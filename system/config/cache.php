@@ -58,6 +58,8 @@ return [
     'prefix' => c::env('CACHE_PREFIX', cstr::slug(CF::appCode(), '_') . '_cache'),
     /**
      * Cache store should be used on rate limiter, leave null to use default store.
+     * Behind a load balancer this must point at a shared store, otherwise each
+     * server counts attempts on its own and the effective limit multiplies.
      */
-    'limiter' => null,
+    'limiter' => c::env('CACHE_LIMITER_DRIVER'),
 ];
