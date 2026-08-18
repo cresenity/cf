@@ -1005,3 +1005,32 @@ $fm-radius: 10px;
 .capp-fm-body {
     position: relative;
 }
+
+/* Warna teks bilah gelap ditulis ulang dengan kelas komponen diulang, sehingga
+   spesifisitasnya (0,5,0) dan aturan tema aplikasi seperti
+   `.business .navbar-dark .navbar-nav .nav-link` (0,4,0) tidak lagi menang.
+   Nilainya sengaja sama persis dengan bawaan .navbar-dark, jadi tampilannya
+   tidak berubah selama tidak ada tema yang menimpanya. */
+.cres\:element\:component\:FileManager.cres\:element\:component\:FileManager {
+    .fm-nav {
+        a, .navbar-brand {
+            color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.5);
+
+            &:hover, &:focus, &.active {
+                color: #fff;
+            }
+        }
+
+        .dropdown-menu .dropdown-item {
+            color: #fff;
+        }
+    }
+
+    .fm-item-actions .dropdown-menu .dropdown-item {
+        color: $fm-dark;
+    }
+}
