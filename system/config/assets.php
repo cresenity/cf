@@ -3,6 +3,10 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 return [
+    // Identitas rilis yang dipakai sebagai versi semua aset: null = versi per berkas dari mtime,
+    // 'git' = gabungan revisi git framework dan aplikasi, string lain dipakai apa adanya.
+    'release' => null,
+
     'css' => [
         'compile' => false,
         'disk' => 'local',
