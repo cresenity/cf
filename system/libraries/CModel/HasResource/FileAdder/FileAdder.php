@@ -338,6 +338,31 @@ class CModel_HasResource_FileAdder_FileAdder {
         }
     }
 
+    /**
+     * Optimize the original image in place before it is measured and stored.
+     *
+     * @return void
+     */
+    protected function optimizeOriginalFile() {
+        if (!CF::config('resource.optimize_original')) {
+            return;
+        }
+        //berkas yang dipertahankan bukan milik framework, jangan disentuh
+        if ($this->preserveOriginal) {
+            return;
+        }
+        $optimizableMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        if (!in_array(File::getMimetype($this->pathToFile), $optimizableMimes, true)) {
+            return;
+        }
+
+        try {
+            CImage_OptimizerChainFactory::createFromConfig()->optimize($this->pathToFile);
+        } catch (Throwable $ex) {
+            //optimasi gagal tidak boleh menggagalkan penyimpanan berkas
+        }
+    }
+
     public function toResourceCollection($collectionName = 'default', $diskName = '') {
         if ($this->file instanceof CResources_Support_RemoteFile) {
             return $this->toResourceCollectionFromRemote($collectionName, $diskName);
@@ -365,6 +390,7 @@ class CModel_HasResource_FileAdder_FileAdder {
         $resource->disk = $this->determineDiskName($diskName, $collectionName);
 
         $resource->collection_name = $collectionName;
+        $this->optimizeOriginalFile();
         $resource->mime_type = File::getMimetype($this->pathToFile);
         $resource->size = filesize($this->pathToFile);
         $resource->custom_properties = $this->customProperties;
