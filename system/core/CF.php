@@ -459,6 +459,35 @@ final class CF {
     }
 
     /**
+     * Controller file path candidates for the given class name segments.
+     *
+     * @param array $segments
+     *
+     * @return array
+     */
+    public static function controllerFileCandidates($segments) {
+        $file = array_pop($segments);
+        $lcFirstDirectories = array_map('lcfirst', $segments);
+        $lowerDirectories = array_map('strtolower', $segments);
+
+        // Kapitalisasi folder controller bebas, jadi siapkan varian lain sebagai cadangan
+        $candidates = [
+            array_merge($lcFirstDirectories, [lcfirst($file)]),
+            array_merge($lowerDirectories, [lcfirst($file)]),
+            array_merge($lowerDirectories, [strtolower($file)]),
+            array_merge($lowerDirectories, [$file]),
+        ];
+
+        $paths = [];
+        foreach ($candidates as $candidate) {
+            $path = implode(DS, $candidate);
+            $paths[$path] = $path;
+        }
+
+        return array_values($paths);
+    }
+
+    /**
      * Provides class auto-loading.
      *
      * @param string $class
@@ -496,9 +525,7 @@ final class CF {
                 $file = substr($class, 11);
             }
             //$file = str_replace('_', DS, $file);
-            $file = implode(DS, array_map(function ($item) {
-                return lcfirst($item);
-            }, explode('_', $file)));
+            $fileCandidates = self::controllerFileCandidates(explode('_', $file));
         } else {
             // This could be either a library or a helper, but libraries must
             // always be capitalized, so we check if the first character is
@@ -509,15 +536,17 @@ final class CF {
 
         $classNotFound = false;
         if ($type == 'controllers') {
-            if ($filename = self::findFile($type, $file, false, false, false, false)) {
-                require $filename;
+            foreach ($fileCandidates as $fileCandidate) {
+                if ($filename = self::findFile($type, $fileCandidate, false, false, false, false)) {
+                    require $filename;
 
-                return true;
-            } else {
-                $type = 'libraries';
-                $directory = 'libraries';
-                $file = $class;
+                    return true;
+                }
             }
+
+            $type = 'libraries';
+            $directory = 'libraries';
+            $file = $class;
         }
 
         if ($filename = self::findFile($type, $file)) {
