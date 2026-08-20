@@ -166,7 +166,22 @@ class CManager_Asset_Compiler {
             clearstatcache(true, $this->outFile);
         }
 
-        return $this->outFile . '?v=' . $this->version();
+        return $this->outFile . $this->versionQuery();
+    }
+
+    /**
+     * Query versi untuk bundel. Kosong bila versioning tipe ini menyala, sebab
+     * perendernya sudah menambahkan `?v=` sendiri dan menambah lagi di sini
+     * menghasilkan `?v=x&v=x`.
+     *
+     * @return string
+     */
+    protected function versionQuery() {
+        if (CF::config('assets.' . $this->type . '.versioning')) {
+            return '';
+        }
+
+        return '?v=' . $this->version();
     }
 
     /**
