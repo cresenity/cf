@@ -130,9 +130,10 @@ class CManager_Asset_Compiler {
                 CFile::makeDirectory($dirname, 0755, true);
             }
 
-            if (file_exists($this->outFile)) {
-                CFile::put($this->outFile, '');
-            }
+            //ditulis ke berkas sementara lalu dipindahkan sekali jalan; sebelumnya berkas
+            //tujuan dikosongkan dulu dan diisi bertahap, sehingga permintaan yang datang
+            //bersamaan dapat menerima bundel kosong atau separuh jadi
+            $tempFile = $dirname . DS . uniqid(basename($this->outFile) . '.', true) . '.tmp';
             foreach ($this->files as $file) {
                 $compiledOutput = file_get_contents($file);
                 // strip BOM, if any
@@ -156,11 +157,31 @@ class CManager_Asset_Compiler {
                     }
                 }
 
-                file_put_contents($this->outFile, $this->separator . $compiledOutput, FILE_APPEND);
+                file_put_contents($tempFile, $this->separator . $compiledOutput, FILE_APPEND);
             }
+
+            if (!@rename($tempFile, $this->outFile)) {
+                @unlink($tempFile);
+            }
+            clearstatcache(true, $this->outFile);
         }
 
-        return $this->outFile . '?v=' . filemtime($this->outFile);
+        return $this->outFile . '?v=' . $this->version();
+    }
+
+    /**
+     * Versi bundel. Identitas rilis dipakai lebih dulu supaya seluruh server di belakang
+     * load balancer menyebut versi yang sama untuk isi yang sama.
+     *
+     * @return string
+     */
+    protected function version() {
+        $release = CManager_Asset_Helper::getReleaseVersion();
+        if ($release !== null) {
+            return $release;
+        }
+
+        return file_exists($this->outFile) ? (string) filemtime($this->outFile) : '0';
     }
 
     /**
