@@ -109,21 +109,10 @@ botlog.log
 .claude/settings.local.json
 
 #ignore graphify
-**/graphify-out/.graphify_*.sig
-**/graphify-out/.graphify_*.json
-**/graphify-out/.graphify_python
-**/graphify-out/.graphify_root
-**/graphify-out/cost.json
-**/graphify-out/cache/
-**/graphify-out/.rebuild.lock
-
-# Keluaran besar graphify: dapat dibangun ulang kapan saja dari kode, dan
-# ukurannya menumpuk di riwayat repo tiap kali digenerate ulang (graph.json
-# framework saja 47 MB). GRAPH_REPORT.md sengaja TIDAK diabaikan — itu satu-
-# satunya keluaran yang terbaca manusia, dan ukurannya wajar.
-**/graphify-out/graph.json
-**/graphify-out/graph.html
-**/graphify-out/manifest.json
+# Seluruh keluaran graphify hanya untuk lokal - tidak ikut repo.
+# Semuanya dapat dibangun ulang dari kode, termasuk cadangan bertanggal
+# (graphify-out/YYYY-MM-DD/) yang dibuat backup_if_protected() sebelum menimpa.
+**/graphify-out/
 
 .php_cs.cache
 *.py
