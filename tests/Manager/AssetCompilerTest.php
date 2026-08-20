@@ -44,6 +44,32 @@ class Manager_AssetCompilerTest extends TestCase {
         return $path;
     }
 
+    public function testBundlePathIsIdenticalForSameReleaseRegardlessOfFileMtime() {
+        $files = ['/srv/a/media/js/a.js', '/srv/a/media/js/b.js'];
+
+        $satu = CManager_Asset_Compiler::bundlePath('js', $files, 'eef78f63e781');
+        $dua = CManager_Asset_Compiler::bundlePath('js', $files, 'eef78f63e781');
+
+        $this->assertSame($satu, $dua);
+        $this->assertStringContainsString('/eef78f63e781/', $satu);
+    }
+
+    public function testBundlePathChangesWithRelease() {
+        $files = ['/srv/a/media/js/a.js'];
+
+        $this->assertNotSame(
+            CManager_Asset_Compiler::bundlePath('js', $files, 'rilis-lama'),
+            CManager_Asset_Compiler::bundlePath('js', $files, 'rilis-baru')
+        );
+    }
+
+    public function testBundlePathRejectsCharactersThatWouldEscapeTheFolder() {
+        $path = CManager_Asset_Compiler::bundlePath('js', ['/srv/a.js'], '../../etc');
+
+        $this->assertStringNotContainsString('..', $path);
+        $this->assertStringContainsString('compiled/asset/js/etc/', $path);
+    }
+
     public function testBundleContainsEverySourceInOrder() {
         $first = $this->sourceFile('a.js', 'var a = 1;');
         $second = $this->sourceFile('b.js', 'var b = 2;');

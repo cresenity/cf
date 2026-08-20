@@ -81,9 +81,34 @@ class CManager_Asset_Compiler {
      * @return void
      */
     protected function determineOutFile() {
-        $firstFile = carr::first($this->files);
-        $ymd = date('Ymd', filemtime($firstFile));
-        $this->outFile = DOCROOT . 'compiled/asset/' . $this->type . '/' . $ymd . '/' . md5(implode(':', $this->files)) . '.' . $this->type;
+        $release = CManager_Asset_Helper::getReleaseVersion();
+        if ($release === null) {
+            //tanpa identitas rilis, jatuh ke perilaku lama
+            $release = date('Ymd', filemtime(carr::first($this->files)));
+        }
+        $this->outFile = DOCROOT . static::bundlePath($this->type, $this->files, $release);
+    }
+
+    /**
+     * Letak bundel relatif terhadap docroot. Dipisahkan agar dapat diuji, dan
+     * dasarnya identitas rilis -- bukan filemtime -- supaya seluruh server
+     * menyusun path yang sama untuk daftar berkas yang sama.
+     *
+     * @param string   $type
+     * @param string[] $files
+     * @param string   $release
+     *
+     * @return string
+     */
+    public static function bundlePath($type, array $files, $release) {
+        $folder = preg_replace('/[^A-Za-z0-9_.-]/', '', (string) $release);
+        //titik berderet dan titik di awal dibuang supaya tidak ada yang bisa naik direktori
+        $folder = ltrim(preg_replace('/\.{2,}/', '.', $folder), '.');
+        if (strlen($folder) == 0) {
+            $folder = 'shared';
+        }
+
+        return 'compiled/asset/' . $type . '/' . $folder . '/' . md5(implode(':', $files)) . '.' . $type;
     }
 
     /**
