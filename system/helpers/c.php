@@ -2296,19 +2296,12 @@ class c {
     }
 
     /**
-     * Generates a random MD5 hash.
-     *
-     * This function is using the date and time along with a random number
-     * between 0 and 9999 to generate a unique MD5 hash. The hash is then
-     * returned as a string.
+     * Nilai acak 32 karakter heks, panjang dan bentuknya sama dengan md5.
      *
      * @return string
      */
     public static function randmd5() {
-        $rand = rand(0, 9999);
-        $base = date('YmdHis') . $rand;
-
-        return md5($rand);
+        return bin2hex(random_bytes(16));
     }
 
     /**

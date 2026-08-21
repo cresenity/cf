@@ -92,10 +92,13 @@ class cutils {
         return $date2;
     }
 
+    /**
+     * Nilai acak 32 karakter heks, panjang dan bentuknya sama dengan md5.
+     *
+     * @return string
+     */
     public static function randmd5() {
-        $rand = rand(0, 9999);
-
-        return md5($rand);
+        return bin2hex(random_bytes(16));
     }
 
     public static function format_filesize($size) {
