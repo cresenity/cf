@@ -32,7 +32,15 @@ final class CModel_Activity {
         $this->message = $message;
     }
 
+    /**
+     * Set the listener for this activity, replacing any previously set.
+     *
+     * @param callable $callback
+     *
+     * @return void
+     */
     public function setListener($callback) {
+        static::getDispatcher()->forget('OnActivity');
         $this->listen('OnActivity', $callback);
     }
 
