@@ -96,6 +96,21 @@ class CServer_Fail2ban {
     }
 
     /**
+     * Alamat asal koneksi SSH ini, yaitu alamat pengelola sebagaimana dilihat
+     * server — dan karenanya alamat yang akan diblokir fail2ban bila salah.
+     *
+     * Dibaca dari server, bukan dari konfigurasi, supaya tetap benar walau
+     * pengelolanya di belakang NAT atau alamatnya berubah.
+     *
+     * @return null|string
+     */
+    public function getManagerIp() {
+        $raw = trim($this->run('echo "$SSH_CONNECTION" | awk ' . escapeshellarg('{print $1}')));
+
+        return static::isValidIp($raw) ? $raw : null;
+    }
+
+    /**
      * @return bool
      */
     public function isInstalled() {
@@ -156,7 +171,8 @@ class CServer_Fail2ban {
     public function getOverview() {
         $prefix = $this->sudoPrefix();
         $unit = escapeshellarg($this->server->distro()->getServiceUnit('fail2ban'));
-        $script = 'echo "[user]"; whoami;'
+        $script = 'echo "[managerip]"; echo "$SSH_CONNECTION" | awk ' . escapeshellarg('{print $1}') . ';'
+            . ' echo "[user]"; whoami;'
             . ' echo "[privilege]"; if [ "$(id -u)" = "0" ]; then echo ROOT; elif sudo -n true >/dev/null 2>&1; then echo SUDO; else echo NONE; fi;'
             . ' echo "[installed]"; command -v fail2ban-client >/dev/null 2>&1 && echo ADA || echo TIDAK;'
             . ' echo "[status]"; systemctl is-active ' . $unit . ' 2>/dev/null || true;'
@@ -185,6 +201,8 @@ class CServer_Fail2ban {
         $privilege = trim((string) carr::get($buffer, 'privilege'));
         $status = trim((string) carr::get($buffer, 'status'));
         $data = [
+            'managerIp' => static::isValidIp(trim((string) carr::get($buffer, 'managerip')))
+                ? trim((string) carr::get($buffer, 'managerip')) : null,
             'sshUser' => trim((string) carr::get($buffer, 'user')),
             'privilege' => $privilege == 'ROOT' ? 'root' : ($privilege == 'SUDO' ? 'sudo' : 'none'),
             'installed' => trim((string) carr::get($buffer, 'installed')) === 'ADA',
@@ -382,12 +400,19 @@ class CServer_Fail2ban {
      * Isi jail.local bawaan: ambangnya longgar supaya salah ketik tidak
      * langsung memblokir orang yang berhak.
      *
+     * Alamat pengelola selalu ikut dikecualikan. Tanpa itu, jalur yang dipakai
+     * untuk melepas blokir adalah jalur yang bisa ikut terblokir.
+     *
      * @param string[] $ignoreIpList
      *
      * @return string
      */
     public function getDefaultJailLocal(array $ignoreIpList = []) {
         $ignore = ['127.0.0.1/8', '::1'];
+        $managerIp = $this->getManagerIp();
+        if ($managerIp !== null) {
+            $ignore[] = $managerIp;
+        }
         foreach ($ignoreIpList as $ip) {
             if (static::isValidIp($ip) && !in_array($ip, $ignore, true)) {
                 $ignore[] = $ip;
