@@ -34,7 +34,7 @@ RewriteRule .* index.php/$0 [PT,L]
 # aturan yang tidak pernah berlaku — jadi jangan kembali ke pola satu-aturan-
 # per-berkas, dan bila menambah sesuatu, sisipkan ke alternasi di bawah.
 RewriteRule \.(log|sql|key|pem|neon|dist|cache)$ - [R=404,L]
-RewriteRule (^|/)\.env(\..+)?$ - [R=404,L]
+RewriteRule (^|/)(\.env|env\.php)(\..+)?$ - [R=404,L]
 
 # Kredensial: berkas service account Google berekstensi .json sehingga tidak
 # tertangkap aturan ekstensi di atas, dan berkas kunci enkripsi aplikasi sama
