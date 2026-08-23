@@ -206,13 +206,22 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
      * Menjalankan mysqldump di server tujuan lewat SSH, bukan di mesin yang
      * menjalankan CBackup - dipakai saat host database tidak reachable
      * langsung (mis. di belakang NAT) tapi SSH ke servernya sendiri bisa.
-     * Isi dump di-stream balik lewat exec SSH langsung ke $dumpFile lokal,
-     * jadi tidak ada file dump yang tertinggal di server remote maupun port
-     * database yang perlu dibuka ke mesin yang menjalankan backup ini.
+     *
+     * Dump ditulis ke berkas sementara **di server remote** (redirect shell
+     * biasa, sama seperti jalur lokal), baru diunduh ke $dumpFile lewat
+     * `get()` (SFTP) - bukan ditangkap lewat `exec()` ke string PHP seperti
+     * versi sebelumnya. Versi lama membuffer seluruh isi dump di memori
+     * sebelum menulisnya ke berkas, sehingga database yang dump-nya lebih
+     * besar dari `memory_limit` PHP (terlihat pada database 242MB, limit CLI
+     * 128M) gagal dengan "Allowed memory size exhausted" - bukan galat
+     * mysqldump sama sekali. `get()` menulis langsung ke berkas lokal saat
+     * mengunduh, jadi ukurannya tidak lagi dibatasi memori PHP.
+     *
+     * Berkas dump remote-nya sendiri tidak pernah tertinggal - dihapus di
+     * `finally` yang sama dengan berkas kredensial.
      *
      * Kompresi belum didukung di jalur ini - $this->compressor mengandalkan
-     * pipe shell lokal yang tidak berlaku untuk output yang sudah berupa
-     * string hasil exec.
+     * pipe shell lokal yang tidak berlaku untuk berkas yang sudah diunduh.
      *
      * @param string $dumpFile
      *
@@ -227,21 +236,33 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
         }
 
         $remoteCredentialsFile = '/tmp/.cbackup-' . cstr::random(20) . '.cnf';
+        $remoteDumpFile = '/tmp/.cbackup-dump-' . cstr::random(20) . '.sql';
         $this->ssh->putString($remoteCredentialsFile, $this->getContentsOfCredentialsFile());
 
         try {
-            $command = implode(' ', $this->buildDumpCommandParts($remoteCredentialsFile));
+            $command = $this->echoToFile(
+                implode(' ', $this->buildDumpCommandParts($remoteCredentialsFile)),
+                $remoteDumpFile
+            );
             $output = $this->ssh->exec($command);
 
-            file_put_contents($dumpFile, $output);
+            $remoteSize = (int) trim((string) $this->ssh->exec('wc -c < ' . escapeshellarg($remoteDumpFile) . ' 2>/dev/null'));
+            if ($remoteSize === 0) {
+                $preview = mb_substr((string) $output, 0, 500);
+
+                throw new CBackup_Database_Exception_DumpFailedException(
+                    "Dump lewat SSH kosong atau gagal di server remote. Output mysqldump:\n{$preview}"
+                );
+            }
+
+            $this->ssh->get($remoteDumpFile, $dumpFile);
         } finally {
-            $this->ssh->exec('rm -f ' . escapeshellarg($remoteCredentialsFile));
+            $this->ssh->exec('rm -f ' . escapeshellarg($remoteCredentialsFile) . ' ' . escapeshellarg($remoteDumpFile));
         }
 
         if (!file_exists($dumpFile) || filesize($dumpFile) === 0) {
-            $preview = mb_substr((string) $output, 0, 500);
             throw new CBackup_Database_Exception_DumpFailedException(
-                "Dump lewat SSH kosong atau gagal. Output mysqldump:\n{$preview}"
+                'Dump lewat SSH gagal diunduh - berkas remote ada, tetapi salinan lokal kosong.'
             );
         }
     }
