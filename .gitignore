@@ -105,8 +105,22 @@ botlog.log
 #ignore vscode
 .vscode
 
-#ignore claude code local settings
-.claude/settings.local.json
+#ignore claude code
+# Sengaja terbalik: tidak ada isi .claude/ yang ikut repo kecuali yang disebut
+# di bawah. Pola sebaliknya - "semua ikut kecuali X" - harus diperbarui setiap
+# Claude Code menambah jenis berkas baru di sana, dan kalau terlewat berkasnya
+# ter-commit tanpa peringatan apa pun.
+#
+# Harus /.claude/* (isinya), bukan /.claude/ (direktorinya): git tidak bisa
+# membatalkan pengabaian sebuah berkas bila direktori induknya yang diabaikan,
+# sehingga ketiga baris ! di bawah akan diam-diam tidak berfungsi.
+#
+# settings.json sengaja tidak dibuka: isinya hooks yang dieksekusi dan daftar
+# izin yang menyebut host serta jalur internal.
+/.claude/*
+!/.claude/skills/
+!/.claude/agents/
+!/.claude/commands/
 
 #ignore graphify
 # Seluruh keluaran graphify hanya untuk lokal - tidak ikut repo.
