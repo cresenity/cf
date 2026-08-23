@@ -189,8 +189,6 @@ class CElement_List_TabList extends CElement_List {
     }
 
     /**
-     * @param array $paramRequest
-     *
      * @return CElement_List_TabList
      */
     public function setParamRequest(array $paramRequest) {
@@ -212,6 +210,21 @@ class CElement_List_TabList extends CElement_List {
         }
 
         return $this;
+    }
+
+    /**
+     * Id of the shared container every ajax tab renders into.
+     *
+     * Exposed because code rendering a tab's own content runs in a separate
+     * request and has no TabList instance to ask - without this it would have
+     * to repeat the suffix by hand to target the container.
+     *
+     * @param string $tabListId
+     *
+     * @return string
+     */
+    public static function ajaxContentId($tabListId) {
+        return $tabListId . '-ajax-tab-content';
     }
 
     /**
@@ -240,7 +253,7 @@ class CElement_List_TabList extends CElement_List {
                 $tab->setActive(true);
                 $activeTab = $tab;
             }
-            $tab->setTarget($this->id . '-ajax-tab-content');
+            $tab->setTarget(static::ajaxContentId($this->id));
             $tab->resolveAjaxUrl();
         }
 
@@ -258,6 +271,7 @@ class CElement_List_TabList extends CElement_List {
 
         $this->addView('cresenity.element.list.tab-list.index', [
             'id' => $this->id,
+            'ajaxContentId' => static::ajaxContentId($this->id),
             'classes' => trim(implode(' ', $this->classes) . ($this->tabPosition == 'left' ? ' vtabs' : '')),
             'cresConfig' => $cresConfig,
             'tabs' => $this->tabs,
