@@ -57,9 +57,12 @@ would double-load Alpine.
 - `modules/` DEPRECATED — use `system/libraries`
 - **`setDataFromArray()` and `setAjax()` are mutually exclusive on a table.** `CElement_Component_DataTable::requery()` wipes `$this->data` the moment ajax mode is on, and the ajax request then falls through to the `Query` processor with an empty query, producing invalid SQL — `select * from () as a`. It fails as a 500 on the ajax call, not on the page render, so it is easy to ship. Array-backed tables need no ajax at all: the default client-side DataTable still paginates, sorts, and searches. Confirmed 2026-08-15 from two production exceptions (#12109 smartfield, #12110 landmap). Several apps still pair the two — that combination is latent breakage, not a working pattern
 - For bulk repetitive edits (e.g. converting 100+ entries), write a bash script instead of editing one-by-one to save quota/tokens
-- `docs/` holds local working notes and is **gitignored** — `docs/TODO.md` tracks CF 1.9 upgrade/refactor tasks; remove an item once it's done. Blocked in `.htaccess` like `CLAUDE.md`, and no longer part of the repo, so it exists only on machines that create it
-- **Per-app `.htaccess` files** (e.g. `application/devcloud/.htaccess`, `application/tribelio/docs/.htaccess`) are a real, existing pattern for blocking extra app-specific sensitive paths beyond what the root `.htaccess` already covers. Two gotchas, both confirmed 2026-08-04:
-  - **Paths inside a per-app `.htaccess` are relative to that `.htaccess`'s own directory**, not the shared docroot root — LiteSpeed/Apache strip the app prefix before matching, so a docroot-rooted pattern (like the ones in the root `.htaccess`) silently never matches when pasted into a per-app file.
-  - **A per-app `.htaccess` is silently dead when the vhost's own rewrite block is already near ~30 rules.** LiteSpeed appends the `.htaccess` rules *after* the vhost's, and stops processing after roughly the 30th — so on a vhost carrying the old 34-rule block, every rule in the per-app file is dropped without a word. Proven 2026-08-15 with one controlled test: the same file, same docroot, same `.htaccess` returned **404 through `devcloud.cresenity.com`** (19-rule vhost) and **200 through `aid.cresenity.com`** (34-rule vhost). So when a per-app `.htaccess` "doesn't work", count the vhost's rules before doubting the pattern — apply the CF standard block via devcloud's *Apply Rewrite Rule For CF* first, then the `.htaccess` starts working on its own.
-  - **`Deny from all` / `Require all denied` do nothing on LiteSpeed for static files.** Use `RewriteRule ... [F,L]` (or `[R=404,L]`) instead — same rule family the root `.htaccess` already uses to block `CLAUDE.md`/`TODO.md`/`BUG.md`/`README.md`/`CHANGELOG.md`, `.env`, and `default/data/key|vendor/`.
-  - That root-level protection only applies while the app shares the top-level docroot. An app whose vhost points at its own separate docroot (e.g. a `default/public/` layout) stops inheriting it entirely and needs the same blocking rules copied into its own `.htaccess` — this bit aidnity historically (see `project-cf19-public-docroot-rollback` memory).
+- `docs/` holds local working notes and is **gitignored**, and blocked in `.htaccess` like `CLAUDE.md` — it exists only on machines that create it
+
+## Operational notes
+
+Anything naming a real host, vhost shape, or where protection is weak lives outside this
+repo — this file is published at `github.com/cresenity/CF`. The import below is optional:
+a missing one changes nothing.
+
+@docs/CLAUDE.operasional.md
