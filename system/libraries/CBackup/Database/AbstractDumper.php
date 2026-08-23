@@ -65,9 +65,18 @@ abstract class CBackup_Database_AbstractDumper {
     protected $extraOptions = [];
 
     /**
-     * @var object
+     * @var null|CBackup_AbstractCompressor
      */
     protected $compressor = null;
+
+    /**
+     * Saat diisi, dumpToFile() dijalankan di server ini lewat SSH alih-alih
+     * di mesin lokal - dipakai untuk database yang hostnya tidak reachable
+     * langsung tapi SSH ke server tempatnya berada bisa.
+     *
+     * @var null|CRemote_SSH
+     */
+    protected $ssh = null;
 
     public static function create() {
         return new static();
@@ -156,6 +165,24 @@ abstract class CBackup_Database_AbstractDumper {
         $this->timeout = $timeout;
 
         return $this;
+    }
+
+    /**
+     * @param null|CRemote_SSH $ssh
+     *
+     * @return $this
+     */
+    public function setSsh($ssh) {
+        $this->ssh = $ssh;
+
+        return $this;
+    }
+
+    /**
+     * @return null|CRemote_SSH
+     */
+    public function getSsh() {
+        return $this->ssh;
     }
 
     public function setDumpBinaryPath($dumpBinaryPath) {

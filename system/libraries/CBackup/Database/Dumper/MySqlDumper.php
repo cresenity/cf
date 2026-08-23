@@ -34,6 +34,15 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
     protected $defaultCharacterSet = '';
 
     /**
+     * Nama binary yang dijalankan - MariaDB 10.6+ menamainya mariadb-dump,
+     * mysqldump hanya symlink kompatibilitas yang tidak selalu ada di semua
+     * instalasi.
+     *
+     * @var string
+     */
+    protected $dumpBinaryName = 'mysqldump';
+
+    /**
      * @var bool
      */
     protected $dbNameWasSetAsExtraOption = false;
@@ -138,6 +147,16 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
     }
 
     /**
+     * @param string $dumpBinaryName
+     *
+     * @return $this
+     */
+    public function setDumpBinaryName($dumpBinaryName) {
+        $this->dumpBinaryName = $dumpBinaryName;
+        return $this;
+    }
+
+    /**
      * @param string $characterSet
      *
      * @return $this
@@ -167,6 +186,12 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
      */
     public function dumpToFile($dumpFile) {
         $this->guardAgainstIncompleteCredentials();
+
+        if ($this->ssh !== null) {
+            $this->dumpToFileViaSsh($dumpFile);
+            return;
+        }
+
         $tempFileHandle = tmpfile();
         fwrite($tempFileHandle, $this->getContentsOfCredentialsFile());
         $temporaryCredentialsFile = stream_get_meta_data($tempFileHandle)['uri'];
@@ -175,6 +200,50 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
         $process = Process::fromShellCommandline($command, null, null, null, $this->timeout);
         $process->run();
         $this->checkIfDumpWasSuccessFul($process, $dumpFile);
+    }
+
+    /**
+     * Menjalankan mysqldump di server tujuan lewat SSH, bukan di mesin yang
+     * menjalankan CBackup - dipakai saat host database tidak reachable
+     * langsung (mis. di belakang NAT) tapi SSH ke servernya sendiri bisa.
+     * Isi dump di-stream balik lewat exec SSH langsung ke $dumpFile lokal,
+     * jadi tidak ada file dump yang tertinggal di server remote maupun port
+     * database yang perlu dibuka ke mesin yang menjalankan backup ini.
+     *
+     * Kompresi belum didukung di jalur ini - $this->compressor mengandalkan
+     * pipe shell lokal yang tidak berlaku untuk output yang sudah berupa
+     * string hasil exec.
+     *
+     * @param string $dumpFile
+     *
+     * @throws \CBackup_Database_Exception_CannotStartDumpException
+     * @throws \CBackup_Database_Exception_DumpFailedException
+     */
+    protected function dumpToFileViaSsh($dumpFile) {
+        if ($this->compressor) {
+            throw new CBackup_Database_Exception_CannotStartDumpException(
+                'Compressor tidak didukung untuk dump lewat SSH - kompres dumpFile setelah dumpToFile() selesai.'
+            );
+        }
+
+        $remoteCredentialsFile = '/tmp/.cbackup-' . cstr::random(20) . '.cnf';
+        $this->ssh->putString($remoteCredentialsFile, $this->getContentsOfCredentialsFile());
+
+        try {
+            $command = implode(' ', $this->buildDumpCommandParts($remoteCredentialsFile));
+            $output = $this->ssh->exec($command);
+
+            file_put_contents($dumpFile, $output);
+        } finally {
+            $this->ssh->exec('rm -f ' . escapeshellarg($remoteCredentialsFile));
+        }
+
+        if (!file_exists($dumpFile) || filesize($dumpFile) === 0) {
+            $preview = mb_substr((string) $output, 0, 500);
+            throw new CBackup_Database_Exception_DumpFailedException(
+                "Dump lewat SSH kosong atau gagal. Output mysqldump:\n{$preview}"
+            );
+        }
     }
 
     public function addExtraOption($extraOption) {
@@ -206,9 +275,23 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
      * @return string
      */
     public function getDumpCommand($dumpFile, $temporaryCredentialsFile) {
+        $command = $this->buildDumpCommandParts($temporaryCredentialsFile);
+        return $this->echoToFile(implode(' ', $command), $dumpFile);
+    }
+
+    /**
+     * Bagian command mysqldump tanpa redirect ke file - dipakai getDumpCommand()
+     * (redirect ke $dumpFile lokal) dan dumpToFileViaSsh() (output ditangkap
+     * dari exec SSH, bukan redirect shell).
+     *
+     * @param string $temporaryCredentialsFile
+     *
+     * @return string[]
+     */
+    protected function buildDumpCommandParts($temporaryCredentialsFile) {
         $quote = $this->determineQuote();
         $command = [
-            "{$quote}{$this->dumpBinaryPath}mysqldump{$quote}",
+            "{$quote}{$this->dumpBinaryPath}{$this->dumpBinaryName}{$quote}",
             "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
         ];
         if (!$this->createTables) {
@@ -249,7 +332,7 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
             $includeTables = implode(' ', $this->includeTables);
             $command[] = "--tables {$includeTables}";
         }
-        return $this->echoToFile(implode(' ', $command), $dumpFile);
+        return $command;
     }
 
     public function getContentsOfCredentialsFile() {
