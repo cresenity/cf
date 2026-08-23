@@ -318,7 +318,9 @@ CREATE TABLE `queue_failed` (
   `deleted` datetime DEFAULT NULL,
   `deletedby` varchar(255) DEFAULT NULL,
   `status` int(11) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`queue_failed_id`)
+  PRIMARY KEY (`queue_failed_id`),
+  KEY `queue_failed__failed_at_index` (`failed_at`),
+  KEY `queue_failed__queue_index` (`queue`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
