@@ -59,6 +59,73 @@ would double-load Alpine.
 - For bulk repetitive edits (e.g. converting 100+ entries), write a bash script instead of editing one-by-one to save quota/tokens
 - `docs/` holds local working notes and is **gitignored**, and blocked in `.htaccess` like `CLAUDE.md` — it exists only on machines that create it
 
+## CElement recipes
+
+Builder methods (`addWidget`, `addForm`, `addTable`, `addTabList`, `addView`, `addField`,
+`addActionList`) live on `CObservable` and its traits in `system/libraries/CObservable/Trait/`.
+Grep there before guessing a name — several plausible ones do not exist, and the failure is a
+fatal at render time, not at edit time.
+
+**Widget and view**
+
+```php
+$widget = $app->addWidget()->setTitle('Judul')->setIcon('ti ti-server');
+$app->addView('partials.stat-cards', ['stats' => $stats]);
+```
+
+**Form** — two names that do not exist are noted inline, both easy to reach for:
+
+```php
+$form = $widget->addForm()->setMethod('post');
+$form->addField()->setLabel('Nama')->addControl('name', 'text')->setValue($value);
+$form->addControl('submit_action', 'hidden')->setValue('save');   // NOT addHidden()
+$form->addField()->setLabel('Secret')->addControl('secret', 'password')
+    ->setValue($secret)->setReadonly()->setToggleVisibility();
+$form->addActionList()->setStyle('form-action')->addAction()
+    ->setLabel('Simpan')->setSubmit(true);                        // NOT $form->addAction()
+
+$post = c::request()->post();
+```
+
+**Ajax tabs** — each tab method returns its own `CApp`:
+
+```php
+const TAB_LIST_ID = 'myTab';
+
+$tabs = $app->addTabList(static::TAB_LIST_ID)->setTabPositionTop();
+$tabs->addTab()->setLabel('Ringkasan')->setAjaxUrl($base . 'tabSummary/' . $id)->setNoPadding();
+```
+
+A form **inside** an ajax tab needs both an explicit action and a target. Without them it posts
+to the parent page's URL, which after the content moved into tabs no longer handles the
+submission — the button appears to work and does nothing:
+
+```php
+$form->setAjaxSubmit(true)
+    ->setAction($base . 'tabRelay/' . $id)
+    ->setAjaxSubmitTarget(CElement_List_TabList::ajaxContentId(static::TAB_LIST_ID));
+```
+
+The form's `action` attribute is what the ajax POST uses, and the response HTML replaces the
+target container.
+
+**Table**
+
+```php
+$table = $widget->addTable();
+$table->setDataFromArray($rows);        // never together with setAjax(), see Conventions
+$table->addColumn('port')->setLabel('Porta');
+$table->addColumn('state')->setLabel('Jangkauan')->setCallback(function ($row, $value) {
+    return $value == 'public' ? '<span class="badge badge-success">publik</span>' : $value;
+});
+```
+
+**Slow data does not belong in the page render.** A controller that reads a remote server before
+returning makes the whole page wait for it, and nothing on screen explains the wait. Render the
+shell first and fetch the slow part over ajax with a spinner. If more than one tab needs the same
+expensive read, cache it — otherwise splitting a page into tabs makes it slower than it was,
+since each tab now pays for its own round trip.
+
 ## Operational notes
 
 Anything naming a real host, vhost shape, or where protection is weak lives outside this
