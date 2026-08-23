@@ -16,9 +16,6 @@ class CServer_Fail2ban {
      */
     protected $sudoPrefix;
 
-    /**
-     * @param CServer_Server $server
-     */
     public function __construct(CServer_Server $server) {
         $this->server = $server;
     }
@@ -182,6 +179,10 @@ class CServer_Fail2ban {
             . ' for j in $JAILS; do'
             . '   echo "[jailstatus $j]"; ' . $prefix . 'fail2ban-client status "$j" 2>/dev/null;'
             . '   echo "[jailignore $j]"; ' . $prefix . 'fail2ban-client get "$j" ignoreip 2>/dev/null;'
+            . '   echo "[jailparam $j]";'
+            . '   for p in bantime findtime maxretry; do'
+            . '     printf "%s=%s\n" "$p" "$(' . $prefix . 'fail2ban-client get "$j" $p 2>/dev/null | tr -d "\r\n")";'
+            . '   done;'
             . ' done';
 
         $section = '';
@@ -218,7 +219,8 @@ class CServer_Fail2ban {
             }
             $data['jail'][$jail] = array_merge(
                 $this->parseJailStatus($jail, (string) carr::get($buffer, 'jailstatus ' . $jail)),
-                ['ignoreIp' => $this->parseIgnoreList((string) carr::get($buffer, 'jailignore ' . $jail))]
+                ['ignoreIp' => $this->parseIgnoreList((string) carr::get($buffer, 'jailignore ' . $jail))],
+                $this->parseJailParam((string) carr::get($buffer, 'jailparam ' . $jail))
             );
         }
 
@@ -292,6 +294,103 @@ class CServer_Fail2ban {
                         $data['bannedIp'][] = $ip;
                     }
                 }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Riwayat blokir dari log fail2ban.
+     *
+     * Status jail hanya menyimpan alamat yang sedang diblokir, jadi alamat yang
+     * masa blokirnya sudah lewat hanya tersisa di log.
+     *
+     * @param int $limit baris log terakhir yang dibaca
+     *
+     * @return array jail, ip, banCount, lastBan, lastUnban, banned
+     */
+    public function getBanHistory($limit = 5000) {
+        $limit = (int) $limit;
+        if ($limit < 1) {
+            $limit = 1;
+        }
+        //berkas dibaca urut waktu ubah supaya yang terpotong tail adalah yang
+        //terlama, dan zcat -f menerima log yang sudah dirotasi maupun yang belum;
+        //kalau logtarget-nya systemd tidak ada berkas sama sekali, jadi jurnal dibaca
+        $unit = escapeshellarg($this->server->distro()->getServiceUnit('fail2ban'));
+        $script = 'FILES=$(ls -1tr /var/log/fail2ban.log* 2>/dev/null);'
+            . ' if [ -n "$FILES" ]; then zcat -f $FILES 2>/dev/null;'
+            . ' else journalctl -u ' . $unit . ' --no-pager -o short-iso 2>/dev/null; fi'
+            . ' | grep -aE "\] (Ban|Unban) " | tail -n ' . $limit;
+
+        $output = $this->run($this->sudoPrefix() . 'bash -c ' . escapeshellarg($script) . ' 2>/dev/null');
+
+        $history = [];
+        foreach (explode("\n", (string) $output) as $line) {
+            //dua bentuk waktu: berkas log fail2ban (spasi, milidetik) dan
+            //jurnal systemd (T, zona waktu)
+            if (!preg_match(
+                '/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:[.,]\d+)?(?:[+-]\d{2}:?\d{2})?'
+                    . '\s+.*\[([A-Za-z0-9._-]+)\]\s+(Ban|Unban)\s+(\S+)/',
+                trim($line),
+                $match
+            )) {
+                continue;
+            }
+            list(, $date, $clock, $jail, $action, $ip) = $match;
+            $time = $date . ' ' . $clock;
+            if (!static::isValidIp($ip) || !static::isValidJail($jail)) {
+                continue;
+            }
+            $key = $jail . '|' . $ip;
+            if (!isset($history[$key])) {
+                $history[$key] = [
+                    'jail' => $jail,
+                    'ip' => $ip,
+                    'banCount' => 0,
+                    'lastBan' => null,
+                    'lastUnban' => null,
+                    'banned' => false,
+                ];
+            }
+            if ($action == 'Ban') {
+                $history[$key]['banCount']++;
+                $history[$key]['lastBan'] = $time;
+                $history[$key]['banned'] = true;
+            } else {
+                $history[$key]['lastUnban'] = $time;
+                $history[$key]['banned'] = false;
+            }
+        }
+
+        //terbaru di atas: yang baru saja diblokir adalah yang sedang dicari
+        usort($history, function ($a, $b) {
+            return strcmp(
+                (string) max($b['lastBan'], $b['lastUnban']),
+                (string) max($a['lastBan'], $a['lastUnban'])
+            );
+        });
+
+        return $history;
+    }
+
+    /**
+     * Ambang blokir sebuah jail.
+     *
+     * Nilainya dibiarkan apa adanya: fail2ban menjawab dalam detik, tapi versi
+     * lama bisa mengembalikan bentuk seperti `15m`.
+     *
+     * @param string $output
+     *
+     * @return array bantime, findtime, maxretry
+     */
+    protected function parseJailParam($output) {
+        $data = ['bantime' => null, 'findtime' => null, 'maxretry' => null];
+        foreach (explode("\n", (string) $output) as $line) {
+            if (preg_match('/^(bantime|findtime|maxretry)=(.+)$/', trim($line), $match)) {
+                $value = trim($match[2]);
+                $data[$match[1]] = strlen($value) > 0 ? $value : null;
             }
         }
 
