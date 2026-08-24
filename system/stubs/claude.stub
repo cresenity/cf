@@ -1,0 +1,30 @@
+# {app}
+
+<!-- One paragraph: what this application is, who uses it, and what it talks to. -->
+
+A CF application. Its own classes are `{prefix}`-prefixed (`{prefix}Model`, `{prefix}Utils`);
+framework classes stay `C`-prefixed.
+
+Framework-wide conventions are deliberately **not** repeated here — soft delete on `status`,
+the PHP 7.4 ceiling, code style, `phpcf` commands, and the rest live in the docroot's own
+`CLAUDE.md`, one level above this directory. Write down only what is true of {app} and
+nothing else; a copy of the framework rules here would be a second copy to keep in sync, and
+it would drift.
+
+## Peta cepat
+
+<!-- The handful of files someone should read first, and what each one is for. -->
+
+## Deploy
+
+<!-- How this application reaches its server, and anything easy to get wrong along the way. -->
+
+## Kebiasaan setempat
+
+<!-- Conventions that apply to {app} alone: naming, table shapes, patterns to follow or avoid. -->
+
+## Jebakan
+
+<!-- Things that look wrong but are correct, and things that look correct but are not.
+     This section earns its keep faster than any other - write here the moment something
+     costs you an hour. -->

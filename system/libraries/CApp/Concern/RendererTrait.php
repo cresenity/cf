@@ -70,9 +70,9 @@ trait CApp_Concern_RendererTrait {
     public function renderStyles($options = []) {
         /** @var CApp $this */
         $viewData = $this->getViewData();
-        $cresCss = curl::base() . 'media/js/cres/dist/cres.css?v=' . md5(CFile::lastModified(DOCROOT . 'media/js/cres/dist/cres.css'));
+        $cresCss = curl::base() . 'media/js/cres/dist/cres.css?v=' . CManager_Asset_Helper::getVersionForFile(DOCROOT . 'media/js/cres/dist/cres.css');
 
-        $alpineJs = curl::base() . 'media/js/libs/alpine.js?v=' . md5(CFile::lastModified(DOCROOT . 'media/js/libs/alpine.js'));
+        $alpineJs = curl::base() . 'media/js/libs/alpine.js?v=' . CManager_Asset_Helper::getVersionForFile(DOCROOT . 'media/js/libs/alpine.js');
         $alpineScript = '<script src="' . $alpineJs . '" defer></script>';
         $cresStyle = '<link href="' . $cresCss . '" rel="stylesheet" />';
         $cresStyleIsEnabled = !!CF::config('cresjs.style.enable');
@@ -119,13 +119,13 @@ HTML;
         $js = carr::get($viewData, 'js', '');
         $customJs = carr::get($viewData, 'custom_js', '');
 
-        $alpineJs = curl::base() . 'media/js/libs/alpine.js?v=' . md5(CFile::lastModified(DOCROOT . 'media/js/libs/alpine.js'));
+        $alpineJs = curl::base() . 'media/js/libs/alpine.js?v=' . CManager_Asset_Helper::getVersionForFile(DOCROOT . 'media/js/libs/alpine.js');
         $alpineScript = '<script src="' . $alpineJs . '"></script>';
 
         $pushesScript = $this->yieldPushContent('capp-script');
 
         $cresJsFile = 'cres.js';
-        $cresJs = curl::base() . 'media/js/cres/dist/' . $cresJsFile . '?v=' . md5(CFile::lastModified(DOCROOT . 'media/js/cres/dist/' . $cresJsFile . ''));
+        $cresJs = curl::base() . 'media/js/cres/dist/' . $cresJsFile . '?v=' . CManager_Asset_Helper::getVersionForFile(DOCROOT . 'media/js/cres/dist/' . $cresJsFile);
 
         $notificationScript = '';
         if ($this->notification()->isEnabled()) {

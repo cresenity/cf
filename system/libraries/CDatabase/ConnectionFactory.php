@@ -295,6 +295,7 @@ class CDatabase_ConnectionFactory {
         return [
             'mysqli' => 'mysql',
             'pdo.mysql' => 'mysql',
+            'mariadb' => 'mysql',
             'postgre' => 'pgsql',
             'postgres' => 'pgsql',
         ];

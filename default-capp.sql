@@ -134,6 +134,7 @@ CREATE TABLE IF NOT EXISTS `sys_counter` (
   `status` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`sys_counter_id`),
   UNIQUE KEY `counter_id` (`sys_counter_id`),
+  UNIQUE KEY `sys_counter_org_key` (`org_id`,`key`),
   CONSTRAINT `sys_counter_ibfk_1` FOREIGN KEY (`org_id`) REFERENCES `org` (`org_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -317,7 +318,9 @@ CREATE TABLE `queue_failed` (
   `deleted` datetime DEFAULT NULL,
   `deletedby` varchar(255) DEFAULT NULL,
   `status` int(11) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`queue_failed_id`)
+  PRIMARY KEY (`queue_failed_id`),
+  KEY `queue_failed__failed_at_index` (`failed_at`),
+  KEY `queue_failed__queue_index` (`queue`(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

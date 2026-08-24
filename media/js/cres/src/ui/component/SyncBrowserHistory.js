@@ -139,7 +139,8 @@ let CresenityStateManager = {
         let stateArray = state.toStateArray();
 
         // Copy over existing history state if it's an object, so we don't overwrite it.
-        let fullstateObject = Object.assign(history.state || {}, { cresenity: stateArray });
+        let existingState = (history.state && typeof history.state === 'object') ? history.state : {};
+        let fullstateObject = Object.assign(existingState, { cresenity: stateArray });
 
         let capitalize = subject => subject.charAt(0).toUpperCase() + subject.slice(1);
 
@@ -188,7 +189,7 @@ let CresenityStateManager = {
 
     clearState() {
         // This is to prevent exponentially increasing the size of our state on page refresh.
-        if (window.history.state) {window.history.state.cresenity = (new CresenityState()).toStateArray();}
+        if (window.history.state && typeof window.history.state === 'object') {window.history.state.cresenity = (new CresenityState()).toStateArray();}
     },
 
     storeInSession(value) {

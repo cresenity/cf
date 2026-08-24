@@ -34,6 +34,15 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
     protected $defaultCharacterSet = '';
 
     /**
+     * Nama binary yang dijalankan - MariaDB 10.6+ menamainya mariadb-dump,
+     * mysqldump hanya symlink kompatibilitas yang tidak selalu ada di semua
+     * instalasi.
+     *
+     * @var string
+     */
+    protected $dumpBinaryName = 'mysqldump';
+
+    /**
      * @var bool
      */
     protected $dbNameWasSetAsExtraOption = false;
@@ -138,6 +147,16 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
     }
 
     /**
+     * @param string $dumpBinaryName
+     *
+     * @return $this
+     */
+    public function setDumpBinaryName($dumpBinaryName) {
+        $this->dumpBinaryName = $dumpBinaryName;
+        return $this;
+    }
+
+    /**
      * @param string $characterSet
      *
      * @return $this
@@ -167,6 +186,12 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
      */
     public function dumpToFile($dumpFile) {
         $this->guardAgainstIncompleteCredentials();
+
+        if ($this->ssh !== null) {
+            $this->dumpToFileViaSsh($dumpFile);
+            return;
+        }
+
         $tempFileHandle = tmpfile();
         fwrite($tempFileHandle, $this->getContentsOfCredentialsFile());
         $temporaryCredentialsFile = stream_get_meta_data($tempFileHandle)['uri'];
@@ -175,6 +200,71 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
         $process = Process::fromShellCommandline($command, null, null, null, $this->timeout);
         $process->run();
         $this->checkIfDumpWasSuccessFul($process, $dumpFile);
+    }
+
+    /**
+     * Menjalankan mysqldump di server tujuan lewat SSH, bukan di mesin yang
+     * menjalankan CBackup - dipakai saat host database tidak reachable
+     * langsung (mis. di belakang NAT) tapi SSH ke servernya sendiri bisa.
+     *
+     * Dump ditulis ke berkas sementara **di server remote** (redirect shell
+     * biasa, sama seperti jalur lokal), baru diunduh ke $dumpFile lewat
+     * `get()` (SFTP) - bukan ditangkap lewat `exec()` ke string PHP seperti
+     * versi sebelumnya. Versi lama membuffer seluruh isi dump di memori
+     * sebelum menulisnya ke berkas, sehingga database yang dump-nya lebih
+     * besar dari `memory_limit` PHP (terlihat pada database 242MB, limit CLI
+     * 128M) gagal dengan "Allowed memory size exhausted" - bukan galat
+     * mysqldump sama sekali. `get()` menulis langsung ke berkas lokal saat
+     * mengunduh, jadi ukurannya tidak lagi dibatasi memori PHP.
+     *
+     * Berkas dump remote-nya sendiri tidak pernah tertinggal - dihapus di
+     * `finally` yang sama dengan berkas kredensial.
+     *
+     * Kompresi belum didukung di jalur ini - $this->compressor mengandalkan
+     * pipe shell lokal yang tidak berlaku untuk berkas yang sudah diunduh.
+     *
+     * @param string $dumpFile
+     *
+     * @throws \CBackup_Database_Exception_CannotStartDumpException
+     * @throws \CBackup_Database_Exception_DumpFailedException
+     */
+    protected function dumpToFileViaSsh($dumpFile) {
+        if ($this->compressor) {
+            throw new CBackup_Database_Exception_CannotStartDumpException(
+                'Compressor tidak didukung untuk dump lewat SSH - kompres dumpFile setelah dumpToFile() selesai.'
+            );
+        }
+
+        $remoteCredentialsFile = '/tmp/.cbackup-' . cstr::random(20) . '.cnf';
+        $remoteDumpFile = '/tmp/.cbackup-dump-' . cstr::random(20) . '.sql';
+        $this->ssh->putString($remoteCredentialsFile, $this->getContentsOfCredentialsFile());
+
+        try {
+            $command = $this->echoToFile(
+                implode(' ', $this->buildDumpCommandParts($remoteCredentialsFile)),
+                $remoteDumpFile
+            );
+            $output = $this->ssh->exec($command);
+
+            $remoteSize = (int) trim((string) $this->ssh->exec('wc -c < ' . escapeshellarg($remoteDumpFile) . ' 2>/dev/null'));
+            if ($remoteSize === 0) {
+                $preview = mb_substr((string) $output, 0, 500);
+
+                throw new CBackup_Database_Exception_DumpFailedException(
+                    "Dump lewat SSH kosong atau gagal di server remote. Output mysqldump:\n{$preview}"
+                );
+            }
+
+            $this->ssh->get($remoteDumpFile, $dumpFile);
+        } finally {
+            $this->ssh->exec('rm -f ' . escapeshellarg($remoteCredentialsFile) . ' ' . escapeshellarg($remoteDumpFile));
+        }
+
+        if (!file_exists($dumpFile) || filesize($dumpFile) === 0) {
+            throw new CBackup_Database_Exception_DumpFailedException(
+                'Dump lewat SSH gagal diunduh - berkas remote ada, tetapi salinan lokal kosong.'
+            );
+        }
     }
 
     public function addExtraOption($extraOption) {
@@ -206,9 +296,23 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
      * @return string
      */
     public function getDumpCommand($dumpFile, $temporaryCredentialsFile) {
+        $command = $this->buildDumpCommandParts($temporaryCredentialsFile);
+        return $this->echoToFile(implode(' ', $command), $dumpFile);
+    }
+
+    /**
+     * Bagian command mysqldump tanpa redirect ke file - dipakai getDumpCommand()
+     * (redirect ke $dumpFile lokal) dan dumpToFileViaSsh() (output ditangkap
+     * dari exec SSH, bukan redirect shell).
+     *
+     * @param string $temporaryCredentialsFile
+     *
+     * @return string[]
+     */
+    protected function buildDumpCommandParts($temporaryCredentialsFile) {
         $quote = $this->determineQuote();
         $command = [
-            "{$quote}{$this->dumpBinaryPath}mysqldump{$quote}",
+            "{$quote}{$this->dumpBinaryPath}{$this->dumpBinaryName}{$quote}",
             "--defaults-extra-file=\"{$temporaryCredentialsFile}\"",
         ];
         if (!$this->createTables) {
@@ -249,7 +353,7 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
             $includeTables = implode(' ', $this->includeTables);
             $command[] = "--tables {$includeTables}";
         }
-        return $this->echoToFile(implode(' ', $command), $dumpFile);
+        return $command;
     }
 
     public function getContentsOfCredentialsFile() {

@@ -137,7 +137,7 @@ var CFileManager = function (options) {
         } catch(e) {
             //do nothing
         }
-        if(typeof data == 'object' && data.message) {
+        if (data !== null && typeof data == 'object' && data.message) {
             message = data.message;
         }
 

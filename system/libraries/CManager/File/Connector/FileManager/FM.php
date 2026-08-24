@@ -244,7 +244,10 @@ class CManager_File_Connector_FileManager_FM {
         $categoryName = $this->config('folder_categories.' . $type . '.folder_name', 'files');
         $rootPath = ltrim($this->config('root_path'), '/');
         if (strlen($rootPath) > 0) {
-            $rootPath = rtrim($rootPath) . '/' . rtrim($categoryName, '/');
+            //rtrim tanpa daftar karakter hanya membuang spasi, bukan garis
+            //miring, sehingga root_path berakhiran '/' menghasilkan '//' yang
+            //merusak lintasan objek S3.
+            $rootPath = rtrim($rootPath, '/') . '/' . rtrim($categoryName, '/');
         }
 
         return $rootPath;

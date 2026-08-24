@@ -33,4 +33,28 @@ class CImage_OptimizerChainFactory {
                 '-q 80',
             ]));
     }
+
+    /**
+     * Build a chain from the `resource.image_optimizers` config, falling back
+     * to the default chain when it is empty.
+     *
+     * @param null|array $optimizers class name => arguments
+     *
+     * @return CImage_OptimizerChain
+     */
+    public static function createFromConfig($optimizers = null) {
+        if ($optimizers === null) {
+            $optimizers = CF::config('resource.image_optimizers');
+        }
+        if (!is_array($optimizers) || count($optimizers) == 0) {
+            return static::create();
+        }
+
+        $chain = new CImage_OptimizerChain();
+        foreach ($optimizers as $className => $arguments) {
+            $chain->addOptimizer(new $className((array) $arguments));
+        }
+
+        return $chain;
+    }
 }

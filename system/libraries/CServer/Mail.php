@@ -1048,16 +1048,103 @@ class CServer_Mail {
                 }
             }
 
-            $list[] = [
+            $list[] = array_merge([
                 'type' => $type,
                 'path' => $path,
                 'version' => strlen($version) > 0 ? $version : null,
                 'domain_path' => strlen($domainPath) > 0 ? $domainPath : null,
                 'domain_list' => $domainList,
-            ];
+            ], $this->getWebmailAccess($path, $type));
         }
 
         return $list;
+    }
+
+    /**
+     * Alamat dan login panel admin sebuah pemasangan webmail.
+     *
+     * Jalur berkasnya sendiri tidak memberi tahu alamat apa yang melayaninya,
+     * jadi vhost yang menunjuk jalur itu dicari lebih dulu, baru namanya
+     * dipetakan ke domain. Bila tidak ketemu, nilainya null - alamat yang salah
+     * lebih buruk daripada alamat yang tidak ditampilkan.
+     *
+     * Kunci panel admin dibaca, bukan diasumsikan `?admin`: `admin_panel_key`
+     * dapat diganti, dan pemasangan yang menggantinya justru yang paling perlu
+     * ditampilkan alamatnya dengan benar.
+     *
+     * Kata sandinya tidak ikut - RainLoop dan SnappyMail menyimpannya sebagai
+     * hash bcrypt, jadi tidak ada yang bisa dibaca dari sana.
+     *
+     * @param string $path
+     * @param string $type
+     *
+     * @return array url, admin_url, admin_login, admin_enabled
+     */
+    protected function getWebmailAccess($path, $type) {
+        $empty = ['url' => null, 'admin_url' => null, 'admin_login' => null, 'admin_enabled' => null];
+
+        $quoted = escapeshellarg($path);
+        $config = escapeshellarg($path . '/data/_data_/_default_/configs/application.ini');
+
+        $output = (string) $this->run(
+            'if [ "$(id -u)" = "0" ]; then S="";'
+            . ' elif sudo -n true >/dev/null 2>&1; then S="sudo -n";'
+            . ' else S=""; fi;'
+            . ' P=' . $quoted . '; D="";'
+            //LiteSpeed: berkas vhost menyebut jalurnya, dan nama foldernya
+            //dipetakan ke domain di httpd_config.conf lewat baris `map`
+            . ' VH=$($S grep -rlF "$P" /usr/local/lsws/conf/vhosts/*/vhconf.conf 2>/dev/null | head -1);'
+            . ' if [ -n "$VH" ]; then N=$(basename $(dirname "$VH"));'
+            . ' D=$($S grep -rhE "map[[:space:]]+$N[[:space:]]" /usr/local/lsws/conf/httpd_config.conf 2>/dev/null'
+            . ' | head -1 | awk "{print \$3}" | cut -d, -f1); fi;'
+            . ' if [ -z "$D" ]; then F=$($S grep -rlF "$P" /etc/nginx 2>/dev/null | head -1);'
+            . ' [ -n "$F" ] && D=$($S grep -hE "^[[:space:]]*server_name" "$F" 2>/dev/null'
+            . ' | head -1 | awk "{print \$2}" | tr -d ";"); fi;'
+            . ' if [ -z "$D" ]; then F=$($S grep -rlF "$P" /etc/apache2 /etc/httpd 2>/dev/null | head -1);'
+            . ' [ -n "$F" ] && D=$($S grep -hE "^[[:space:]]*ServerName" "$F" 2>/dev/null'
+            . ' | head -1 | awk "{print \$2}"); fi;'
+            . ' echo "DOMAIN:$D";'
+            . ' C=' . $config . ';'
+            . ' echo "LOGIN:$($S grep -E "^admin_login" "$C" 2>/dev/null | cut -d\" -f2)";'
+            . ' echo "KEY:$($S grep -E "^admin_panel_key" "$C" 2>/dev/null | cut -d\" -f2)";'
+            . ' echo "ALLOW:$($S grep -E "^allow_admin_panel" "$C" 2>/dev/null | awk "{print \$3}")";'
+        );
+
+        $parsed = [];
+        foreach (explode("\n", $output) as $line) {
+            $line = trim($line);
+            if (strpos($line, ':') === false) {
+                continue;
+            }
+            list($key, $value) = explode(':', $line, 2);
+            $parsed[$key] = trim($value);
+        }
+
+        $domain = carr::get($parsed, 'DOMAIN');
+        if (strlen((string) $domain) == 0) {
+            return $empty;
+        }
+
+        $url = 'https://' . $domain . '/';
+        $result = ['url' => $url, 'admin_url' => null, 'admin_login' => null, 'admin_enabled' => null];
+
+        //roundcube tidak punya panel admin berbasis web
+        if ($type == 'roundcube') {
+            return $result;
+        }
+
+        $allow = strtolower((string) carr::get($parsed, 'ALLOW'));
+        $result['admin_enabled'] = $allow == 'on' || $allow == '1' || $allow == 'true';
+        $result['admin_login'] = strlen((string) carr::get($parsed, 'LOGIN')) > 0
+            ? carr::get($parsed, 'LOGIN') : null;
+
+        $key = carr::get($parsed, 'KEY');
+        if (strlen((string) $key) == 0) {
+            $key = 'admin';
+        }
+        $result['admin_url'] = $url . '?' . $key;
+
+        return $result;
     }
 
     /**

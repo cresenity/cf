@@ -68,7 +68,7 @@ $contentColClass = $tabPosition == 'top' ? 'row-tab-content row-tab-content-top'
                     <?php } ?>
                     <div class="<?php echo c::e($widgetBodyClass); ?> tab-widget-body">
                         <?php if ($ajax) { ?>
-                        <div id="<?php echo $id; ?>-ajax-tab-content" class="ajax-tab-content"></div>
+                        <div id="<?php echo $ajaxContentId; ?>" class="ajax-tab-content"></div>
                         <?php } else {
                             foreach ($tabs as $tab) {
                                 echo $tab->html();

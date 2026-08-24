@@ -27,6 +27,11 @@ class CServer_Server {
     private $certbotInstance;
 
     /**
+     * @var null|CServer_Fail2ban
+     */
+    private $fail2banInstance;
+
+    /**
      * @var null|CServer_WebServer
      */
     private $webServerInstance;
@@ -195,6 +200,17 @@ class CServer_Server {
         }
 
         return $this->certbotInstance;
+    }
+
+    /**
+     * @return CServer_Fail2ban
+     */
+    public function fail2ban() {
+        if ($this->fail2banInstance === null) {
+            $this->fail2banInstance = new CServer_Fail2ban($this);
+        }
+
+        return $this->fail2banInstance;
     }
 
     /**

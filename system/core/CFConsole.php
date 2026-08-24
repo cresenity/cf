@@ -104,6 +104,7 @@ class CFConsole {
         CConsole_Command_Model_ModelUpdateCommand::class,
         CConsole_Command_Asset_GoogleFontsFetchCommand::class,
         CConsole_Command_App_AppInitCommand::class,
+        CConsole_Command_Claude_InitCommand::class,
         CConsole_Command_App_AppCodeCommand::class,
         CConsole_Command_TestInstallCommand::class,
         CConsole_Command_TestCommand::class,

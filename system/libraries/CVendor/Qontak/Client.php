@@ -171,8 +171,10 @@ final class CVendor_Qontak_Client implements CVendor_Qontak_ClientInterface {
         );
 
         if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
-            /** @var array $responseBody */
             $responseBody = \json_decode((string) $response->getBody(), true);
+            if (!is_array($responseBody)) {
+                throw CVendor_Qontak_Exception_ClientSendingException::make($response);
+            }
 
             Assert::keyExists($responseBody, 'data');
 
@@ -199,8 +201,16 @@ final class CVendor_Qontak_Client implements CVendor_Qontak_ClientInterface {
                 \json_encode($this->credential->getOAuthCredential())
             );
             // cdbg::dd($response->getBody()->getContents());
-            /** @var array<array-key, string> $body */
+            if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
+                throw CVendor_Qontak_Exception_ClientSendingException::make($response);
+            }
+
             $body = \json_decode((string) $response->getBody(), true);
+            // body bukan JSON saat Qontak membalas halaman galat, jangan diteruskan ke Assert
+            if (!is_array($body)) {
+                throw CVendor_Qontak_Exception_ClientSendingException::make($response);
+            }
+
             Assert::keyExists($body, 'access_token');
 
             $this->accessToken = $body['access_token'];

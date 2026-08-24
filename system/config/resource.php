@@ -56,6 +56,12 @@ return [
      */
     'path_generator' => null,
     /*
+     * Optimize the original image itself when it is added to a resource
+     * collection. Off by default; conversions are untouched either way.
+     */
+    'optimize_original' => false,
+
+    /*
      * Medialibrary will try to optimize all converted images by removing
      * metadata and applying a little bit of compression. These are
      * the optimizers that will be used by default.
