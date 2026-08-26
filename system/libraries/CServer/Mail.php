@@ -140,10 +140,11 @@ class CServer_Mail {
                 'apiKeyLabel' => null,
                 'docUrl' => 'https://app.mailersend.com/domains',
                 'steps' => [
-                    'Masuk ke MailerSend, buka Domains lalu pilih domain yang sudah terverifikasi.',
-                    'Buka tab SMTP, lalu buat SMTP user baru.',
-                    'Salin Username dan Password yang muncul.',
-                    'Domainnya harus terverifikasi lebih dulu; SMTP user tidak dapat dibuat sebelum itu.',
+                    'Masuk ke MailerSend, buka Domains lalu pilih domain yang sudah terverifikasi, klik Manage.',
+                    'Gulir ke bagian SMTP, lalu klik Generate new user.',
+                    'Salin Username dan Password yang muncul — hanya ditampilkan sekali.',
+                    '<b>Bukan</b> API Token dari menu API Tokens: token itu hanya berlaku untuk REST API'
+                        . ' dan ditolak oleh relai SMTP, walau namanya sama-sama terdengar seperti kunci.',
                 ],
             ],
             'brevo' => [
