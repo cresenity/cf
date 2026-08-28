@@ -95,6 +95,32 @@ class SerializableClosureTest extends TestCase {
 
         $this->assertSame(SerializableClosureTest_WithSecret::class, $data['scope']);
     }
+
+    /**
+     * A closure declared inside a class carries that class name as its scope.
+     * When the payload is restored in a context that cannot load the class -
+     * a queue worker running under another app - `bindTo()` only raises a
+     * warning and returns null, which silently emptied the closure and blew
+     * up later on the next `serialize()`. The scope must be dropped instead.
+     */
+    public function testUnserializeFallsBackToNullScopeWhenScopeClassIsNotLoadable() {
+        $serializer = new CFunction_SerializableClosure_Serializer_NativeSerializer(function ($value) {
+            return '[' . $value . ']';
+        });
+
+        $data = $serializer->__serialize();
+        $data['scope'] = 'SerializableClosureTest_MissingScopeClass';
+
+        $restored = (new ReflectionClass(CFunction_SerializableClosure_Serializer_NativeSerializer::class))
+            ->newInstanceWithoutConstructor();
+        $restored->__unserialize($data);
+
+        $closure = $restored->getClosure();
+
+        $this->assertInstanceOf(Closure::class, $closure);
+        $this->assertSame('[abc]', $closure('abc'));
+        $this->assertNotSame('', serialize($restored));
+    }
 }
 
 class SerializableClosureTest_WithSecret {

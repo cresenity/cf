@@ -185,7 +185,10 @@ class CFunction_SerializableClosure_Serializer_NativeSerializer implements CFunc
             $this->code['this'] = null;
         }
 
-        $this->closure = $this->closure->bindTo($this->code['this'], $this->code['scope']);
+        $bound = $this->closure->bindTo($this->code['this'], $this->resolveScope());
+        if ($bound instanceof Closure) {
+            $this->closure = $bound;
+        }
 
         if (!empty($this->code['objects'])) {
             foreach ($this->code['objects'] as $item) {
@@ -194,6 +197,22 @@ class CFunction_SerializableClosure_Serializer_NativeSerializer implements CFunc
         }
 
         $this->code = $this->code['function'];
+    }
+
+    /**
+     * Get the scope class to rebind the closure to, or null when it cannot be loaded.
+     *
+     * @return null|string
+     */
+    private function resolveScope() {
+        $scope = $this->code['scope'];
+        if ($scope === null || class_exists($scope) || interface_exists($scope) || trait_exists($scope)) {
+            return $scope;
+        }
+        // bindTo() hanya memberi warning lalu mengembalikan null kalau kelas scope tak ada
+        CF::log('warning', 'CFunction_SerializableClosure: scope class ' . $scope . ' is not loadable, the closure is bound without scope');
+
+        return null;
     }
 
     /**
