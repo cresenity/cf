@@ -65,6 +65,13 @@ class CRemote_SSH_Config {
     protected $ipAddress;
 
     /**
+     * Bastion/jump host this connection tunnels through, or null to connect directly.
+     *
+     * @var null|CRemote_SSH_Config
+     */
+    protected $proxyJump;
+
+    /**
      * @param array $config
      */
     public function __construct(array $config = []) {
@@ -79,6 +86,11 @@ class CRemote_SSH_Config {
         $this->useAgent = carr::get($config, 'agent', false) === true;
         $this->timeout = (int) carr::get($config, 'timeout', 10);
         $this->authenticationType = carr::get($config, 'authentication_type');
+
+        $proxyJump = carr::get($config, 'proxy_jump');
+        if ($proxyJump !== null) {
+            $this->setProxyJump($proxyJump);
+        }
     }
 
     /**
@@ -115,6 +127,31 @@ class CRemote_SSH_Config {
      */
     public function getIpAddress() {
         return $this->ipAddress;
+    }
+
+    /**
+     * @param array|CRemote_SSH_Config $proxyJump
+     *
+     * @return $this
+     */
+    public function setProxyJump($proxyJump) {
+        $this->proxyJump = $proxyJump instanceof self ? $proxyJump : new self($proxyJump);
+
+        return $this;
+    }
+
+    /**
+     * @return null|CRemote_SSH_Config
+     */
+    public function getProxyJump() {
+        return $this->proxyJump;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasProxyJump() {
+        return $this->proxyJump !== null;
     }
 
     /**
@@ -391,6 +428,7 @@ class CRemote_SSH_Config {
             'agent' => $this->useAgent,
             'timeout' => $this->timeout,
             'authentication_type' => $this->authenticationType,
+            'proxy_jump' => $this->proxyJump !== null ? $this->proxyJump->toArray() : null,
         ];
     }
 
