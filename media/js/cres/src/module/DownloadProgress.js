@@ -106,10 +106,11 @@ class DownloadProgressModal {
             const animationEl = this.statusEl.find('.cres-download-progress-animation');
             animationEl.empty();
 
-            statusBar = $('<div class="cres-download-progress-status-bar my-4">');
-            const progress = $('<div class="progress">');
+            statusBar = $('<div class="cres-download-progress-status-bar my-4 d-flex align-items-center">');
+            const progress = $('<div class="progress flex-grow-1">');
             const progressBar = $('<div class="progress-bar progress-bar-striped progress-bar-animated">');
-            animationEl.append(statusBar.append(progress.append(progressBar)));
+            const percentLabel = $('<span class="cres-download-progress-percent ms-2">');
+            animationEl.append(statusBar.append(progress.append(progressBar)).append(percentLabel));
         }
 
         let progressMax = parseFloat(data.progressMax);
@@ -120,7 +121,7 @@ class DownloadProgressModal {
         const progressBar = statusBar.find('.progress-bar');
         const percent = Math.round(progressMax > 0 ? progressValue * 100 / progressMax : 0);
         progressBar.css('width', percent + '%');
-        progressBar.html(percent + '%');
+        statusBar.find('.cres-download-progress-percent').text(percent + '%');
     }
 
     cancel() {
