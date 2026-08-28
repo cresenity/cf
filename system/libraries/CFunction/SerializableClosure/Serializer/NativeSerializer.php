@@ -289,6 +289,9 @@ class CFunction_SerializableClosure_Serializer_NativeSerializer implements CFunc
      */
     public function getReflector() {
         if ($this->reflector === null) {
+            if (!$this->closure instanceof Closure) {
+                throw new CFunction_SerializableClosure_Exception_MissingClosureException();
+            }
             $this->code = null;
             $this->reflector = new CFunction_SerializableClosure_Support_ReflectionClosure($this->closure);
         }

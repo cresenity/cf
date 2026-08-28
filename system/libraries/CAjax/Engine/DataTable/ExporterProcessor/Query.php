@@ -34,6 +34,7 @@ class CAjax_Engine_DataTable_ExporterProcessor_Query extends CAjax_Engine_DataTa
 
             if ($queued) {
                 $queueConnection = $this->getData('exporter.queueConnection', false);
+                $queueName = $this->getData('exporter.queue', false);
 
                 $queueParams = [];
                 $queueParams['downloadId'] = $fileId;
@@ -42,6 +43,9 @@ class CAjax_Engine_DataTable_ExporterProcessor_Query extends CAjax_Engine_DataTa
                 ]);
                 if ($queueConnection) {
                     $storeResult->allOnConnection($queueConnection);
+                }
+                if ($queueName) {
+                    $storeResult->allOnQueue($queueName);
                 }
             }
 

@@ -17,109 +17,116 @@ const SPINNER_HTML = '<div class="sk-fading-circle sk-primary">'
     + '<div class="sk-circle12 sk-circle"></div>'
     + '</div>';
 
-function buildInitialStatus(cresenity, interval) {
-    let wrapper = $('<div>');
-    let label = $('<label>', {class: 'mb-4'}).append('Please Wait...');
-    let animation = $('<div class="cres-download-progress-animation">').append(SPINNER_HTML);
-    let actionContainer = $('<div>', {class: 'text-center my-3'});
-    let cancelButton = $('<button>', {class: 'btn btn-primary'}).append('Cancel');
-
-    cancelButton.click(function () {
-        clearInterval(interval);
-        cresenity.closeLastModal();
-    });
-
-    actionContainer.append(cancelButton);
-    wrapper.append(label).append(animation).append(actionContainer);
-
-    return wrapper;
-}
-
-function renderDone(cresenity, container, data, interval) {
-    clearInterval(interval);
-
-    let statusEl = container.find('.cres-download-progress-status');
-    statusEl.empty();
-
-    let label = $('<label>', {class: 'mb-3 d-block'}).append('Your file is ready');
-    let downloadLink = $('<a>', {
-        target: '_blank',
-        href: data.fileUrl,
-        class: 'btn btn-primary'
-    }).append('Download');
-    let closeLink = $('<a>', {
-        href: 'javascript:;',
-        class: 'btn btn-primary ml-3'
-    }).append('Close');
-
-    closeLink.click(function () {
-        cresenity.closeLastModal();
-    });
-
-    statusEl.append($('<div>').append(label).append(downloadLink).append(closeLink));
-}
-
-function renderPending(container, data) {
-    let progressValue = parseFloat(data.progressValue);
-    if (!(progressValue > 0)) {
-        return;
+/**
+ * The small modal a download-progress action opens: a spinner that polls
+ * progressUrl every POLL_INTERVAL, then swaps to a download link once the
+ * server reports state 'DONE'.
+ */
+class DownloadProgressModal {
+    constructor(cresenity) {
+        this.cresenity = cresenity;
+        this.interval = null;
+        this.statusEl = null;
     }
 
-    let statusBar = container.find('.cres-download-progress-status-bar');
-    if (statusBar.length === 0) {
-        let animationEl = container.find('.cres-download-progress-animation');
-        animationEl.empty();
+    open(progressUrl, method) {
+        const container = $('<div>').addClass('cres-download-progress');
+        this.statusEl = $('<div class="text-center">').addClass('cres-download-progress-status');
+        container.append(this.statusEl.append(this.buildInitialStatus()));
 
-        statusBar = $('<div class="cres-download-progress-status-bar my-4">');
-        let progress = $('<div class="progress">');
-        let progressBar = $('<div class="progress-bar progress-bar-striped progress-bar-animated">');
-        animationEl.append(statusBar.append(progress.append(progressBar)));
+        this.cresenity.modal({
+            message: container,
+            modalClass: 'cres-modal-download-progress'
+        });
+
+        this.interval = setInterval(() => this.poll(progressUrl, method), POLL_INTERVAL);
     }
 
-    let progressMax = parseFloat(data.progressMax);
-    if (isNaN(progressMax) || progressMax === 0) {
-        progressMax = 100;
+    buildInitialStatus() {
+        const wrapper = $('<div>');
+        const label = $('<label>', {class: 'mb-4'}).append('Please Wait...');
+        const animation = $('<div class="cres-download-progress-animation">').append(SPINNER_HTML);
+        const actionContainer = $('<div>', {class: 'text-center my-3'});
+        const cancelButton = $('<button>', {class: 'btn btn-primary'}).append('Cancel');
+
+        cancelButton.click(() => this.cancel());
+
+        actionContainer.append(cancelButton);
+        wrapper.append(label).append(animation).append(actionContainer);
+
+        return wrapper;
     }
 
-    let progressBar = statusBar.find('.progress-bar');
-    let percent = Math.round(progressMax > 0 ? progressValue * 100 / progressMax : 0);
-    progressBar.css('width', percent + '%');
-    progressBar.html(percent + '%');
-}
+    poll(progressUrl, method) {
+        $.ajax({
+            type: method,
+            url: progressUrl,
+            dataType: 'json',
+            success: (response) => {
+                this.cresenity.handleJsonResponse(response, (data) => {
+                    if (data.state === 'DONE') {
+                        this.renderDone(data);
+                    } else if (data.state === 'PENDING') {
+                        this.renderPending(data);
+                    }
+                });
+            }
+        });
+    }
 
-function pollProgress(cresenity, progressUrl, method, container, interval) {
-    $.ajax({
-        type: method,
-        url: progressUrl,
-        dataType: 'json',
-        success: function (response) {
-            cresenity.handleJsonResponse(response, function (data) {
-                if (data.state === 'DONE') {
-                    renderDone(cresenity, container, data, interval);
-                } else if (data.state === 'PENDING') {
-                    renderPending(container, data);
-                }
-            });
+    renderDone(data) {
+        clearInterval(this.interval);
+
+        this.statusEl.empty();
+
+        const label = $('<label>', {class: 'mb-3 d-block'}).append('Your file is ready');
+        const downloadLink = $('<a>', {
+            target: '_blank',
+            href: data.fileUrl,
+            class: 'btn btn-primary'
+        }).append('Download');
+        const closeLink = $('<a>', {
+            href: 'javascript:;',
+            class: 'btn btn-primary ml-3'
+        }).append('Close');
+
+        closeLink.click(() => this.cresenity.closeLastModal());
+
+        this.statusEl.append($('<div>').append(label).append(downloadLink).append(closeLink));
+    }
+
+    renderPending(data) {
+        const progressValue = parseFloat(data.progressValue);
+        if (!(progressValue > 0)) {
+            return;
         }
-    });
-}
 
-function showProgressModal(cresenity, progressUrl, method) {
-    let container = $('<div>').addClass('cres-download-progress');
+        let statusBar = this.statusEl.find('.cres-download-progress-status-bar');
+        if (statusBar.length === 0) {
+            const animationEl = this.statusEl.find('.cres-download-progress-animation');
+            animationEl.empty();
 
-    let interval = setInterval(function () {
-        pollProgress(cresenity, progressUrl, method, container, interval);
-    }, POLL_INTERVAL);
+            statusBar = $('<div class="cres-download-progress-status-bar my-4">');
+            const progress = $('<div class="progress">');
+            const progressBar = $('<div class="progress-bar progress-bar-striped progress-bar-animated">');
+            animationEl.append(statusBar.append(progress.append(progressBar)));
+        }
 
-    let statusEl = buildInitialStatus(cresenity, interval);
-    container.append(
-        $('<div class="text-center">').addClass('cres-download-progress-status').append(statusEl)
-    );
+        let progressMax = parseFloat(data.progressMax);
+        if (isNaN(progressMax) || progressMax === 0) {
+            progressMax = 100;
+        }
 
-    cresenity.modal({
-        message: container,
-        modalClass: 'cres-modal-download-progress'
-    });
+        const progressBar = statusBar.find('.progress-bar');
+        const percent = Math.round(progressMax > 0 ? progressValue * 100 / progressMax : 0);
+        progressBar.css('width', percent + '%');
+        progressBar.html(percent + '%');
+    }
+
+    cancel() {
+        clearInterval(this.interval);
+        this.cresenity.closeLastModal();
+    }
 }
 
 export default class DownloadProgress {
@@ -160,7 +167,7 @@ export default class DownloadProgress {
             data: dataAddition,
             success: function (response) {
                 cresenity.handleJsonResponse(response, function (data) {
-                    showProgressModal(cresenity, data.progressUrl, settings.method);
+                    new DownloadProgressModal(cresenity).open(data.progressUrl, settings.method);
                 });
             },
             error: function (xhrError, ajaxOptions, thrownError) {

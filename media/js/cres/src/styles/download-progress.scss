@@ -6,3 +6,9 @@
         margin-right: auto;
     }
 }
+
+/* cresenity.modal() always renders .modal-dialog as modal-xl; this modal only ever
+   holds a spinner or a couple of buttons, so override it back down to a small dialog. */
+.cres-modal-download-progress .modal-dialog {
+    max-width: 400px;
+}
