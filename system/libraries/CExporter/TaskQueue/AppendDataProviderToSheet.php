@@ -116,7 +116,13 @@ class CExporter_TaskQueue_AppendDataProviderToSheet extends CQueue_AbstractTask 
             $progressMax = carr::get($data, 'progressMax', 100);
             $progressValue = $total ? ($offset * $progressMax / $total) : 0;
             $data['data']['progressValue'] = $progressValue;
-            $data['data']['state'] = $progressValue >= $progressMax ? 'DONE' : 'PENDING';
+            // Reaching progressMax here only means every row has been appended to the
+            // in-memory sheet - the file still has to be closed and copied to its final
+            // path by the jobs chained after this one. Leave 'state' as PENDING even at
+            // 100%; only CElement_Component_DataTable_TaskQueue_AfterExportProgress (which
+            // verifies the file actually exists at its destination) may set it to DONE,
+            // otherwise a poller can be shown a download link before the file is there.
+            $data['data']['state'] = 'PENDING';
 
             CAjax::setData($downloadId, $data);
             CDaemon::log('set progress to ' . $progressValue);
