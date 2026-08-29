@@ -9,16 +9,28 @@ use Symfony\Component\Process\Process;
  * Always runs the canonical build from github.com/cresenity/devcloud-mcp via
  * npx - deliberately not a locally built/editable checkout. That single
  * source of truth is what makes `claude:update` meaningful (every developer
- * gets the same code) and what gives auto-update for free: an unpinned
- * `github:owner/repo` spec is re-resolved against the remote's default branch
- * on every `npx` invocation, so each new Claude Code session already runs
- * whatever is current on GitHub - no bespoke updater needed.
+ * gets the same code).
+ *
+ * Uses an explicit `git+ssh://` spec rather than the `github:owner/repo`
+ * shorthand (changed 2026-08-30) - the shorthand's protocol resolution isn't
+ * reliable across environments: it worked over plain SSH in one shell but a
+ * VSCode-spawned reconnect hit an HTTPS username/password prompt for the same
+ * private repo, on the same machine, same registration. Forcing git+ssh here
+ * removes the ambiguity - it only ever needs the SSH key that's already used
+ * for every other git operation in this repo, never HTTPS credentials.
+ *
+ * "Auto-update for free" from an unpinned spec is **not guaranteed** - measured
+ * 2026-08-30: npx can silently reuse a stale cached build instead of
+ * re-resolving against the remote's current HEAD (a cache from an earlier
+ * commit was reused as-is, missing everything pushed since). `bustNpxCache()`
+ * below exists because of this - it removes any cached copy before every
+ * warm-up/registration, so a stale build is never silently trusted again.
  */
 class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
     /**
      * @var string
      */
-    const GITHUB_SPEC = 'github:cresenity/devcloud-mcp';
+    const GITHUB_SPEC = 'git+ssh://git@github.com/cresenity/devcloud-mcp.git';
 
     /**
      * devcloud-mcp needs Node >= 18 (see its README) - the system-default
@@ -183,6 +195,8 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
      * @return void
      */
     protected function warmUpNpxCache(array $runCommand) {
+        $this->bustNpxCache();
+
         $this->line('Warming up devcloud-mcp (first install downloads + builds it, up to ~1 minute)...');
 
         $process = new Process($runCommand);
@@ -193,6 +207,27 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
             $process->run();
         } catch (Exception $e) {
             $this->warn('Warm-up did not finish cleanly (' . $e->getMessage() . ') - continuing anyway.');
+        }
+    }
+
+    /**
+     * Removes any cached npx install of devcloud-mcp, so the next `npx` run is
+     * forced to fetch+build fresh rather than possibly reusing a stale cached
+     * copy silently (see this class's own docblock - confirmed 2026-08-30 that
+     * npx does not reliably re-resolve an unpinned spec on its own).
+     *
+     * @return void
+     */
+    protected function bustNpxCache() {
+        $npxRoot = getenv('HOME') . DS . '.npm' . DS . '_npx';
+        if (!CFile::isDirectory($npxRoot)) {
+            return;
+        }
+
+        foreach (glob($npxRoot . DS . '*') as $entry) {
+            if (CFile::isDirectory($entry . DS . 'node_modules' . DS . 'devcloud-mcp')) {
+                CFile::deleteDirectory($entry);
+            }
         }
     }
 
