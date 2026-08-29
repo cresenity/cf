@@ -5,13 +5,13 @@
  * DEVCLOUD-AI-TODO-Management-Platform-SPEC.md §18) via the `doc/fetch`
  * method, and writes it over the local file. This is the command developers
  * run to pick up whatever CLAUDE.md devcloud currently holds for their app -
- * devcloud is the source of truth here, not the local checkout (Hery,
+ * devcloud is the source of truth here, not the local checkout (decided
  * 2026-08-30). The one-time initial backfill (pushing today's local content
  * up to devcloud for every app before anyone starts pulling) is a separate,
- * one-off action Hery runs directly against production - not exposed here,
- * and not something this command's --app/--dry-run flags are meant to serve.
+ * one-off action run directly against production - not exposed here, and not
+ * something this command's --app/--dry-run flags are meant to serve.
  *
- * docs/TODO.md and docs/BUG.md are deliberately out of scope (Hery,
+ * docs/TODO.md and docs/BUG.md are deliberately out of scope (decided
  * 2026-08-30) - they already have a separate, task-row-based sync design
  * (§8), not a raw-document one.
  */
