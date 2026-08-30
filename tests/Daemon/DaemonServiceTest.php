@@ -240,4 +240,39 @@ class DaemonServiceTest extends TestCase {
 
         $this->assertEqualsWithDelta(120, $service->runtime(), 2);
     }
+
+    /**
+     * TB-13897. A daemon never exits, so an object that only forms a reference
+     * cycle (a closure capturing $this, say) - and any resource it holds -
+     * leaks until the cycle collector runs. PHP only triggers that on its own
+     * once an internal buffer fills, which in a daemon can take longer than
+     * its file descriptor limit survives. collectCyclesPeriodically() forces
+     * it every $gcCollectCyclesInterval loop iterations instead.
+     */
+    public function testCollectCyclesPeriodicallyRunsOnlyEveryConfiguredInterval() {
+        $service = $this->makeService();
+        $service->setProperty('gcCollectCyclesInterval', 3);
+
+        $collections = gc_status()['runs'];
+
+        $service->callProtected('collectCyclesPeriodically'); // 1
+        $service->callProtected('collectCyclesPeriodically'); // 2
+        $this->assertSame($collections, gc_status()['runs'], 'gc_collect_cycles() tidak boleh jalan sebelum mencapai interval');
+
+        $service->callProtected('collectCyclesPeriodically'); // 3 -- mencapai interval
+        $this->assertSame($collections + 1, gc_status()['runs'], 'gc_collect_cycles() harus jalan tepat di iterasi ke-3');
+    }
+
+    public function testCollectCyclesPeriodicallyIsANoOpWhenIntervalIsZero() {
+        $service = $this->makeService();
+        $service->setProperty('gcCollectCyclesInterval', 0);
+
+        $collections = gc_status()['runs'];
+
+        for ($i = 0; $i < 10; $i++) {
+            $service->callProtected('collectCyclesPeriodically');
+        }
+
+        $this->assertSame($collections, gc_status()['runs'], 'interval 0 harus mematikan pengumpulan periodik');
+    }
 }

@@ -197,6 +197,19 @@ abstract class CDaemon_ServiceAbstract implements CDaemon_ServiceInterface {
     protected $autoRestartInterval = 43200;
 
     /**
+     * How often (in loop iterations) to run PHP's cycle collector. A daemon
+     * runs for hours/days without ever exiting, so objects that only form a
+     * reference cycle (a closure capturing $this, for instance) sit unfreed -
+     * and any resource they hold (curl handle, socket) leaks with them - until
+     * the cycle collector finally runs. PHP only triggers that automatically
+     * once its internal root buffer fills up, which in a daemon can take far
+     * longer than the file descriptor limit survives (TB-13897).
+     *
+     * @var int
+     */
+    protected $gcCollectCyclesInterval = 500;
+
+    /**
      * @var bool If true, the daemon will continue running even if a fatal error occurs. If false, the daemon will attempt to restart itself after a fatal error.
      */
     protected $isDaemonContinueOnFatalError = false;
@@ -207,6 +220,13 @@ abstract class CDaemon_ServiceAbstract implements CDaemon_ServiceInterface {
      * @var int
      */
     private $pid;
+
+    /**
+     * Loop iterations since the last gc_collect_cycles() call.
+     *
+     * @var int
+     */
+    private $gcCollectCyclesCounter = 0;
 
     /**
      * Array of worker aliases.
@@ -464,10 +484,26 @@ abstract class CDaemon_ServiceAbstract implements CDaemon_ServiceInterface {
                     pcntl_signal_dispatch();
                 }
 
+                $this->collectCyclesPeriodically();
                 $this->dispatch([self::ON_POSTEXECUTE]);
                 $this->dispatchEvent(new CDaemon_Event_Service_OnPostExecute($this));
             }
             $this->timer();
+        }
+    }
+
+    /**
+     * Runs PHP's cycle collector every $gcCollectCyclesInterval loop iterations.
+     * See the property docblock for why a daemon needs this. Set
+     * $gcCollectCyclesInterval to 0 in a subclass to disable.
+     */
+    private function collectCyclesPeriodically() {
+        if ($this->gcCollectCyclesInterval <= 0) {
+            return;
+        }
+        if (++$this->gcCollectCyclesCounter >= $this->gcCollectCyclesInterval) {
+            $this->gcCollectCyclesCounter = 0;
+            gc_collect_cycles();
         }
     }
 
