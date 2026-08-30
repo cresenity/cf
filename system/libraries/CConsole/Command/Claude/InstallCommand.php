@@ -25,6 +25,10 @@ use Symfony\Component\Process\Process;
  * every push to be noticed. A fresh install always re-clones current HEAD
  * regardless of the version field, so this sidesteps that entirely (same
  * "never trust an implicit staleness check" lesson as the old npx cache).
+ *
+ * Also runs `claude:sync` at the end - installing the plugin without a local
+ * CLAUDE.md that matches devcloud's copy would leave a session working off
+ * stale instructions from the very first prompt.
  */
 class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
     /**
@@ -101,6 +105,8 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
 
         $this->info("devcloud-mcp installed ({$scope} scope).");
         $this->line('Restart any running Claude Code session (or run `/mcp` reconnect) for it to pick up the new version.');
+
+        $this->call('claude:sync');
 
         return CConsole::SUCCESS_EXIT;
     }
