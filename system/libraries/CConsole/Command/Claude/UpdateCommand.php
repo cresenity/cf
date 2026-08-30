@@ -1,25 +1,22 @@
 <?php
 
 /**
- * Re-registers devcloud-mcp with Claude Code. In practice this rarely does
- * anything by itself - `claude:install` always points at the unpinned
- * `github:cresenity/devcloud-mcp` npx spec, which already re-resolves to
- * whatever is current on GitHub every time Claude Code starts the server.
- * This command exists for the cases that do need a fresh registration: the
- * scope/name changed, or the entry in Claude Code's config looks stuck.
+ * Reinstalls the devcloud-mcp plugin (§ InstallCommand's own docblock - always a full
+ * uninstall+reinstall, not `claude plugin update`, since that command's version-diffing needs a
+ * manual bump on every push to notice anything changed). Run this any time devcloud-mcp changed
+ * and you want it picked up now, rather than waiting for the next `/mcp`/plugin reconnect.
  */
 class CConsole_Command_Claude_UpdateCommand extends CConsole_Command {
     /**
      * @var string
      */
     protected $signature = 'claude:update
-        {--scope=user : Claude Code MCP scope: user, project, or local}
-        {--name=devcloud : Name the MCP server is registered under}';
+        {--scope=user : Claude Code plugin scope: user, project, or local}';
 
     /**
      * @var string
      */
-    protected $description = 'Re-register devcloud-mcp with Claude Code (equivalent to claude:install --force)';
+    protected $description = 'Reinstall the devcloud-mcp plugin (equivalent to claude:install --force)';
 
     /**
      * @return int
@@ -27,7 +24,6 @@ class CConsole_Command_Claude_UpdateCommand extends CConsole_Command {
     public function handle() {
         return $this->call('claude:install', [
             '--scope' => $this->option('scope'),
-            '--name' => $this->option('name'),
             '--force' => true,
         ]);
     }
