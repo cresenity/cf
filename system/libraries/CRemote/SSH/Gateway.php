@@ -44,6 +44,15 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
     }
 
     /**
+     * Belt-and-suspenders: a proxy jump tunnel is a real OS subprocess, not
+     * just a PHP resource, so a caller that never calls disconnect() (several
+     * do not) would otherwise leak an `ssh -L` process per connection.
+     */
+    public function __destruct() {
+        $this->closeTunnel();
+    }
+
+    /**
      * @param string $username
      *
      * @return bool
