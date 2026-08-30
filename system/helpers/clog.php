@@ -63,7 +63,7 @@ class clog {
             'org_id' => null,
             'user_agent' => CHTTP::request()->userAgent(),
             'username' => $username,
-            'password' => $password,
+            'password' => $password === null ? null : (string) strlen($password), // panjang saja, bukan sandi mentah
             'error_message' => $errorMessage,
             'browser' => CHTTP::request()->browser()->getBrowser(),
             'browser_version' => CHTTP::request()->browser()->getVersion(),
