@@ -45,6 +45,18 @@ class CAI_Service_OpenAIService extends CAI_ServiceAbstract {
     }
 
     public function image(array $options = []) {
+        $params = [
+            'model' => carr::get($options, 'model', 'gpt-image-1'),
+            'prompt' => carr::get($options, 'prompt', $this->prompt),
+        ];
+
+        foreach (['size', 'n', 'quality', 'response_format'] as $key) {
+            if (array_key_exists($key, $options)) {
+                $params[$key] = $options[$key];
+            }
+        }
+
+        return $this->openAI->images()->create($params);
     }
 
     public function getOpenAI() {
