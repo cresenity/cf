@@ -121,6 +121,26 @@ class SerializableClosureTest extends TestCase {
         $this->assertSame('[abc]', $closure('abc'));
         $this->assertNotSame('', serialize($restored));
     }
+
+    /**
+     * Regression test for TB-13063: an instance-method closure implicitly
+     * binds $this, and NativeSerializer::wrapClosures() used to walk that
+     * bound object's properties via ReflectionObject::newInstanceWithoutConstructor()
+     * + manual property copy. That approach silently drops CCarbon/DateTime's
+     * internal engine state (it isn't a reflectable PHP property), producing
+     * a "zombie" object that throws "DateTime object has not been correctly
+     * initialized by its constructor" on the next method call - reproduced in
+     * production via CElement_Component_DataTable::js() -> serialize($table)
+     * when a column callback's bound object held a CCarbon property.
+     */
+    public function testInstanceMethodClosureSurvivesRoundTripWhenBoundObjectHoldsACarbonProperty() {
+        $subject = new SerializableClosureTest_WithCarbon();
+        $wrapped = new CFunction_SerializableClosure($subject->makeClosure());
+
+        $restored = unserialize(serialize($wrapped));
+
+        $this->assertSame('2026-01-01', $restored());
+    }
 }
 
 class SerializableClosureTest_WithSecret {
@@ -133,6 +153,20 @@ class SerializableClosureTest_WithSecret {
     public function makeClosure() {
         return function () {
             return $this->secret;
+        };
+    }
+}
+
+class SerializableClosureTest_WithCarbon {
+    public $when;
+
+    public function __construct() {
+        $this->when = new CCarbon('2026-01-01 00:00:00', new DateTimeZone('Asia/Jakarta'));
+    }
+
+    public function makeClosure() {
+        return function () {
+            return $this->when->format('Y-m-d');
         };
     }
 }

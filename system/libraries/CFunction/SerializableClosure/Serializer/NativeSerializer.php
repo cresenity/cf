@@ -255,6 +255,12 @@ class CFunction_SerializableClosure_Serializer_NativeSerializer implements CFunc
             }
 
             unset($value);
+        } elseif ($data instanceof DateTimeInterface) {
+            // DateTime/Carbon menyimpan state di internal engine, bukan di property yang bisa
+            // direfleksikan - newInstanceWithoutConstructor() di bawah menghasilkan objek
+            // "zombie" yang gagal pada method apa pun (getTimezone() dkk). Objek macam ini
+            // tidak pernah berisi closure, jadi clone biasa aman dan cukup.
+            $data = clone $data;
         } elseif (is_object($data) && !$data instanceof static) {
             if (isset($storage[$data])) {
                 $data = $storage[$data];
