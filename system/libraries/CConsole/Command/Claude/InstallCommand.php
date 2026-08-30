@@ -108,7 +108,40 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
 
         $this->call('claude:sync');
 
+        $this->installDocGuardHook();
+
         return CConsole::SUCCESS_EXIT;
+    }
+
+    /**
+     * Installs the PreToolUse hook that blocks hand-edits of CLAUDE.md,
+     * docs/TODO.md and docs/BACKLOG.md (see CDevSuite_ClaudeHookInstaller).
+     * Not fatal on failure - devcloud-mcp itself still works without it, this
+     * is a local safety net on top.
+     *
+     * @return void
+     */
+    protected function installDocGuardHook() {
+        try {
+            $result = CDevSuite_ClaudeHookInstaller::install();
+        } catch (Exception $e) {
+            $this->warn('Could not install the devcloud-doc-guard hook: ' . $e->getMessage());
+
+            return;
+        }
+
+        $action = carr::get($result, 'action');
+        $settingsPath = carr::get($result, 'settingsPath');
+
+        if ($action === 'unchanged') {
+            $this->line("devcloud-doc-guard hook already up to date in {$settingsPath}.");
+
+            return;
+        }
+
+        $verb = $action === 'updated' ? 'Updated' : 'Installed';
+        $this->info("{$verb} devcloud-doc-guard hook in {$settingsPath} (blocks hand-edits of CLAUDE.md/docs/TODO.md/docs/BACKLOG.md).");
+        $this->line('Restart any running Claude Code session (or run `/hooks`) for it to pick up the change.');
     }
 
     /**
