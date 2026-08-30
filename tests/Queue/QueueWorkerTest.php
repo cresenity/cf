@@ -331,4 +331,49 @@ class QueueWorkerTest extends TestCase {
         $this->assertInstanceOf(CQueue_WorkerOptions::class, $options);
         $this->assertSame(600, $options->timeout);
     }
+
+    /**
+     * @return void
+     */
+    protected function tearDownDaemonRunningService() {
+        $property = new ReflectionProperty(CDaemon::class, 'runningService');
+        $property->setAccessible(true);
+        $property->setValue(null, null);
+    }
+
+    /**
+     * `getNextJob()` used to call `CDaemon::handleException()` when a pop
+     * failed inside a daemon - errNo -1 is mapped fatal, and the daemon's
+     * default `isDaemonContinueOnFatalError=false` turns that into `exit(1)`,
+     * killing the whole process over a transient error the catch block had
+     * already decided was recoverable (it sleeps and retries right after).
+     * It must log through the running service instead, the same fix already
+     * applied to runJob() in 95400fc41.
+     *
+     * @return void
+     */
+    public function testGetNextJobLogsInsteadOfHandlingExceptionAsFatal() {
+        $property = new ReflectionProperty(CDaemon::class, 'runningService');
+        $property->setAccessible(true);
+        $property->setValue(null, new QueueWorkerFakeDaemonService());
+
+        try {
+            $worker = $this->makeWorker([]);
+            $connection = new QueueWorkerThrowingFakeConnection(new RuntimeException('socket error on read socket'));
+            $worker->setManager(new QueueWorkerFakeManager($connection));
+
+            $worker->runNextJob('test-connection', 'default', $this->makeOptions());
+
+            $service = CDaemon::getRunningService();
+            $this->assertNotEmpty($service->logged, 'kegagalan pop job harus tercatat di log daemon');
+            $this->assertStringContainsString('socket error on read socket', $service->logged[0][0]);
+            $this->assertSame(
+                [1, 3],
+                $worker->sleptFor,
+                'harus tidur 1s di getNextJob() lalu 3s di runNextJob() karena tak ada job, bukan berhenti'
+            );
+        } finally {
+            $this->tearDownDaemonRunningService();
+        }
+    }
 }

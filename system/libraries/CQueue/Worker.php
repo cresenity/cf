@@ -472,7 +472,11 @@ class CQueue_Worker {
         } catch (Throwable $e) {
             $this->exceptions->report($e);
             if (CDaemon::isDaemon()) {
-                CDaemon::handleException($e);
+                // CDaemon::handleException() menandai errNo -1 sebagai fatal dan
+                // meng-exit(1) proses daemon secara default - padahal blok ini sudah
+                // memutuskan kegagalan pop job recoverable (sleep lalu retry di bawah).
+                // Sama seperti runJob() (lihat 95400fc41): cukup log, jangan fatal.
+                CDaemon::log('Get Next Job Exception :' . $e->getMessage());
             }
             $this->stopWorkerIfLostConnection($e);
             $this->sleep(1);

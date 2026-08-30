@@ -139,6 +139,56 @@ class QueueWorkerFakeConnection {
     }
 }
 
+/**
+ * Connection whose pop() always throws, to test getNextJob()'s catch block.
+ */
+class QueueWorkerThrowingFakeConnection extends QueueWorkerFakeConnection {
+    /**
+     * @var Throwable
+     */
+    protected $exception;
+
+    /**
+     * @param Throwable $exception
+     */
+    public function __construct(Throwable $exception) {
+        parent::__construct([]);
+        $this->exception = $exception;
+    }
+
+    /**
+     * @param null|string $queue
+     *
+     * @return never
+     */
+    public function pop($queue = null) {
+        $this->popCount++;
+
+        throw $this->exception;
+    }
+}
+
+/**
+ * Stand-in for a running CDaemon service, just enough to observe log() calls
+ * without any of the real process/pid machinery.
+ */
+class QueueWorkerFakeDaemonService {
+    /**
+     * @var array
+     */
+    public $logged = [];
+
+    /**
+     * @param string $msg
+     * @param string $label
+     *
+     * @return void
+     */
+    public function log($msg, $label = '') {
+        $this->logged[] = [$msg, $label];
+    }
+}
+
 class QueueWorkerFakeManager extends CQueue_Manager {
     /**
      * @var QueueWorkerFakeConnection
