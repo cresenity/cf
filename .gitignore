@@ -167,3 +167,8 @@ capp.code-workspace
 # Catatan kerja lokal — tidak ikut repo
 /docs
 /reference
+
+# CLAUDE.md sekarang disinkron dari devcloud (appCode "cf"), bukan git —
+# lihat phpcf claude:sync. Sebelumnya berkas ini publik di repo CF; kalau
+# ada checkout lama yang masih melacaknya, jalankan git rm --cached CLAUDE.md.
+/CLAUDE.md
