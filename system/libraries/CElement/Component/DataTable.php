@@ -973,8 +973,9 @@ class CElement_Component_DataTable extends CElement_Component {
         $dbResolver = $this->dbResolver;
         $dbName = $this->dbName;
         $dbConfig = $this->dbConfig;
+        $elementId = $this->id;
 
-        $this->query->setConnection(function () use ($dbResolver, $dbName, $dbConfig) {
+        $this->query->setConnection(function () use ($dbResolver, $dbName, $dbConfig, $elementId) {
             if ($dbResolver != null) {
                 return $dbResolver->connection($dbName);
             }
@@ -983,7 +984,7 @@ class CElement_Component_DataTable extends CElement_Component {
                 return c::db($dbName);
             }
 
-            $generatedDbName = 'db-datatable-' . $this->id;
+            $generatedDbName = 'db-datatable-' . $elementId;
             CDatabase::manager()->addConnection($dbConfig, $generatedDbName);
 
             return c::db($generatedDbName);
