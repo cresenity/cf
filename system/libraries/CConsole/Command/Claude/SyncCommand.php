@@ -25,7 +25,7 @@ class CConsole_Command_Claude_SyncCommand extends CConsole_Command {
      * @var string
      */
     protected $signature = 'claude:sync
-        {--app= : app_code to sync (defaults to auto-detect from the working directory, or "framework" at docroot)}
+        {--app= : app_code to sync (defaults to auto-detect from the working directory, or "cf" at docroot)}
         {--dry-run : Show what would be written without touching the local file}';
 
     /**
@@ -84,7 +84,12 @@ class CConsole_Command_Claude_SyncCommand extends CConsole_Command {
     /**
      * --app wins; otherwise an application/<app>/ working directory resolves
      * to that app_code, and anything else (docroot itself included) resolves
-     * to the framework sentinel, matching DModel_AppDocument::FRAMEWORK_APP_CODE.
+     * to 'cf' - the framework's own registered app_code in devcloud (verified
+     * 2026-08-30; NOT DModel_AppDocument::FRAMEWORK_APP_CODE, which is an
+     * unvalidated sentinel for apps with no real devcloud registration at
+     * all - 'cf' is a real app, so it goes through the normal
+     * app+membership-checked path in doc/store and doc/fetch, not that
+     * bypass).
      *
      * @return string
      */
@@ -106,7 +111,7 @@ class CConsole_Command_Claude_SyncCommand extends CConsole_Command {
             }
         }
 
-        return 'framework';
+        return 'cf';
     }
 
     /**
@@ -115,7 +120,7 @@ class CConsole_Command_Claude_SyncCommand extends CConsole_Command {
      * @return string
      */
     protected function baseDirFor($appCode) {
-        if ($appCode === 'framework') {
+        if ($appCode === 'cf') {
             return c::fixPath(DOCROOT);
         }
 
