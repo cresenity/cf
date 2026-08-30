@@ -120,49 +120,30 @@ class CursorTest extends TestCase {
     }
 
     /**
-     * BUG: JSON yang sah tetapi bukan objek membuat `fromEncoded()` melempar,
-     * padahal nilainya datang dari query string.
-     *
-     * Penjaganya hanya memeriksa `json_last_error()`, sehingga `123`, `"halo"`,
-     * dan `null` lolos — lalu pengambilan `$parameters['_pointsToNextItems']`
-     * dan `unset()`-nya dijalankan atas nilai yang bukan array.
-     *
-     * Test ini merekam perilaku SEKARANG, bukan yang seharusnya. Jenis
-     * Throwable-nya sengaja tidak dipatok karena berbeda antar versi PHP;
-     * yang dijaga faktanya melempar, bukan mengembalikan null.
+     * JSON yang sah tetapi bukan objek (skalar, atau null) mengembalikan
+     * `null`, selaras dengan perbaikan upstream Laravel
+     * (laravel/framework#59699, sudah dirilis di 13.x).
      *
      * @return void
      */
-    public function testScalarJsonMakesFromEncodedThrowInsteadOfReturningNull() {
+    public function testScalarJsonMakesFromEncodedReturnNull() {
         foreach ([123, 'halo', null] as $value) {
             $encoded = $this->encodeRaw($value);
-            $thrown = false;
 
-            try {
-                CPagination_Cursor::fromEncoded($encoded);
-            } catch (Throwable $e) {
-                $thrown = true;
-            }
-
-            $this->assertTrue(
-                $thrown,
-                'JSON ' . var_export($value, true) . ' tidak lagi melempar - bug sudah diperbaiki dan test ini yang perlu disesuaikan'
+            $this->assertNull(
+                CPagination_Cursor::fromEncoded($encoded),
+                'JSON ' . var_export($value, true) . ' seharusnya menghasilkan null'
             );
         }
     }
 
     /**
-     * Sedikit lebih ringan dari kasus di atas: objek JSON yang sah tetapi tanpa
-     * penanda arah tidak melempar, hanya menghasilkan arah `null` — bukan
-     * `true` seperti bawaan konstruktornya.
+     * Objek JSON yang sah tetapi tanpa penanda arah `_pointsToNextItems`
+     * juga mengembalikan `null`, bukan Cursor dengan arah `null`.
      *
      * @return void
      */
-    public function testObjectWithoutDirectionKeyYieldsANullDirection() {
-        $cursor = @CPagination_Cursor::fromEncoded($this->encodeRaw(['id' => 5]));
-
-        $this->assertNotNull($cursor);
-        $this->assertSame(5, $cursor->parameter('id'));
-        $this->assertNull($cursor->pointsToNextItems());
+    public function testObjectWithoutDirectionKeyReturnsNull() {
+        $this->assertNull(CPagination_Cursor::fromEncoded($this->encodeRaw(['id' => 5])));
     }
 }
