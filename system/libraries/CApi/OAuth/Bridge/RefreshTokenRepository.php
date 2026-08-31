@@ -65,6 +65,15 @@ class CApi_OAuth_Bridge_RefreshTokenRepository implements RefreshTokenRepository
      * @inheritdoc
      */
     public function isRefreshTokenRevoked($tokenId) {
-        return $this->refreshTokenRepository->isRefreshTokenRevoked($tokenId);
+        $revoked = $this->refreshTokenRepository->isRefreshTokenRevoked($tokenId);
+
+        if ($revoked) {
+            $tokenModel = $this->refreshTokenRepository->find($tokenId);
+            if ($tokenModel !== null) {
+                $this->events->dispatch(new CApi_OAuth_Event_RefreshTokenReused($tokenId, $tokenModel));
+            }
+        }
+
+        return $revoked;
     }
 }
