@@ -21,6 +21,18 @@ class cTest extends TestCase {
         $this->assertEquals($str, c::e($html));
     }
 
+    /**
+     * Blade's {{ }} compiles to c::e(), so an array-typed value here (e.g. a
+     * scanner sending "?field[]=x") used to crash htmlspecialchars() with a
+     * TypeError on every view that echoed it.
+     *
+     * @return void
+     */
+    public function testEDoesNotCrashOnArrayInput() {
+        $this->assertSame('', c::e(['a', 'b']));
+        $this->assertSame('', c::e([]));
+    }
+
     public function testClassBasename() {
         $this->assertSame('Baz', c::classBasename('Foo\Bar\Baz'));
         $this->assertSame('Baz', c::classBasename('Baz'));

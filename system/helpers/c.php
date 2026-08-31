@@ -495,6 +495,12 @@ class c {
             return $value->toHtml();
         }
 
+        // Blade's {{ }} compiles to this call, so an array-typed value here (e.g.
+        // a scanner sending "?field[]=x") would crash every view that echoes it.
+        if (is_array($value)) {
+            $value = '';
+        }
+
         return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', $doubleEncode);
     }
 

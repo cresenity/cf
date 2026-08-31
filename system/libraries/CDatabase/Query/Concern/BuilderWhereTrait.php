@@ -171,6 +171,12 @@ trait CDatabase_Query_Concern_BuilderWhereTrait {
      * @return bool
      */
     protected function invalidOperator($operator) {
+        // A where() built from raw request input (e.g. a scanner sending an
+        // array where a scalar operator is expected) must not crash strtolower() -
+        // an array is never a valid operator, so it's treated the same as any
+        // other unrecognized one.
+        $operator = is_array($operator) ? '' : $operator;
+
         return !in_array(strtolower($operator), $this->operators, true)
                 && !in_array(strtolower($operator), $this->grammar->getOperators(), true);
     }
@@ -183,6 +189,8 @@ trait CDatabase_Query_Concern_BuilderWhereTrait {
      * @return bool
      */
     protected function isBitwiseOperator($operator) {
+        $operator = is_array($operator) ? '' : $operator;
+
         return in_array(strtolower($operator), $this->bitwiseOperators, true)
                || in_array(strtolower($operator), $this->grammar->getBitwiseOperators(), true);
     }

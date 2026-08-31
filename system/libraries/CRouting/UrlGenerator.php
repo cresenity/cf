@@ -607,6 +607,10 @@ class CRouting_UrlGenerator {
      * @return bool
      */
     public function isValidUrl($path) {
+        if (is_array($path)) {
+            return false;
+        }
+
         if (!preg_match('~^(#|//|https?://|(mailto|tel|sms):)~', $path)) {
             return filter_var($path, FILTER_VALIDATE_URL) !== false;
         }

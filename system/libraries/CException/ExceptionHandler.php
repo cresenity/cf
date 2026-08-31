@@ -13,6 +13,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\ErrorHandler\ErrorRenderer\HtmlErrorRenderer;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
+use League\Flysystem\PathTraversalDetected;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 
 /**
@@ -489,6 +490,11 @@ class CException_ExceptionHandler implements CException_ExceptionHandlerInterfac
             $e = new CHTTP_Exception_HttpException(419, $e->getMessage(), $e);
         } elseif ($e instanceof SuspiciousOperationException) {
             $e = new NotFoundHttpException('Bad hostname provided.', $e);
+        } elseif ($e instanceof PathTraversalDetected) {
+            // Flysystem's own path normalizer already refuses the traversal before
+            // touching any adapter (local, S3, ...) - this is malformed/malicious
+            // input, same class of problem as a bad hostname above, not a server error.
+            $e = new NotFoundHttpException('Not Found.', $e);
         }
 
         return $e;
