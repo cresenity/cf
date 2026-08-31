@@ -75,6 +75,7 @@ class CFConsole {
         CConsole_Command_DevSuite_DevSuiteSshListCommand::class,
         CConsole_Command_DevSuite_DevSuiteSshCreateCommand::class,
         CConsole_Command_DevCloud_DevCloudLoginCommand::class,
+        CConsole_Command_DevCloud_DevCloudSessionCommand::class,
         CConsole_Command_DevCloud_DevCloudTeamsCommand::class,
         CConsole_Command_DevCloud_DevCloudTeamSwitchCommand::class,
         CConsole_Command_DevCloud_App_DevCloudAppInfoCommand::class,

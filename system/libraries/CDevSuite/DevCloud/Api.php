@@ -107,6 +107,39 @@ class CDevSuite_DevCloud_Api {
     }
 
     /**
+     * Report the local token file state, plus a live check of whether the
+     * cached credentials are actually usable right now (refreshing if the
+     * access token looks expired).
+     *
+     * @return array
+     */
+    public function session() {
+        $path = $this->tokenPath();
+        $stored = $this->readToken();
+
+        $status = [
+            'token_path' => $path,
+            'logged_in' => !empty($stored),
+            'file_modified_at' => file_exists($path) ? filemtime($path) : null,
+            'access_token_expires_at' => carr::get($stored, 'expires_at'),
+            'access_token_expired' => empty($stored) ? null : $this->isExpired($stored),
+            'has_refresh_token' => !empty(carr::get($stored, 'refresh_token')),
+            'live_valid' => false,
+            'live_error' => null,
+        ];
+
+        if (!empty($stored)) {
+            try {
+                $status['live_valid'] = !empty($this->accessToken());
+            } catch (Exception $e) {
+                $status['live_error'] = $e->getMessage();
+            }
+        }
+
+        return $status;
+    }
+
+    /**
      * Call an authenticated Devcloud API method (e.g. "app/getInfo"), using
      * the cached (and auto-refreshed) access token. Returns the "data" key
      * of the {errCode, errMessage, data} envelope, or throws on failure.
