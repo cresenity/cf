@@ -84,8 +84,11 @@ mobile/*
 #ignore the other files
 .idea/*
 *.iml
-composer.json
 sftp-config*.json
+
+# root composer.json is tracked (phpcf/cf.isCF() detects the framework root by
+# its "name": "cresenity/cf") - only vendored libraries' own composer.json stays ignored
+system/vendor/**/composer.json
 .well-known
 .well-known/*
 __sublime_sftp_offset

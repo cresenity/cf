@@ -1,0 +1,10 @@
+{
+    "name": "cresenity/cf",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
