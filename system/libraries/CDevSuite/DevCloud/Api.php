@@ -160,6 +160,7 @@ class CDevSuite_DevCloud_Api {
         try {
             $pending = CHTTP::client()
                 ->withToken($token)
+                ->withUserAgent(static::userAgent())
                 ->acceptJson()
                 ->timeout(15);
 
@@ -192,6 +193,18 @@ class CDevSuite_DevCloud_Api {
         if ($this->files->exists($this->tokenPath())) {
             $this->files->unlink($this->tokenPath());
         }
+    }
+
+    /**
+     * A descriptive User-Agent identifying this as the phpcf CLI on a given
+     * OS - Account Setting > Login Devices on the server parses this to show
+     * a friendly device name, the way Google's "Your devices" page does.
+     * The default Guzzle User-Agent ("GuzzleHttp/7") carries no OS info at all.
+     *
+     * @return string
+     */
+    protected static function userAgent() {
+        return 'phpcf-devcloud-cli/1.0 (' . PHP_OS_FAMILY . ')';
     }
 
     /**
@@ -247,6 +260,7 @@ class CDevSuite_DevCloud_Api {
         try {
             $response = CHTTP::client()
                 ->asForm()
+                ->withUserAgent(static::userAgent())
                 ->timeout(15)
                 ->post(static::BASE_URL . '/api/devcloud/oauth/token', $params);
         } catch (Exception $e) {
