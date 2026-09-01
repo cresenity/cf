@@ -471,6 +471,118 @@ class NestedSetTest extends TestCase {
 
         $this->assertSame(['Root', 'A', 'A1', 'B'], $flat->pluck('name')->all());
     }
+
+    // -----------------------------------------------------------------
+    // Whole-tree integrity after a mixed sequence of moves - added for the
+    // smartfield panel SPA's Role drag-and-drop reorder (SF-14021). The
+    // tests above each verify one operation in isolation; a real drag
+    // session fires several moves back-to-back, so this asserts the
+    // lft/rgt/parent_id/depth invariants still hold (no gaps, no overlaps,
+    // every node's bounds nested correctly inside its parent's) after a
+    // sequence combining reparent + reorder + promote-to-root.
+    // -----------------------------------------------------------------
+
+    /**
+     * Every node's [lft, rgt] must fall strictly inside its parent's, no two
+     * siblings' ranges may overlap, and every integer in [1, 2N] must be used
+     * exactly once across the whole tree (N = node count).
+     *
+     * @return void
+     */
+    protected function assertNestedSetIsInternallyConsistent() {
+        $all = $this->rawRows()->orderBy('lft')->get();
+        $byId = [];
+        foreach ($all as $row) {
+            $byId[$row->nestedset_categories_id] = $row;
+        }
+
+        $seen = [];
+        foreach ($all as $row) {
+            $this->assertLessThan($row->rgt, $row->lft, "node {$row->name}: lft must be < rgt");
+            foreach ([$row->lft, $row->rgt] as $bound) {
+                $this->assertArrayNotHasKey($bound, $seen, "bound {$bound} used more than once (overlap/gap) - offending node {$row->name}");
+                $seen[$bound] = $row->name;
+            }
+
+            if ($row->parent_id !== null) {
+                $this->assertArrayHasKey($row->parent_id, $byId, "node {$row->name} references a parent_id that doesn't exist");
+                $parent = $byId[$row->parent_id];
+                $this->assertGreaterThan($parent->lft, $row->lft, "{$row->name}'s lft must be inside parent {$parent->name}'s bounds");
+                $this->assertLessThan($parent->rgt, $row->rgt, "{$row->name}'s rgt must be inside parent {$parent->name}'s bounds");
+                $this->assertSame((int) $parent->depth + 1, (int) $row->depth, "{$row->name}'s depth must be exactly one more than its parent {$parent->name}'s");
+            } else {
+                $this->assertSame(0, (int) $row->depth, "root node {$row->name} must have depth 0");
+            }
+        }
+
+        $count = count($all);
+        $expectedBounds = range(1, $count * 2);
+        $seenKeys = array_keys($seen);
+        sort($seenKeys);
+        $this->assertSame($expectedBounds, $seenKeys, 'lft/rgt values across the whole tree must be exactly 1..2N with no gaps');
+    }
+
+    public function testTreeStaysConsistentAfterAMixedSequenceOfMoves() {
+        $root = NestedSetTestCategory::create(['name' => 'Root']);
+        $branchA = NestedSetTestCategory::create(['name' => 'BranchA'], $root);
+        $branchB = NestedSetTestCategory::create(['name' => 'BranchB'], $root);
+        $a1 = NestedSetTestCategory::create(['name' => 'A1'], $branchA);
+        $a2 = NestedSetTestCategory::create(['name' => 'A2'], $branchA);
+        $b1 = NestedSetTestCategory::create(['name' => 'B1'], $branchB);
+        $this->assertNestedSetIsInternallyConsistent();
+
+        // 1. Reorder siblings within BranchA (A2 before A1).
+        $a2->refreshNode();
+        $a1->refreshNode();
+        $a2->beforeNode($a1)->save();
+        $this->assertNestedSetIsInternallyConsistent();
+
+        // 2. Reparent A1 (a leaf) under BranchB, appended as last child.
+        $a1->refreshNode();
+        $branchB->refreshNode();
+        $a1->appendToNode($branchB)->save();
+        $this->assertNestedSetIsInternallyConsistent();
+
+        // 3. Reparent BranchA (now containing only A2) to be a child of B1.
+        $branchA->refreshNode();
+        $b1->refreshNode();
+        $branchA->appendToNode($b1)->save();
+        $this->assertNestedSetIsInternallyConsistent();
+
+        // 4. Promote B1's subtree (BranchA + A2 inside it) back to root level.
+        $b1->refreshNode();
+        $b1->saveAsRoot();
+        $this->assertNestedSetIsInternallyConsistent();
+
+        // Final structural spot-check on top of the generic integrity sweep.
+        $branchA->refreshNode();
+        $a2->refreshNode();
+        $b1->refreshNode();
+        $this->assertSame($b1->getKey(), $branchA->getParentId(), 'BranchA should still be nested under B1 after B1 was promoted to root');
+        $this->assertSame($branchA->getKey(), $a2->getParentId(), 'A2 should still be nested under BranchA throughout');
+        $this->assertSame(0, $b1->getDepth());
+        $this->assertSame(1, $branchA->getDepth());
+        $this->assertSame(2, $a2->getDepth());
+    }
+
+    public function testUpAndDownByMultiplePositionsSkipTheRightNumberOfSiblings() {
+        $root = NestedSetTestCategory::create(['name' => 'Root']);
+        $first = NestedSetTestCategory::create(['name' => 'First'], $root);
+        $second = NestedSetTestCategory::create(['name' => 'Second'], $root);
+        $third = NestedSetTestCategory::create(['name' => 'Third'], $root);
+        $fourth = NestedSetTestCategory::create(['name' => 'Fourth'], $root);
+
+        $fourth->up(3);
+        $ordered = NestedSetTestCategory::query()->whereDescendantOf($root)->defaultOrder()->get()->pluck('name')->all();
+        $this->assertSame(['Fourth', 'First', 'Second', 'Third'], $ordered, 'up(3) should move past 3 siblings to the front');
+        $this->assertNestedSetIsInternallyConsistent();
+
+        $fourth->refreshNode();
+        $fourth->down(2);
+        $ordered = NestedSetTestCategory::query()->whereDescendantOf($root)->defaultOrder()->get()->pluck('name')->all();
+        $this->assertSame(['First', 'Second', 'Fourth', 'Third'], $ordered, 'down(2) should move past 2 siblings');
+        $this->assertNestedSetIsInternallyConsistent();
+    }
 }
 
 class NestedSetTestCategory extends CModel {
