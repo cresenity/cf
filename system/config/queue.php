@@ -60,6 +60,7 @@ return [
             'queue' => '', // 'your-queue-name'),
             'region' => '', //, 'us-east-1'),
             'after_commit' => false,
+            'wait_time_seconds' => 0, // > 0 enables SQS long-polling on pop()
         ],
 
         'redis' => [

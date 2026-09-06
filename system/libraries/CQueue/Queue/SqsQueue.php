@@ -34,6 +34,13 @@ class CQueue_Queue_SqsQueue extends CQueue_AbstractQueue {
     protected $suffix;
 
     /**
+     * Seconds to long-poll on receiveMessage(). 0 keeps the previous short-polling behavior.
+     *
+     * @var int
+     */
+    protected $waitTimeSeconds;
+
+    /**
      * Create a new Amazon SQS queue instance.
      *
      * @param \Aws\Sqs\SqsClient $sqs
@@ -41,15 +48,17 @@ class CQueue_Queue_SqsQueue extends CQueue_AbstractQueue {
      * @param string             $prefix
      * @param bool               $dispatchAfterCommit
      * @param mixed              $suffix
+     * @param int                $waitTimeSeconds
      *
      * @return void
      */
-    public function __construct(SqsClient $sqs, $default, $prefix = '', $suffix = '', $dispatchAfterCommit = false) {
+    public function __construct(SqsClient $sqs, $default, $prefix = '', $suffix = '', $dispatchAfterCommit = false, $waitTimeSeconds = 0) {
         $this->sqs = $sqs;
         $this->prefix = $prefix;
         $this->suffix = $suffix;
         $this->default = $default;
         $this->dispatchAfterCommit = $dispatchAfterCommit;
+        $this->waitTimeSeconds = $waitTimeSeconds;
     }
 
     /**
@@ -158,10 +167,14 @@ class CQueue_Queue_SqsQueue extends CQueue_AbstractQueue {
      * @return null|\CQueue_JobInterface
      */
     public function pop($queue = null) {
-        $response = $this->sqs->receiveMessage([
+        $params = [
             'QueueUrl' => $queue = $this->getQueue($queue),
             'AttributeNames' => ['ApproximateReceiveCount'],
-        ]);
+        ];
+        if ($this->waitTimeSeconds > 0) {
+            $params['WaitTimeSeconds'] = $this->waitTimeSeconds;
+        }
+        $response = $this->sqs->receiveMessage($params);
         if (!is_null($response['Messages']) && count($response['Messages']) > 0) {
             return new CQueue_Job_SqsJob(
                 $this->container,

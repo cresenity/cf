@@ -28,11 +28,12 @@ class QueueSqsQueueTest extends TestCase {
 
     /**
      * @param \Mockery\MockInterface $client
+     * @param int                    $waitTimeSeconds
      *
      * @return CQueue_Queue_SqsQueue
      */
-    protected function makeQueue($client) {
-        $queue = new CQueue_Queue_SqsQueue($client, $this->queueName, $this->prefix);
+    protected function makeQueue($client, $waitTimeSeconds = 0) {
+        $queue = new CQueue_Queue_SqsQueue($client, $this->queueName, $this->prefix, '', false, $waitTimeSeconds);
         $queue->setContainer(CContainer::getInstance());
         $queue->setConnectionName('sqs');
 
@@ -118,6 +119,28 @@ class QueueSqsQueueTest extends TestCase {
         $client->shouldReceive('receiveMessage')->once()->andReturn(new Result(['Messages' => null]));
 
         $this->assertNull($this->makeQueue($client)->pop());
+    }
+
+    /**
+     * Default behavior (waitTimeSeconds not configured) must stay byte-identical to before
+     * long-polling support existed -- no WaitTimeSeconds key at all, not even zero.
+     */
+    public function testPopOmitsWaitTimeSecondsByDefault() {
+        $client = m::mock(SqsClient::class);
+        $client->shouldReceive('receiveMessage')->once()->with(m::on(function ($args) {
+            return !array_key_exists('WaitTimeSeconds', $args);
+        }))->andReturn(new Result(['Messages' => null]));
+
+        $this->makeQueue($client)->pop();
+    }
+
+    public function testPopSendsWaitTimeSecondsWhenConfigured() {
+        $client = m::mock(SqsClient::class);
+        $client->shouldReceive('receiveMessage')->once()->with(m::on(function ($args) {
+            return isset($args['WaitTimeSeconds']) && $args['WaitTimeSeconds'] === 15;
+        }))->andReturn(new Result(['Messages' => null]));
+
+        $this->makeQueue($client, 15)->pop();
     }
 
     public function testGetQueueBuildsTheUrlFromThePrefix() {
