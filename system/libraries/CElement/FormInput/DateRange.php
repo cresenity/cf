@@ -64,22 +64,32 @@ class CElement_FormInput_DateRange extends CElement_FormInput {
     }
 
     /**
-     * @param string $dateStart
+     * Normalizes a `DateTimeInterface` value to a plain string before storing it.
+     *
+     * @param DateTimeInterface|string $dateStart
      *
      * @return $this
      */
     public function setValueStart($dateStart) {
+        if ($dateStart instanceof DateTimeInterface) {
+            $dateStart = $dateStart->format('Y-m-d H:i:s');
+        }
         $this->dateStart = $dateStart;
 
         return $this;
     }
 
     /**
-     * @param string $dateEnd
+     * Normalizes a `DateTimeInterface` value to a plain string before storing it.
+     *
+     * @param DateTimeInterface|string $dateEnd
      *
      * @return $this
      */
     public function setValueEnd($dateEnd) {
+        if ($dateEnd instanceof DateTimeInterface) {
+            $dateEnd = $dateEnd->format('Y-m-d H:i:s');
+        }
         $this->dateEnd = $dateEnd;
 
         return $this;

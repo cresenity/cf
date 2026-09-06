@@ -23,13 +23,21 @@ trait CElement_FormInput_Trait_PredefinedDateRangeTrait {
     }
 
     /**
-     * @param string $label
-     * @param Carbon $dateStart
-     * @param Carbon $dateEnd
+     * `dateStart`/`dateEnd` are normalized to plain strings before storing.
+     *
+     * @param string                   $label
+     * @param DateTimeInterface|string $dateStart
+     * @param DateTimeInterface|string $dateEnd
      *
      * @return $this
      */
     public function addRange($label, $dateStart, $dateEnd) {
+        if ($dateStart instanceof DateTimeInterface) {
+            $dateStart = $dateStart->format('Y-m-d H:i:s');
+        }
+        if ($dateEnd instanceof DateTimeInterface) {
+            $dateEnd = $dateEnd->format('Y-m-d H:i:s');
+        }
         $this->predefinedRanges[] = [
             'label' => $label,
             'dateStart' => $dateStart,
