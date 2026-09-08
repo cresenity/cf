@@ -24,7 +24,8 @@ class CQueue_Connector_SqsConnector extends CQueue_AbstractConnector {
             carr::get($config, 'prefix', ''),
             carr::get($config, 'suffix', ''),
             carr::get($config, 'after_commit', false),
-            carr::get($config, 'wait_time_seconds', 0)
+            carr::get($config, 'wait_time_seconds', 0),
+            carr::get($config, 'max_number_of_messages', 1)
         );
     }
 

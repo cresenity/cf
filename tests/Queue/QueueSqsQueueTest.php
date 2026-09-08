@@ -29,15 +29,30 @@ class QueueSqsQueueTest extends TestCase {
     /**
      * @param \Mockery\MockInterface $client
      * @param int                    $waitTimeSeconds
+     * @param int                    $maxNumberOfMessages
      *
      * @return CQueue_Queue_SqsQueue
      */
-    protected function makeQueue($client, $waitTimeSeconds = 0) {
-        $queue = new CQueue_Queue_SqsQueue($client, $this->queueName, $this->prefix, '', false, $waitTimeSeconds);
+    protected function makeQueue($client, $waitTimeSeconds = 0, $maxNumberOfMessages = 1) {
+        $queue = new CQueue_Queue_SqsQueue($client, $this->queueName, $this->prefix, '', false, $waitTimeSeconds, $maxNumberOfMessages);
         $queue->setContainer(CContainer::getInstance());
         $queue->setConnectionName('sqs');
 
         return $queue;
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return array
+     */
+    protected function message($id) {
+        return [
+            'MessageId' => $id,
+            'ReceiptHandle' => 'tanda-terima-' . $id,
+            'Body' => json_encode(['job' => 'PekerjaanUji', 'data' => []]),
+            'Attributes' => ['ApproximateReceiveCount' => 1],
+        ];
     }
 
     public function testSizeReadsTheApproximateMessageCount() {
@@ -141,6 +156,82 @@ class QueueSqsQueueTest extends TestCase {
         }))->andReturn(new Result(['Messages' => null]));
 
         $this->makeQueue($client, 15)->pop();
+    }
+
+    /**
+     * Default behavior (maxNumberOfMessages not configured) must stay byte-identical to
+     * before batching support existed -- no MaxNumberOfMessages key at all, not even one.
+     */
+    public function testPopOmitsMaxNumberOfMessagesByDefault() {
+        $client = m::mock(SqsClient::class);
+        $client->shouldReceive('receiveMessage')->once()->with(m::on(function ($args) {
+            return !array_key_exists('MaxNumberOfMessages', $args);
+        }))->andReturn(new Result(['Messages' => null]));
+
+        $this->makeQueue($client)->pop();
+    }
+
+    public function testPopSendsMaxNumberOfMessagesWhenConfigured() {
+        $client = m::mock(SqsClient::class);
+        $client->shouldReceive('receiveMessage')->once()->with(m::on(function ($args) {
+            return isset($args['MaxNumberOfMessages']) && $args['MaxNumberOfMessages'] === 5;
+        }))->andReturn(new Result(['Messages' => null]));
+
+        $this->makeQueue($client, 0, 5)->pop();
+    }
+
+    /**
+     * AWS caps a single receiveMessage() call at 10 messages -- a larger config value must
+     * be clamped, not sent through as is (AWS would reject it).
+     */
+    public function testPopClampsMaxNumberOfMessagesToTen() {
+        $client = m::mock(SqsClient::class);
+        $client->shouldReceive('receiveMessage')->once()->with(m::on(function ($args) {
+            return $args['MaxNumberOfMessages'] === 10;
+        }))->andReturn(new Result(['Messages' => null]));
+
+        $this->makeQueue($client, 0, 50)->pop();
+    }
+
+    /**
+     * A batch of N messages from one receiveMessage() call must be handed out one at a time
+     * across N pop() calls, with only the first pop() actually hitting AWS -- this is the
+     * whole point of MaxNumberOfMessages: fewer API calls for the same messages processed.
+     */
+    public function testPopServesABatchFromOneReceiveMessageCallAcrossMultiplePops() {
+        $client = m::mock(SqsClient::class);
+        $client->shouldReceive('receiveMessage')->once()->andReturn(new Result([
+            'Messages' => [$this->message('a'), $this->message('b'), $this->message('c')],
+        ]));
+
+        $queue = $this->makeQueue($client, 0, 10);
+
+        $first = $queue->pop();
+        $second = $queue->pop();
+        $third = $queue->pop();
+
+        $this->assertSame('a', $first->getJobId());
+        $this->assertSame('b', $second->getJobId());
+        $this->assertSame('c', $third->getJobId());
+    }
+
+    /**
+     * Once the buffer from a batch is exhausted, the next pop() must go back to AWS instead
+     * of returning null forever.
+     */
+    public function testPopFetchesAgainAfterTheBufferIsExhausted() {
+        $client = m::mock(SqsClient::class);
+        $client->shouldReceive('receiveMessage')->once()->andReturn(new Result([
+            'Messages' => [$this->message('a')],
+        ]));
+        $client->shouldReceive('receiveMessage')->once()->andReturn(new Result([
+            'Messages' => [$this->message('b')],
+        ]));
+
+        $queue = $this->makeQueue($client, 0, 10);
+
+        $this->assertSame('a', $queue->pop()->getJobId());
+        $this->assertSame('b', $queue->pop()->getJobId());
     }
 
     public function testGetQueueBuildsTheUrlFromThePrefix() {

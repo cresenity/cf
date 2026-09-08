@@ -41,6 +41,21 @@ class CQueue_Queue_SqsQueue extends CQueue_AbstractQueue {
     protected $waitTimeSeconds;
 
     /**
+     * Messages to request per receiveMessage() call. 1 keeps the previous one-at-a-time
+     * behavior (no MaxNumberOfMessages key sent at all).
+     *
+     * @var int
+     */
+    protected $maxNumberOfMessages;
+
+    /**
+     * Messages already fetched from AWS but not yet handed out by pop(), keyed by queue URL.
+     *
+     * @var array
+     */
+    protected $buffer = [];
+
+    /**
      * Create a new Amazon SQS queue instance.
      *
      * @param \Aws\Sqs\SqsClient $sqs
@@ -49,16 +64,18 @@ class CQueue_Queue_SqsQueue extends CQueue_AbstractQueue {
      * @param bool               $dispatchAfterCommit
      * @param mixed              $suffix
      * @param int                $waitTimeSeconds
+     * @param int                $maxNumberOfMessages
      *
      * @return void
      */
-    public function __construct(SqsClient $sqs, $default, $prefix = '', $suffix = '', $dispatchAfterCommit = false, $waitTimeSeconds = 0) {
+    public function __construct(SqsClient $sqs, $default, $prefix = '', $suffix = '', $dispatchAfterCommit = false, $waitTimeSeconds = 0, $maxNumberOfMessages = 1) {
         $this->sqs = $sqs;
         $this->prefix = $prefix;
         $this->suffix = $suffix;
         $this->default = $default;
         $this->dispatchAfterCommit = $dispatchAfterCommit;
         $this->waitTimeSeconds = $waitTimeSeconds;
+        $this->maxNumberOfMessages = $maxNumberOfMessages;
     }
 
     /**
@@ -162,28 +179,58 @@ class CQueue_Queue_SqsQueue extends CQueue_AbstractQueue {
     /**
      * Pop the next job off of the queue.
      *
+     * A prior receiveMessage() call may have fetched more than one message (see
+     * $maxNumberOfMessages) -- serve those from the buffer before calling AWS again, so a
+     * higher $maxNumberOfMessages actually reduces the number of receiveMessage() calls
+     * instead of just discarding the extra messages.
+     *
      * @param null|string $queue
      *
      * @return null|\CQueue_JobInterface
      */
     public function pop($queue = null) {
+        $queue = $this->getQueue($queue);
+
+        if (!empty($this->buffer[$queue])) {
+            return $this->jobFromMessage(array_shift($this->buffer[$queue]), $queue);
+        }
+
         $params = [
-            'QueueUrl' => $queue = $this->getQueue($queue),
+            'QueueUrl' => $queue,
             'AttributeNames' => ['ApproximateReceiveCount'],
         ];
         if ($this->waitTimeSeconds > 0) {
             $params['WaitTimeSeconds'] = $this->waitTimeSeconds;
         }
+        if ($this->maxNumberOfMessages > 1) {
+            $params['MaxNumberOfMessages'] = min(10, $this->maxNumberOfMessages);
+        }
         $response = $this->sqs->receiveMessage($params);
         if (!is_null($response['Messages']) && count($response['Messages']) > 0) {
-            return new CQueue_Job_SqsJob(
-                $this->container,
-                $this->sqs,
-                $response['Messages'][0],
-                $this->connectionName,
-                $queue
-            );
+            $messages = $response['Messages'];
+            $first = array_shift($messages);
+            if (count($messages) > 0) {
+                $this->buffer[$queue] = $messages;
+            }
+
+            return $this->jobFromMessage($first, $queue);
         }
+    }
+
+    /**
+     * @param array  $message
+     * @param string $queue
+     *
+     * @return \CQueue_JobInterface
+     */
+    protected function jobFromMessage($message, $queue) {
+        return new CQueue_Job_SqsJob(
+            $this->container,
+            $this->sqs,
+            $message,
+            $this->connectionName,
+            $queue
+        );
     }
 
     /**
