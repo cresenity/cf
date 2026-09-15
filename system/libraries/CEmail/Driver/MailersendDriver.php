@@ -67,7 +67,18 @@ class CEmail_Driver_MailersendDriver extends CEmail_DriverAbstract {
             $errMessage = 'No Recipients';
         }
         if (!$errCode) {
-            $response = $mailersend->bulkEmail->send($bulkEmailParams);
+            //Endpoint /bulk-email butuh tier akun tersendiri di MailerSend --
+            //akun tanpa tier itu ditolak 403 "Your plan doesn't allow to send
+            //bulk emails" untuk SATU pun penerima. Satu penerima (kasus paling
+            //umum: email transaksional) karena itu lewat endpoint /email biasa,
+            //yang tersedia di semua tier; kirim ke banyak penerima sekaligus
+            //tetap lewat /bulk-email seperti sebelumnya, jadi tidak ada
+            //perubahan perilaku untuk pemanggil yang memang mengandalkan bulk.
+            if (count($bulkEmailParams) === 1) {
+                $response = $mailersend->email->send($bulkEmailParams[0]);
+            } else {
+                $response = $mailersend->bulkEmail->send($bulkEmailParams);
+            }
             $statusCode = carr::get($response, 'status_code');
             if ($statusCode != 202) {
                 $responseBody = carr::get($response, 'body', []);
