@@ -40,6 +40,7 @@ return array(
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Config\\AgentConfig' => $baseDir . '/src/Config/AgentConfig.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Config\\ConfigLoader' => $baseDir . '/src/Config/ConfigLoader.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Config\\EnvironmentConfig' => $baseDir . '/src/Config/EnvironmentConfig.php',
+    'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Error\\ErrorRecorder' => $baseDir . '/src/Error/ErrorRecorder.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Error\\ExceptionRecorder' => $baseDir . '/src/Error/ExceptionRecorder.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Export\\BatchProcessor' => $baseDir . '/src/Export/BatchProcessor.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Export\\ExporterInterface' => $baseDir . '/src/Export/ExporterInterface.php',

@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit91582195b21e8fb941c6a4e2cec2cff4
+class ComposerStaticInit9e71acdbc26c2574938127f9f9a5c3b2
 {
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
@@ -50,6 +50,8 @@ class ComposerStaticInit91582195b21e8fb941c6a4e2cec2cff4
         'Cresenity\\DevCloud\\APM\\Config\\ConfigLoader' => __DIR__ . '/../..' . '/src/Config/ConfigLoader.php',
         'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Config\\EnvironmentConfig' => __DIR__ . '/../..' . '/src/Config/EnvironmentConfig.php',
         'Cresenity\\DevCloud\\APM\\Config\\EnvironmentConfig' => __DIR__ . '/../..' . '/src/Config/EnvironmentConfig.php',
+        'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Error\\ErrorRecorder' => __DIR__ . '/../..' . '/src/Error/ErrorRecorder.php',
+        'Cresenity\\DevCloud\\APM\\Error\\ErrorRecorder' => __DIR__ . '/../..' . '/src/Error/ErrorRecorder.php',
         'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Error\\ExceptionRecorder' => __DIR__ . '/../..' . '/src/Error/ExceptionRecorder.php',
         'Cresenity\\DevCloud\\APM\\Error\\ExceptionRecorder' => __DIR__ . '/../..' . '/src/Error/ExceptionRecorder.php',
         'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Export\\BatchProcessor' => __DIR__ . '/../..' . '/src/Export/BatchProcessor.php',
@@ -1258,7 +1260,7 @@ class ComposerStaticInit91582195b21e8fb941c6a4e2cec2cff4
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInit91582195b21e8fb941c6a4e2cec2cff4::$classMap;
+            $loader->classMap = ComposerStaticInit9e71acdbc26c2574938127f9f9a5c3b2::$classMap;
 
         }, null, ClassLoader::class);
     }

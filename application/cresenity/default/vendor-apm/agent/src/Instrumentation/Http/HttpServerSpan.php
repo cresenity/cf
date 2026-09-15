@@ -103,10 +103,24 @@ final class HttpServerSpan
      */
     private static function requestAttributes(): array
     {
-        $host = $_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? null;
+        // `??` alone is not enough: a vhost with no server_name (nginx's
+        // default_server, say) sets SERVER_NAME to an empty string, which is
+        // not null, so the fallback never fires and every url.full comes out
+        // as "http:///" - a URL attribute with no host in it. Seen on a real
+        // nginx/php-fpm setup, not hypothetical.
+        $host = self::firstNonEmpty($_SERVER['SERVER_NAME'] ?? null, $_SERVER['HTTP_HOST'] ?? null);
         $scheme = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
         $path = $_SERVER['REQUEST_URI'] ?? '/';
         return array_filter([HttpAttributes::HTTP_REQUEST_METHOD => $_SERVER['REQUEST_METHOD'] ?? null, UrlAttributes::URL_FULL => $host !== null ? $scheme . '://' . $host . $path : null, ServerAttributes::SERVER_ADDRESS => $host, ServerAttributes::SERVER_PORT => isset($_SERVER['SERVER_PORT']) ? (int) $_SERVER['SERVER_PORT'] : null, UserAgentAttributes::USER_AGENT_ORIGINAL => $_SERVER['HTTP_USER_AGENT'] ?? null, ClientAttributes::CLIENT_ADDRESS => $_SERVER['REMOTE_ADDR'] ?? null], static fn($value) => $value !== null);
+    }
+    private static function firstNonEmpty(?string ...$values): ?string
+    {
+        foreach ($values as $value) {
+            if ($value !== null && $value !== '') {
+                return $value;
+            }
+        }
+        return null;
     }
     /**
      * @return array<string, string>

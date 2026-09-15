@@ -58,6 +58,7 @@ humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Metrics\Metrics', 'Creseni
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Support\Logger', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Support\Logger');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Support\Clock', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Support\Clock');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Support\IdGenerator', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Support\IdGenerator');
+humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Error\ErrorRecorder', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Error\ErrorRecorder');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Error\ExceptionRecorder', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Error\ExceptionRecorder');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Config\EnvironmentConfig', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Config\EnvironmentConfig');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Config\AgentConfig', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Config\AgentConfig');
