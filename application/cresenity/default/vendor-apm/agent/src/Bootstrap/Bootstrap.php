@@ -11,6 +11,7 @@ use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Cli\CliIns
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Exception\ExceptionInstrumentation;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Http\HttpInstrumentation;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\InstrumentationRegistry;
+use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Native\NativeBridge;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Metrics\Metrics;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Resource\ServiceResource;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Sampling\ParentBasedSampler;
@@ -108,6 +109,11 @@ final class Bootstrap
                 $registry->add(new CliInstrumentation($tracer));
             }
             $registry->registerAll($logger);
+            // Automatic (engine-level) instrumentation, when the devcloud_apm
+            // extension is loaded - additive, and a no-op without it, so the
+            // manual TracedPdo/TracedRedis path stays the fallback rather than
+            // being replaced (SPEC §4/§67).
+            NativeBridge::register($config, $tracer, $metrics);
             return $tracer;
         } catch (Throwable $exception) {
             $logger->error('devcloud-apm: failed to initialize tracing, tracing stays off', ['exception' => $exception->getMessage()]);

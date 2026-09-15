@@ -35,6 +35,7 @@ humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Instrument
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Redis\RedisAttributes', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Redis\RedisAttributes');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Redis\TracedRedis', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Redis\TracedRedis');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Guzzle\TracingMiddleware', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Guzzle\TracingMiddleware');
+humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Native\NativeBridge', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Native\NativeBridge');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Cli\CliInstrumentation', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Cli\CliInstrumentation');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Cli\CliCommandSpan', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Cli\CliCommandSpan');
 humbug_phpscoper_expose_class('Cresenity\DevCloud\APM\Instrumentation\Exception\ExceptionInstrumentation', 'CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Exception\ExceptionInstrumentation');

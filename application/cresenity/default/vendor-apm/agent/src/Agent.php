@@ -6,6 +6,7 @@ namespace CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Bootstrap\Bootstrap;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Config\AgentConfig;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Config\ConfigLoader;
+use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Instrumentation\Native\NativeBridge;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Metrics\Metrics;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Support\Logger;
 use CresenityDevCloudAPMVendor\Cresenity\DevCloud\APM\Tracing\Tracer;
@@ -70,6 +71,7 @@ final class Agent
         self::$tracer = null;
         self::$metrics = null;
         self::$config = null;
+        NativeBridge::reset();
     }
 }
 /**

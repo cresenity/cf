@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit13b1ab0d70334260d2e20cf6d7988d72
+class ComposerStaticInit91582195b21e8fb941c6a4e2cec2cff4
 {
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
@@ -84,6 +84,8 @@ class ComposerStaticInit13b1ab0d70334260d2e20cf6d7988d72
         'Cresenity\\DevCloud\\APM\\Instrumentation\\InstrumentationInterface' => __DIR__ . '/../..' . '/src/Instrumentation/InstrumentationInterface.php',
         'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\InstrumentationRegistry' => __DIR__ . '/../..' . '/src/Instrumentation/InstrumentationRegistry.php',
         'Cresenity\\DevCloud\\APM\\Instrumentation\\InstrumentationRegistry' => __DIR__ . '/../..' . '/src/Instrumentation/InstrumentationRegistry.php',
+        'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Native\\NativeBridge' => __DIR__ . '/../..' . '/src/Instrumentation/Native/NativeBridge.php',
+        'Cresenity\\DevCloud\\APM\\Instrumentation\\Native\\NativeBridge' => __DIR__ . '/../..' . '/src/Instrumentation/Native/NativeBridge.php',
         'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Queue\\QueueJob' => __DIR__ . '/../..' . '/src/Instrumentation/Queue/QueueJob.php',
         'Cresenity\\DevCloud\\APM\\Instrumentation\\Queue\\QueueJob' => __DIR__ . '/../..' . '/src/Instrumentation/Queue/QueueJob.php',
         'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Redis\\RedisAttributes' => __DIR__ . '/../..' . '/src/Instrumentation/Redis/RedisAttributes.php',
@@ -1256,7 +1258,7 @@ class ComposerStaticInit13b1ab0d70334260d2e20cf6d7988d72
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->classMap = ComposerStaticInit13b1ab0d70334260d2e20cf6d7988d72::$classMap;
+            $loader->classMap = ComposerStaticInit91582195b21e8fb941c6a4e2cec2cff4::$classMap;
 
         }, null, ClassLoader::class);
     }

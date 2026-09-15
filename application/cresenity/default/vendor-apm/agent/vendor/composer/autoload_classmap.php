@@ -57,6 +57,7 @@ return array(
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Http\\HttpServerSpan' => $baseDir . '/src/Instrumentation/Http/HttpServerSpan.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\InstrumentationInterface' => $baseDir . '/src/Instrumentation/InstrumentationInterface.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\InstrumentationRegistry' => $baseDir . '/src/Instrumentation/InstrumentationRegistry.php',
+    'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Native\\NativeBridge' => $baseDir . '/src/Instrumentation/Native/NativeBridge.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Queue\\QueueJob' => $baseDir . '/src/Instrumentation/Queue/QueueJob.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Redis\\RedisAttributes' => $baseDir . '/src/Instrumentation/Redis/RedisAttributes.php',
     'CresenityDevCloudAPMVendor\\Cresenity\\DevCloud\\APM\\Instrumentation\\Redis\\TracedRedis' => $baseDir . '/src/Instrumentation/Redis/TracedRedis.php',

@@ -37,7 +37,13 @@ final class ExceptionInstrumentation implements InstrumentationInterface
     public function register(): void
     {
         $previousHandler = set_exception_handler(static function (Throwable $exception) use (&$previousHandler): void {
-            ExceptionRecorder::record($exception);
+            try {
+                ExceptionRecorder::record($exception);
+            } catch (Throwable $recordingFailure) {
+                // Recording must never be the reason a request dies, and an
+                // exception escaping here would be dispatched straight back
+                // into this same handler.
+            }
             if ($previousHandler !== null) {
                 $previousHandler($exception);
                 return;
@@ -45,7 +51,15 @@ final class ExceptionInstrumentation implements InstrumentationInterface
             // No previous handler: fall back to PHP's own default uncaught-exception
             // behavior (message + non-zero exit) rather than silently swallowing it -
             // the agent must never change what the application does (SPEC §7, §64).
-            restore_exception_handler();
+            //
+            // It must be set_exception_handler(null), not restore_exception_handler().
+            // Restoring from *inside* the handler does not affect the dispatch in
+            // progress: PHP re-invokes this same still-installed handler for the
+            // exception thrown below, and again for the next one, until the process
+            // dies with "Maximum call stack size reached. Infinite recursion?".
+            // Every uncaught exception in an instrumented app hit that, replacing
+            // the application's own error with a stack-overflow fatal.
+            set_exception_handler(null);
             throw $exception;
         });
         register_shutdown_function([self::class, 'recordFatalErrorIfAny']);
