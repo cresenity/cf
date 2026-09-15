@@ -1,0 +1,5 @@
+{
+    "name": "cresenity/devcloud-apm-php-agent-scoped",
+    "autoload": { "classmap": ["src/", "vendor/"] },
+    "config": { "platform": { "php": "8.1.0" } }
+}

@@ -1,0 +1,18 @@
+<?php
+
+declare (strict_types=1);
+namespace CresenityDevCloudAPMVendor\OpenTelemetry\SDK\Resource\Detectors;
+
+use CresenityDevCloudAPMVendor\OpenTelemetry\SDK\Resource\ResourceDetectorInterface;
+use CresenityDevCloudAPMVendor\OpenTelemetry\SDK\Resource\ResourceInfo;
+final class Constant implements ResourceDetectorInterface
+{
+    public function __construct(private readonly ResourceInfo $resourceInfo)
+    {
+    }
+    #[\Override]
+    public function getResource(): ResourceInfo
+    {
+        return $this->resourceInfo;
+    }
+}

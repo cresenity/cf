@@ -14,4 +14,10 @@ vendor
 composer.phar
 composer.lock
 
+# devcloud-apm-php-agent's vendor dir is a manually-vendored, namespace-scoped
+# bundle (no composer install on any server) - not the "vendor" the bare
+# pattern above means to exclude. See default/config/apm.php.
+!/default/vendor-apm/
+!/default/vendor-apm/**
+
 env.php

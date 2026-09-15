@@ -1,0 +1,32 @@
+<?php
+
+declare (strict_types=1);
+namespace CresenityDevCloudAPMVendor\OpenTelemetry\SDK\Metrics\StalenessHandler;
+
+use CresenityDevCloudAPMVendor\OpenTelemetry\SDK\Metrics\ReferenceCounterInterface;
+/**
+ * @internal
+ */
+final class MultiReferenceCounter implements ReferenceCounterInterface
+{
+    /**
+     * @param list<ReferenceCounterInterface> $referenceCounters
+     */
+    public function __construct(private readonly array $referenceCounters)
+    {
+    }
+    #[\Override]
+    public function acquire(bool $persistent = \false): void
+    {
+        foreach ($this->referenceCounters as $referenceCounter) {
+            $referenceCounter->acquire($persistent);
+        }
+    }
+    #[\Override]
+    public function release(): void
+    {
+        foreach ($this->referenceCounters as $referenceCounter) {
+            $referenceCounter->release();
+        }
+    }
+}
