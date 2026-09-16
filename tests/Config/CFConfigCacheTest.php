@@ -140,13 +140,30 @@ class CFConfigCacheTest extends TestCase {
         $this->assertNotSame($before, $after);
     }
 
-    public function testPutCacheWritesPhpThatLoadsBackAsTheSameArray() {
+    public function testPutCacheWritesAPayloadThatDecodesBackAsTheSameArray() {
         $path = $this->temporaryFile();
         $payload = ['version' => 1, 'items' => ['app' => ['name' => 'Cresenity', 'debug' => false]]];
 
         $this->callProtected('putCache', [$path, $payload]);
 
-        $this->assertSame($payload, require $path);
+        $this->assertSame($payload, $this->callProtected('decode', [file_get_contents($path)]));
+    }
+
+    public function testEncodeAndDecodeRoundTripArraysAndScalars() {
+        $payload = ['a' => 1, 'b' => 1.5, 'c' => 'teks', 'd' => null, 'e' => false, 'f' => ['g' => ['h' => 'i']]];
+
+        $encoded = $this->callProtected('encode', [$payload]);
+        $decoded = $this->callProtected('decode', [$encoded]);
+
+        $this->assertSame($payload, $decoded);
+    }
+
+    public function testDecodeRejectsGarbageWithoutThrowing() {
+        $this->assertNull($this->callProtected('decode', ['S' . 'bukan data serial yang valid']));
+    }
+
+    public function testDecodeReturnsNullForAnUnknownFormatByte() {
+        $this->assertNull($this->callProtected('decode', ['X' . serialize(['a' => 1])]));
     }
 
     public function testPutCacheLeavesNoTemporaryFileBehind() {
@@ -184,8 +201,8 @@ class CFConfigCacheTest extends TestCase {
         $directory = sys_get_temp_dir() . DS . 'cfconfigcache-' . uniqid();
         mkdir($directory, 0775, true);
         for ($i = 0; $i < $count; $i++) {
-            $file = $directory . DS . 'config-' . str_pad((string) $i, 12, '0', STR_PAD_LEFT) . '.php';
-            file_put_contents($file, '<?php return [];');
+            $file = $directory . DS . 'config-' . str_pad((string) $i, 12, '0', STR_PAD_LEFT) . '.cache';
+            file_put_contents($file, 'S' . serialize([]));
             $this->temporaryPaths[] = $file;
         }
         $this->temporaryDirectories[] = $directory;
@@ -202,12 +219,12 @@ class CFConfigCacheTest extends TestCase {
     public function testANewVariantIsRefusedOnceTheLimitIsReached() {
         $directory = $this->directoryHolding(CFConfig::CACHE_VARIANT_LIMIT);
 
-        $this->assertFalse($this->callProtected('mayAddVariant', [$directory . DS . 'config-baru.php']));
+        $this->assertFalse($this->callProtected('mayAddVariant', [$directory . DS . 'config-baru.cache']));
     }
 
     public function testRebuildingAnExistingVariantStaysAllowedAtTheLimit() {
         $directory = $this->directoryHolding(CFConfig::CACHE_VARIANT_LIMIT);
-        $existing = $directory . DS . 'config-' . str_pad('0', 12, '0', STR_PAD_LEFT) . '.php';
+        $existing = $directory . DS . 'config-' . str_pad('0', 12, '0', STR_PAD_LEFT) . '.cache';
 
         $this->assertTrue($this->callProtected('mayAddVariant', [$existing]));
     }
@@ -269,7 +286,7 @@ class CFConfigCacheTest extends TestCase {
             return;
         }
 
-        $this->assertStringEndsWith(DS . 'config.php', $default);
-        $this->assertSame(substr($default, 0, -strlen('.php')) . '-abc123.php', $variant);
+        $this->assertStringEndsWith(DS . 'config.cache', $default);
+        $this->assertSame(substr($default, 0, -strlen('.cache')) . '-abc123.cache', $variant);
     }
 }

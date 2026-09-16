@@ -8,7 +8,7 @@ class CFConfig {
      *
      * @var int
      */
-    const CACHE_VERSION = 1;
+    const CACHE_VERSION = 2;
 
     /**
      * Ceiling on cache files per app, since the key carries the request's
@@ -17,6 +17,17 @@ class CFConfig {
      * @var int
      */
     const CACHE_VARIANT_LIMIT = 64;
+
+    /**
+     * One marker byte prefixes the payload, so a reader never has to guess the
+     * format from the current build - a cache written while igbinary was loaded
+     * still decodes correctly after the extension is removed, and vice versa.
+     *
+     * @var string
+     */
+    const FORMAT_IGBINARY = 'I';
+
+    const FORMAT_SERIALIZE = 'S';
 
     public static function bootstrap() {
         $repository = self::bootstrapRepository();
@@ -122,7 +133,9 @@ class CFConfig {
         if ($appCode) {
             $suffix = ($variant === null || $variant === '') ? '' : '-' . $variant;
 
-            return DOCROOT . 'temp/cache/' . CF::appCode() . '/config' . $suffix . '.php';
+            // Not `.php`: the payload is a serialized data blob, never executed,
+            // and a `.cache` name keeps it from ever being requested as a script.
+            return DOCROOT . 'temp/cache/' . CF::appCode() . '/config' . $suffix . '.cache';
         }
 
         return null;
@@ -155,7 +168,12 @@ class CFConfig {
             return null;
         }
 
-        $cache = require $path;
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+
+        $cache = self::decode($raw);
         if (!is_array($cache)
             || !isset($cache['version'], $cache['fingerprint'], $cache['watch'], $cache['files'], $cache['dynamic'], $cache['items'])
             || $cache['version'] !== self::CACHE_VERSION
@@ -167,6 +185,45 @@ class CFConfig {
         }
 
         return $cache;
+    }
+
+    /**
+     * @param mixed $payload
+     *
+     * @return string
+     */
+    protected static function encode($payload) {
+        if (function_exists('igbinary_serialize')) {
+            return self::FORMAT_IGBINARY . igbinary_serialize($payload);
+        }
+
+        return self::FORMAT_SERIALIZE . serialize($payload);
+    }
+
+    /**
+     * @param string $raw
+     *
+     * @return mixed
+     */
+    protected static function decode($raw) {
+        $format = $raw[0];
+        $body = substr($raw, 1);
+
+        try {
+            if ($format === self::FORMAT_IGBINARY) {
+                return function_exists('igbinary_unserialize') ? igbinary_unserialize($body) : null;
+            }
+            if ($format === self::FORMAT_SERIALIZE) {
+                // Config content is arrays/scalars only (isExportable() already
+                // excludes anything else from the cache) - no class is ever
+                // legitimate here, so none is allowed back in on read.
+                return unserialize($body, ['allowed_classes' => false]);
+            }
+        } catch (Throwable $ex) {
+            return null;
+        }
+
+        return null;
     }
 
     /**
@@ -213,7 +270,7 @@ class CFConfig {
             return true;
         }
 
-        $existing = glob(dirname($path) . DS . 'config-*.php');
+        $existing = glob(dirname($path) . DS . 'config-*.cache');
 
         return $existing === false || count($existing) < self::CACHE_VARIANT_LIMIT;
     }
@@ -327,17 +384,11 @@ class CFConfig {
         }
 
         $temporary = $path . '.' . getmypid() . '.tmp';
-        $content = '<?php' . PHP_EOL . PHP_EOL . 'return ' . var_export($payload, true) . ';' . PHP_EOL;
-        if (@file_put_contents($temporary, $content) === false) {
+        if (@file_put_contents($temporary, self::encode($payload)) === false) {
             return;
         }
         if (!@rename($temporary, $path)) {
             @unlink($temporary);
-
-            return;
-        }
-        if (function_exists('opcache_invalidate')) {
-            @opcache_invalidate($path, true);
         }
     }
 
