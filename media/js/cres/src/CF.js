@@ -97,11 +97,27 @@ class CF {
     CFVersion() {
         return this.getConfig().CFVersion;
     }
+    isAssetTagPresent(tagName, attr, url) {
+        // Compares by resolved absolute path only -- a script/link already on
+        // the page under a different cache-busting query string (e.g. `?v=...`)
+        // or written as a relative path must still count as loaded, or callers
+        // reload+re-execute the whole file. `elements[i][attr]` (the DOM
+        // property, not getAttribute) is what resolves a relative src/href to
+        // an absolute URL for us.
+        const target = new URL(url, this.document.baseURI).href.split('?')[0];
+        const elements = this.document.querySelectorAll(tagName + '[' + attr + ']');
+        for (let i = 0; i < elements.length; i++) {
+            if (elements[i][attr].split('?')[0] === target) {
+                return true;
+            }
+        }
+        return false;
+    }
     requireCssAsync(url) {
         return new Promise((resolve, reject)=> {
             let loaded = ~this.cssRequired.indexOf(url);
             if(!loaded) {
-                loaded = document.querySelector('link[href="' + url + '"]') !== null;
+                loaded = this.isAssetTagPresent('link', 'href', url);
             }
             if (!loaded) {
                 this.cssRequired.push(url);
@@ -146,7 +162,7 @@ class CF {
         return new Promise((resolve, reject)=> {
             let loaded = ~this.required.indexOf(url);
             if(!loaded) {
-                loaded = document.querySelector('link[href="' + url + '"],script[src="' + url + '"]') !== null;
+                loaded = this.isAssetTagPresent('link', 'href', url) || this.isAssetTagPresent('script', 'src', url);
             }
             if (!loaded) {
                 this.required.push(url);
