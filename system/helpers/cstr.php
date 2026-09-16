@@ -1452,6 +1452,10 @@ class cstr {
     /**
      * Generate a time-ordered UUID (version 4).
      *
+     * Falls back to CUuid_NativeNumberConverter when neither the gmp extension nor
+     * moontoast/math (bcmath) is installed, instead of fataling with
+     * UnsatisfiedDependencyException - see #-13845.
+     *
      * @return \Ramsey\Uuid\UuidInterface
      */
     public static function orderedUuid() {
@@ -1461,9 +1465,14 @@ class cstr {
 
         $factory = new UuidFactory();
 
+        $numberConverter = $factory->getNumberConverter();
+        if ($numberConverter instanceof Ramsey\Uuid\Converter\Number\DegradedNumberConverter) {
+            $numberConverter = new CUuid_NativeNumberConverter();
+        }
+
         $factory->setRandomGenerator(new CombGenerator(
             $factory->getRandomGenerator(),
-            $factory->getNumberConverter()
+            $numberConverter
         ));
 
         $factory->setCodec(new TimestampFirstCombCodec(
