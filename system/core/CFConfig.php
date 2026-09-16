@@ -179,14 +179,12 @@ class CFConfig {
         }
 
         try {
-            $items = $repository->all();
-            $dynamic = [];
-            foreach ($items as $configKey => $value) {
-                if (!self::isExportable($value)) {
-                    $dynamic[] = $configKey;
-                    unset($items[$configKey]);
-                }
+            $second = new CConfig_Repository([]);
+            foreach ($files as $configKey => $configFiles) {
+                self::loadConfigurationFiles($configKey, $configFiles, $second);
             }
+
+            list($items, $dynamic) = self::partition($repository->all(), $second->all());
 
             $watch = self::watchList($files);
             self::putCache($path, [
@@ -258,6 +256,39 @@ class CFConfig {
         }
 
         return md5(implode(';', $parts));
+    }
+
+    /**
+     * Split configuration into what may be cached and what must be read from
+     * file on every request.
+     *
+     * A key is excluded when var_export() cannot round-trip it, and when two
+     * consecutive loads disagree - the latter is how a value built from
+     * uniqid() or the clock gives itself away, since freezing one would turn a
+     * deliberately per-request value into a constant.
+     *
+     * @return array [cacheable items, keys to reload]
+     */
+    protected static function partition(array $first, array $second) {
+        $dynamic = [];
+        foreach ($first as $configKey => $value) {
+            if (!self::isExportable($value)) {
+                $dynamic[] = $configKey;
+
+                continue;
+            }
+            if (!array_key_exists($configKey, $second)
+                || !self::isExportable($second[$configKey])
+                || var_export($value, true) !== var_export($second[$configKey], true)
+            ) {
+                $dynamic[] = $configKey;
+            }
+        }
+        foreach ($dynamic as $configKey) {
+            unset($first[$configKey]);
+        }
+
+        return [$first, $dynamic];
     }
 
     /**

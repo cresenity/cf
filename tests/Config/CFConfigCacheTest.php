@@ -212,6 +212,49 @@ class CFConfigCacheTest extends TestCase {
         $this->assertTrue($this->callProtected('mayAddVariant', [$existing]));
     }
 
+    public function testPartitionCachesAKeyThatLoadsIdenticallyTwice() {
+        $first = ['app' => ['name' => 'Cresenity'], 'database' => ['host' => 'localhost']];
+
+        list($items, $dynamic) = $this->callProtected('partition', [$first, $first]);
+
+        $this->assertSame($first, $items);
+        $this->assertSame([], $dynamic);
+    }
+
+    public function testPartitionRefusesToCacheAKeyThatDiffersBetweenLoads() {
+        // Bentuk client_modules.php yang memakai uniqid() sebagai pembatal cache.
+        $first = ['app' => ['name' => 'Cresenity'], 'client_modules' => ['js' => ['a.js?v=satu']]];
+        $second = ['app' => ['name' => 'Cresenity'], 'client_modules' => ['js' => ['a.js?v=dua']]];
+
+        list($items, $dynamic) = $this->callProtected('partition', [$first, $second]);
+
+        $this->assertSame(['client_modules'], $dynamic);
+        $this->assertArrayNotHasKey('client_modules', $items);
+        $this->assertArrayHasKey('app', $items);
+    }
+
+    public function testPartitionRefusesToCacheAKeyHoldingAClosure() {
+        $value = ['handler' => function () {
+            return 1;
+        }];
+        $first = ['app' => ['name' => 'Cresenity'], 'filemanager' => $value];
+
+        list($items, $dynamic) = $this->callProtected('partition', [$first, $first]);
+
+        $this->assertSame(['filemanager'], $dynamic);
+        $this->assertArrayNotHasKey('filemanager', $items);
+    }
+
+    public function testPartitionRefusesToCacheAKeyMissingFromTheSecondLoad() {
+        $first = ['app' => ['name' => 'Cresenity'], 'hilang' => ['a' => 1]];
+        $second = ['app' => ['name' => 'Cresenity']];
+
+        list($items, $dynamic) = $this->callProtected('partition', [$first, $second]);
+
+        $this->assertSame(['hilang'], $dynamic);
+        $this->assertArrayNotHasKey('hilang', $items);
+    }
+
     public function testCacheIsDisabledWhileTesting() {
         $this->assertNull($this->callProtected('cachePath'));
     }
