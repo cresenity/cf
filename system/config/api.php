@@ -18,7 +18,8 @@ return [
                 ]
             ],
             'debug' => !CF::isProduction(),
-            'domain' => CF::domain(),
+            // Sengaja tidak diisi: CApi_Manager::router() sudah memakai
+            // CF::domain() sebagai cadangan, dan config harus statis.
             'name' => 'api',
             'prefix' => null,
             'version' => 'v1',

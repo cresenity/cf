@@ -15,7 +15,7 @@ return [
 
         'port' => 6001,
 
-        'domain' => CF::domain(),
+        'domain' => null,
 
         'path' => 'cwebsocket',
 
