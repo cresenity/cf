@@ -10,6 +10,14 @@ class CFConfig {
      */
     const CACHE_VERSION = 1;
 
+    /**
+     * Ceiling on cache files per app, since the key carries the request's
+     * domain and a forged Host would otherwise mint one file after another.
+     *
+     * @var int
+     */
+    const CACHE_VARIANT_LIMIT = 64;
+
     public static function bootstrap() {
         $repository = self::bootstrapRepository();
 
@@ -166,7 +174,7 @@ class CFConfig {
      */
     protected static function writeCache(array $files, CConfig_Repository $repository) {
         $path = self::cachePath();
-        if ($path === null) {
+        if ($path === null || !self::mayAddVariant($path)) {
             return;
         }
 
@@ -192,6 +200,24 @@ class CFConfig {
         } catch (Exception $ex) {
             // A request that would have worked must still work without the cache.
         }
+    }
+
+    /**
+     * Whether a cache file this app does not have yet may still be added.
+     * Rebuilding one that already exists is always allowed.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    protected static function mayAddVariant($path) {
+        if (is_file($path)) {
+            return true;
+        }
+
+        $existing = glob(dirname($path) . DS . 'config-*.php');
+
+        return $existing === false || count($existing) < self::CACHE_VARIANT_LIMIT;
     }
 
     /**

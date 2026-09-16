@@ -18,13 +18,24 @@ class CFConfigCacheTest extends TestCase {
      */
     protected $temporaryPaths = [];
 
+    /**
+     * @var array
+     */
+    protected $temporaryDirectories = [];
+
     protected function tearDown(): void {
         foreach ($this->temporaryPaths as $path) {
             if (is_file($path)) {
                 @unlink($path);
             }
         }
+        foreach ($this->temporaryDirectories as $directory) {
+            if (is_dir($directory)) {
+                @rmdir($directory);
+            }
+        }
         $this->temporaryPaths = [];
+        $this->temporaryDirectories = [];
 
         parent::tearDown();
     }
@@ -162,6 +173,43 @@ class CFConfigCacheTest extends TestCase {
         }
 
         $this->assertTrue($written);
+    }
+
+    /**
+     * @param int $count
+     *
+     * @return string
+     */
+    protected function directoryHolding($count) {
+        $directory = sys_get_temp_dir() . DS . 'cfconfigcache-' . uniqid();
+        mkdir($directory, 0775, true);
+        for ($i = 0; $i < $count; $i++) {
+            $file = $directory . DS . 'config-' . str_pad((string) $i, 12, '0', STR_PAD_LEFT) . '.php';
+            file_put_contents($file, '<?php return [];');
+            $this->temporaryPaths[] = $file;
+        }
+        $this->temporaryDirectories[] = $directory;
+
+        return $directory;
+    }
+
+    public function testANewVariantIsAllowedWhileBelowTheLimit() {
+        $directory = $this->directoryHolding(CFConfig::CACHE_VARIANT_LIMIT - 1);
+
+        $this->assertTrue($this->callProtected('mayAddVariant', [$directory . DS . 'config-baru.php']));
+    }
+
+    public function testANewVariantIsRefusedOnceTheLimitIsReached() {
+        $directory = $this->directoryHolding(CFConfig::CACHE_VARIANT_LIMIT);
+
+        $this->assertFalse($this->callProtected('mayAddVariant', [$directory . DS . 'config-baru.php']));
+    }
+
+    public function testRebuildingAnExistingVariantStaysAllowedAtTheLimit() {
+        $directory = $this->directoryHolding(CFConfig::CACHE_VARIANT_LIMIT);
+        $existing = $directory . DS . 'config-' . str_pad('0', 12, '0', STR_PAD_LEFT) . '.php';
+
+        $this->assertTrue($this->callProtected('mayAddVariant', [$existing]));
     }
 
     public function testCacheIsDisabledWhileTesting() {
