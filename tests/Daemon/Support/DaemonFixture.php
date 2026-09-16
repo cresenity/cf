@@ -37,6 +37,13 @@ class DaemonTestService extends CDaemon_ServiceAbstract {
     }
 
     /**
+     * @return array
+     */
+    public function exposeHandledSignals() {
+        return $this->handledSignals();
+    }
+
+    /**
      * Kept out of the filesystem; the tests only care that it was called.
      *
      * @param string $message

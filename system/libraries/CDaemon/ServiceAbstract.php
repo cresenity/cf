@@ -344,18 +344,20 @@ abstract class CDaemon_ServiceAbstract implements CDaemon_ServiceInterface {
     }
 
     /**
-     * Run the setup() methods of installed plugins, installed workers, and the subclass, in that order. And dispatch the ON_INIT event.
+     * Signals a PHP handler is installed for; synchronous hardware faults are
+     * left at their default disposition, because handling one makes the
+     * faulting instruction repeat forever instead of ending the process.
      *
-     * @return void
+     * @return array
      */
-    private function init() {
+    protected function handledSignals() {
         // SIGKILL, you can't override SIGKILL so it is useless
         $signals = [
             // Handled by CDaemon_ServiceAbstract:
             SIGTERM, SIGINT, SIGUSR1, SIGHUP, SIGCHLD,
             // Ignored by CDaemon_ServiceAbstract -- register callback ON_SIGNAL to listen for them.
             // Some of these are duplicated/aliased, listed here for completeness
-            SIGUSR2, SIGCONT, SIGQUIT, SIGILL, SIGTRAP, SIGABRT, SIGIOT, SIGBUS, SIGFPE, SIGSEGV, SIGPIPE, SIGALRM,
+            SIGUSR2, SIGCONT, SIGQUIT, SIGTRAP, SIGABRT, SIGIOT, SIGPIPE, SIGALRM,
             SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU, SIGURG, SIGXCPU, SIGXFSZ, SIGVTALRM, SIGPROF,
             SIGWINCH, SIGIO, SIGSYS, SIGBABY
         ];
@@ -368,7 +370,24 @@ abstract class CDaemon_ServiceAbstract implements CDaemon_ServiceInterface {
         if (defined('SIGSTKFLT')) {
             $signals[] = SIGSTKFLT;
         }
-        foreach (array_unique($signals) as $signal) {
+
+        // Raised by the CPU against the instruction being executed, which the
+        // kernel re-runs once a handler returns - so a handler here is an
+        // endless loop, not a rescue. Kept out of the list entirely rather
+        // than referenced as a class constant: these come from ext-pcntl, and
+        // this class is also reachable from a SAPI that does not load it.
+        $faultSignals = [SIGSEGV, SIGBUS, SIGILL, SIGFPE];
+
+        return array_values(array_diff(array_unique($signals), $faultSignals));
+    }
+
+    /**
+     * Run the setup() methods of installed plugins, installed workers, and the subclass, in that order. And dispatch the ON_INIT event.
+     *
+     * @return void
+     */
+    private function init() {
+        foreach ($this->handledSignals() as $signal) {
             pcntl_signal($signal, [$this, 'signal']);
         }
         $this->addPlugin('ProcessManager');

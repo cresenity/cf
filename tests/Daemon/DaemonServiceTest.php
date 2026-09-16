@@ -40,6 +40,33 @@ class DaemonServiceTest extends TestCase {
         return new DaemonTestService('DaemonTestService', $config + ['pidFile' => $this->pidFile]);
     }
 
+    /**
+     * A handler for SIGSEGV and its relatives does not rescue anything: the
+     * kernel re-runs the faulting instruction when the handler returns, so the
+     * process spins instead of dying. The loop itself cannot be reproduced in
+     * a test - PHP has no way to fault on purpose - so what is asserted here is
+     * the thing that prevents it, that no handler is installed for them.
+     */
+    public function testHardwareFaultSignalsAreLeftAlone() {
+        $signals = $this->makeService()->exposeHandledSignals();
+
+        foreach ([SIGSEGV => 'SIGSEGV', SIGBUS => 'SIGBUS', SIGILL => 'SIGILL', SIGFPE => 'SIGFPE'] as $signal => $name) {
+            $this->assertNotContains($signal, $signals, $name . ' harus dibiarkan mematikan proses, bukan ditangani');
+        }
+    }
+
+    /**
+     * The signals a daemon genuinely acts on must still arrive - shutdown and
+     * restart are delivered this way.
+     */
+    public function testControlSignalsAreStillHandled() {
+        $signals = $this->makeService()->exposeHandledSignals();
+
+        foreach ([SIGTERM => 'SIGTERM', SIGINT => 'SIGINT', SIGHUP => 'SIGHUP', SIGUSR1 => 'SIGUSR1', SIGCHLD => 'SIGCHLD'] as $signal => $name) {
+            $this->assertContains($signal, $signals, $name . ' harus tetap ditangani');
+        }
+    }
+
     public function testConfigIsReadable() {
         $service = $this->makeService(['loopInterval' => 5]);
 
