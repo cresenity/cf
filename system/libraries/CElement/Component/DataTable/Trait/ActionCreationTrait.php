@@ -77,6 +77,10 @@ trait CElement_Component_DataTable_Trait_ActionCreationTrait {
         $ajaxMethod->setType('DataTableExporter');
         $ajaxMethod->setData('table', serialize($this));
         $ajaxMethod->setData('exporter', $options);
+        $ajaxMethod->setExpiration(carr::get($options, 'expiration', c::now()->addDays(1)->getTimestamp()));
+        if (carr::get($options, 'auth', c::app()->isAuthEnabled())) {
+            $ajaxMethod->enableAuth();
+        }
         $downloadUrl = $ajaxMethod->makeUrl();
 
         $act->setLink($downloadUrl)->setLinkTarget('_blank');
@@ -152,6 +156,10 @@ trait CElement_Component_DataTable_Trait_ActionCreationTrait {
         $ajaxMethod->setData('progressMax', '100');
         $ajaxMethod->setData('writerType', carr::get($options, 'writerType', CExporter::XLS));
         $ajaxMethod->setData('fileUrl', $fileUrl);
+        $ajaxMethod->setExpiration(carr::get($options, 'expiration', c::now()->addDays(1)->getTimestamp()));
+        if (carr::get($options, 'auth', c::app()->isAuthEnabled())) {
+            $ajaxMethod->enableAuth();
+        }
         $downloadUrl = $ajaxMethod->makeUrl();
 
         $act->addListener('click')->addDownloadProgressHandler()->setUrl($downloadUrl);

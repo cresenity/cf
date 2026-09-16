@@ -49,9 +49,14 @@ class CAjax_Engine_DataTable_ExporterProcessor_Query extends CAjax_Engine_DataTa
                 }
             }
 
+            // The progress url is polled from the same session that clicked the export, so
+            // it inherits that method's expiration and auth binding instead of being open.
+            $parentMethod = $this->engine->getAjaxMethod();
             $ajaxMethod = CAjax::createMethod();
             $ajaxMethod->setType('DataTableExporterProgress');
             $ajaxMethod->setData('downloadId', $fileId);
+            $ajaxMethod->setExpiration($parentMethod->getExpiration());
+            $ajaxMethod->auth = $parentMethod->auth;
             $progressUrl = $ajaxMethod->makeUrl();
 
             $responseData = [

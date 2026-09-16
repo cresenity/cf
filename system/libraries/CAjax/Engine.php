@@ -77,6 +77,13 @@ abstract class CAjax_Engine implements CAjax_EngineInterface {
     }
 
     /**
+     * @return CAjax_Method
+     */
+    public function getAjaxMethod() {
+        return $this->ajaxMethod;
+    }
+
+    /**
      * Convert response to JSON.
      *
      * @param int    $errCode
