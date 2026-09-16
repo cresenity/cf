@@ -520,6 +520,31 @@ class Controller_Cresenity extends CController {
         return c::abort(404);
     }
 
+    /**
+     * Same-origin sink for the browser-side JS error collector in cres.js
+     * (media/js/cres/src/module/jsErrorCollector.js) - POST only, fire-and-forget from the
+     * caller's side (sendBeacon/fetch, response body is never read). Never throws: a failure
+     * here must not surface as a fresh error on a page that is already reporting one.
+     *
+     * @return CHTTP_Response
+     */
+    public function jsError() {
+        if (!c::request()->isMethod('post')) {
+            return c::response('', 405);
+        }
+
+        try {
+            $payload = json_decode((string) c::request()->getContent(), true);
+            if (is_array($payload)) {
+                CDebug::collector()->collectJsException($payload);
+            }
+        } catch (Throwable $e) {
+            //diam-diam - lihat docblock method ini
+        }
+
+        return c::response('', 204);
+    }
+
     public function tus() {
         $server = CStorage::tus()->createServer();
         // $entityBody = file_get_contents('php://input');

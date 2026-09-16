@@ -132,8 +132,17 @@ HTML;
             $notificationScript = c::view('cresenity.notification.javascript')->render();
         }
 
+        //cres.js's jsErrorCollector module reads this before attaching window.onerror/
+        //unhandledrejection - kept a plain inline (non-defer) script so it always runs before
+        //the deferred cres.js tag right after it. Apps that never opted into
+        //`collector.js_exception` (own flag, separate from `collector.exception`'s PHP-side one)
+        //get zero JS error reporting overhead, not just a server-side drop.
+        $jsCollectorEnabled = CF::config('collector.js_exception') ? 'true' : 'false';
+        $jsCollectorFlagScript = "<script>window.__CF_JS_COLLECTOR_ENABLED__ = {$jsCollectorEnabled};</script>";
+
         return <<<HTML
             {$endClientScript}
+            {$jsCollectorFlagScript}
             <script defer src="{$cresJs}"></script>
             {$notificationScript}
             <script>
