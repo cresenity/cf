@@ -134,6 +134,37 @@ $default  = c::config('app.missing_key', 'foo');   // 'foo' (fallback)
 
 ---
 
+### What Belongs in a Config File
+
+**A config file must return static data — values that are identical for every request in the same deployment.**
+
+Configuration is cached. On the first request the merged result is written to `temp/cache/{app_code}/`, and reused until a config file, a config directory, or the app's `env.php` changes — there is no command to run and nothing to add to a deploy, because the cache checks those modification times on every request and rebuilds itself when they move.
+
+Safe in a config file:
+
+- literal values
+- `c::env('KEY')` — `env.php` is watched, so editing it rebuilds the cache
+
+**Not safe. Do not put these in a config file:**
+
+- anything derived from the current request — `$_SERVER`, `c::request()`, the visitor's IP, the session
+- anything that changes each time it is evaluated — `uniqid()`, `time()`, `rand()`
+
+Caching freezes the value, and both cases break quietly rather than loudly. A cache-buster written as `'app.js?v=' . uniqid()` stops busting anything, and editing that javascript will not change it back, because the file is not a config file and so does not invalidate the cache. A request-derived value gets computed once and then served to every other visitor.
+
+Two guards exist, and it is worth knowing where they stop:
+
+| Guard | Covers |
+|---|---|
+| Keys that differ between two consecutive loads are excluded from the cache and re-read per request | `uniqid()`, `rand()`, and anything else regenerated on each evaluation |
+| The cache is keyed by domain as well as by resolved paths | a value holding `CF::domain()` — `system/config/api.php` and `websocket.php` both do this, and are never reused across domains |
+
+**Neither guard catches a value that comes from the request but stays the same throughout it** — `c::request()->ip()`, a header, the logged-in user. Two loads inside one request agree on it, so it looks static, and it will be cached and then wrong for everyone else. Compute that in your code, not in config.
+
+> If `temp/` is not writable the cache is simply never written — configuration still loads correctly, just without the speed-up. See Directory Permissions above.
+
+---
+
 ### Bootstrap File
 
 Each application can have a `bootstrap.php` file at `application/{app_code}/bootstrap.php`. This file is executed after the framework is initialized and before the request is dispatched. Use it to register service providers, set up middleware, configure pagination, or run any application-level setup.
