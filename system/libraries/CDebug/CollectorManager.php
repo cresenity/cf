@@ -13,11 +13,6 @@ class CDebug_CollectorManager {
      */
     private $deprecated;
 
-    /**
-     * @var CDebug_Collector_JsException
-     */
-    private $jsException;
-
     public static function instance() {
         if (static::$instance == null) {
             static::$instance = new static();
@@ -48,17 +43,6 @@ class CDebug_CollectorManager {
         return $this->deprecated;
     }
 
-    /**
-     * @return CDebug_Collector_JsException
-     */
-    public function jsException() {
-        if ($this->jsException == null) {
-            $this->jsException = new CDebug_Collector_JsException();
-        }
-
-        return $this->jsException;
-    }
-
     public static function allCollectorType() {
         return [CDebug::COLLECTOR_TYPE_DEPRECATED, CDebug::COLLECTOR_TYPE_EXCEPTION, CDebug::COLLECTOR_TYPE_PROFILER];
     }
@@ -79,14 +63,5 @@ class CDebug_CollectorManager {
      */
     public function collectDeprecated($message = '') {
         return $this->deprecated()->collect($message);
-    }
-
-    /**
-     * @param array $payload message, stack, filename, lineno, colno, name, url, type
-     *
-     * @return null|array
-     */
-    public function collectJsException(array $payload) {
-        return $this->jsException()->collect($payload);
     }
 }

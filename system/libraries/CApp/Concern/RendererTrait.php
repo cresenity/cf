@@ -132,13 +132,17 @@ HTML;
             $notificationScript = c::view('cresenity.notification.javascript')->render();
         }
 
-        //cres.js's jsErrorCollector module reads this before attaching window.onerror/
-        //unhandledrejection - kept a plain inline (non-defer) script so it always runs before
-        //the deferred cres.js tag right after it. Apps that never opted into
-        //`collector.js_exception` (own flag, separate from `collector.exception`'s PHP-side one)
-        //get zero JS error reporting overhead, not just a server-side drop.
-        $jsCollectorEnabled = CF::config('collector.js_exception') ? 'true' : 'false';
-        $jsCollectorFlagScript = "<script>window.__CF_JS_COLLECTOR_ENABLED__ = {$jsCollectorEnabled};</script>";
+        //cres.js's cresjs-error-collector dependency reads this before attaching window.onerror/
+        //unhandledrejection - kept a plain inline (non-defer) script so it always runs before the
+        //deferred cres.js tag right after it. url/key come from devcloud.jsCollector.* (system/
+        //config/devcloud.php) - the browser posts DIRECTLY to devcloud with these, this app's PHP
+        //is never involved in the actual report. Null url/key (not configured for this app) means
+        //the package never attaches its listeners at all, not just a server-side drop.
+        $jsCollectorConfig = json_encode([
+            'endpoint' => CF::config('devcloud.jsCollector.url'),
+            'key' => CF::config('devcloud.jsCollector.key'),
+        ]);
+        $jsCollectorFlagScript = "<script>window.__CF_JS_COLLECTOR_CONFIG__ = {$jsCollectorConfig};</script>";
 
         return <<<HTML
             {$endClientScript}
