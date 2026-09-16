@@ -1188,14 +1188,26 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Escape a value for safe SQL embedding.
      *
-     * @param null|string|float|int|bool $value
-     * @param bool                       $binary
-     * @param bool                       $useReadPdo quote against the read connection instead of
-     *                                               the write one (only compileBinds() sets this)
+     * A DateTimeInterface (Carbon included) is converted to its string form before escaping -
+     * Carbon via its own __toString(), same conversion compileBinds() already applies to Carbon
+     * bind values; plain DateTime/DateTimeImmutable (no __toString()) via format('Y-m-d H:i:s')
+     * instead, so passing one directly no longer fatals with "could not be converted to string".
+     *
+     * @param null|string|float|int|bool|DateTimeInterface $value
+     * @param bool                                         $binary
+     * @param bool                                         $useReadPdo quote against the read connection instead of
+     *                                                                 the write one (only compileBinds() sets this)
      *
      * @return string
      */
     public function escape($value, $binary = false, $useReadPdo = false) {
+        if ($value instanceof DateTimeInterface) {
+            // Carbon defines __toString() (same conversion compileBinds() already applies to
+            // Carbon bind values); plain DateTime/DateTimeImmutable don't, so casting those
+            // would fatal with "could not be converted to string" instead of escaping them.
+            $value = method_exists($value, '__toString') ? (string) $value : $value->format('Y-m-d H:i:s');
+        }
+
         if ($value === null) {
             return 'null';
         } elseif ($binary) {

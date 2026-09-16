@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Carbon;
 use Mockery as m;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
@@ -513,6 +514,37 @@ class DatabaseConnectionTest extends TestCase {
         });
         $this->assertSame('foo bar', $queries[0]['query']);
         $this->assertEquals(['baz'], $queries[0]['bindings']);
+    }
+
+    /**
+     * A Carbon instance used to reach the PDO quote() call only via an implicit
+     * __toString() cast inside cstr::contains()/preg_match() - fragile, and dependent
+     * on Carbon::setToStringFormat() never being changed process-wide. escape() now
+     * converts it explicitly up front, the same conversion compileBinds() already
+     * applies to Carbon bind values (#-13850).
+     */
+    public function testEscapeConvertsCarbonToItsStringFormBeforeQuoting() {
+        $carbon = Carbon::create(2026, 9, 16, 10, 30, 0);
+        $pdo = $this->getMockBuilder(DatabaseConnectionTestMockPDO::class)->onlyMethods(['quote'])->getMock();
+        $pdo->expects($this->once())->method('quote')->with('2026-09-16 10:30:00')->willReturn("'2026-09-16 10:30:00'");
+        $connection = $this->getMockConnection([], $pdo);
+
+        $this->assertSame("'2026-09-16 10:30:00'", $connection->escape($carbon));
+    }
+
+    /**
+     * Plain DateTime/DateTimeImmutable don't define __toString() (unlike Carbon), so
+     * before this fix passing one straight to escape() fataled with "Object of class
+     * DateTime could not be converted to string" instead of escaping it. escape() now
+     * falls back to format('Y-m-d H:i:s') for these.
+     */
+    public function testEscapeConvertsPlainDateTimeToItsStringFormBeforeQuoting() {
+        $date = new DateTime('2026-09-16 10:30:00');
+        $pdo = $this->getMockBuilder(DatabaseConnectionTestMockPDO::class)->onlyMethods(['quote'])->getMock();
+        $pdo->expects($this->once())->method('quote')->with('2026-09-16 10:30:00')->willReturn("'2026-09-16 10:30:00'");
+        $connection = $this->getMockConnection([], $pdo);
+
+        $this->assertSame("'2026-09-16 10:30:00'", $connection->escape($date));
     }
 
     public function testSchemaBuilderCanBeCreated() {
