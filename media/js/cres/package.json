@@ -54,6 +54,7 @@
     "dependencies": {
         "cleave.js": "^1.6.0",
         "collect.js": "^4.36.1",
+        "cresjs-error-collector": "git+ssh://git@github.com/cresenity/cresjs-error-collector.git",
         "date-fns": "^4.1.0",
         "date-fns-tz": "^3.2.0",
         "event-source-polyfill": "^1.0.25",

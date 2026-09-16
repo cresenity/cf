@@ -16,7 +16,7 @@ String.prototype.toNumber = function () {
 
 import './index.scss';
 import Cresenity from './Cresenity';
-import { initJsErrorCollector } from './module/jsErrorCollector';
+import { initJsErrorCollector } from 'cresjs-error-collector';
 
 initJsErrorCollector();
 
