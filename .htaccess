@@ -54,40 +54,6 @@ RewriteRule ^application/[^/]+/default/data/(vendor|key)/ - [R=404,L]
 RewriteRule ^application/[^/]+/(docs|default/data/docs)/ - [R=404,L]
 RewriteRule ^application/[^/]+/default/data/.*\.md$ - [R=404,L]
 
-# Di bawah application/, hanya direktori aset yang boleh dilayani langsung.
-#
-# Aturan di atas semuanya daftar tolak, dan daftar tolak selalu tertinggal:
-# saat ditulis, `default/js/console/src/pages/Apm.tsx` (62 KB sumber SPA),
-# `tsconfig.json`, dan `bin/*.sh` tersaji 200 di produksi karena tidak ada
-# yang mencantumkannya. Dibalik menjadi daftar izin, berkas baru aman sejak
-# awal alih-alih aman setelah seseorang ingat menambahkan polanya.
-#
-# Yang diizinkan hanya media/, resources/, dan data/ - tiga direktori yang
-# memang berisi aset publik: gambar dan build JS/CSS di media/ (termasuk PDF
-# yang diunggah, mis. application/pensiunq/default/media/docs/), gambar lama
-# di resources/, dan preset tema di data/ (lihat catatan data/ di atas).
-# Segmen kedua sengaja bebas, bukan hanya `default`: aplikasi ber-org
-# menyajikan asetnya dari application/<app>/<org>/media/.
-#
-# Yang tertutup karenanya: seluruh sumber (js/, libraries/, controllers/,
-# tests/), skrip (bin/), berkas konfigurasi di akar app, dan apa pun yang
-# ditaruh orang di sana tanpa memikirkan HTTP.
-#
-# **LiteSpeed men-cache .htaccess.** Menyunting berkas ini tidak berpengaruh
-# apa-apa sampai `lswsctrl restart` - tanpa error, tanpa peringatan, aturan
-# barunya hanya diam. Setiap uji coba aturan di bawah ini harus didahului
-# restart, atau hasilnya menyesatkan (terbukti 2026-09-16: empat putaran uji
-# menyimpulkan polanya salah, padahal berkasnya belum dibaca ulang).
-#
-# BATASNYA: aturan ini tidak berlaku untuk aplikasi yang punya .htaccess
-# sendiri (saat ini 14 di antaranya). mod_rewrite tidak mewariskan aturan
-# induk ke direktori yang punya aturan sendiri, dan `RewriteOptions
-# InheritDown` diuji di LiteSpeed 2026-09-16: tidak berpengaruh sama sekali.
-# Aplikasi seperti itu perlu baris setara di .htaccess-nya masing-masing -
-# lihat application/devcloud/.htaccess sebagai contoh.
-RewriteCond %{REQUEST_URI} !^/?application/[^/]+/[^/]+/(media|resources|data)/ [NC]
-RewriteRule ^application/ - [R=404,L]
-
 # Berkas titik dan metadata editor/VCS
 RewriteRule ^(.*/)?\.((claude|git(hub)?|vscode|idea)/|(DS_Store|git.*|editorconfig|htaccess.*|php_cs.*|stylelintrc|prettierrc|eslintrc|eslintignore|php-cs-fixer\.cache|phpunit\.result\.cache)$) - [R=404,L]
 
