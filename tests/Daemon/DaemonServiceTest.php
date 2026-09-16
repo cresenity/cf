@@ -302,4 +302,32 @@ class DaemonServiceTest extends TestCase {
 
         $this->assertSame($collections, gc_status()['runs'], 'interval 0 harus mematikan pengumpulan periodik');
     }
+
+    /**
+     * loopProcess() wraps execute() in a QueueJob span when the APM agent's
+     * package is installed, guarded by class_exists() since that package is
+     * not a framework dependency - it never is in this test run, so this
+     * exercises exactly the path every server without the agent takes.
+     */
+    public function testLoopProcessCallsExecuteWhenTheApmAgentIsAbsent() {
+        $this->assertFalse(
+            class_exists(\Cresenity\DevCloud\APM\Instrumentation\Queue\QueueJob::class),
+            'Prasyarat pengujian ini: paket agen APM bukan dependensi framework, jadi tidak boleh ter-autoload di sini.'
+        );
+        $service = $this->makeService();
+
+        $service->callProtected('loopProcess');
+
+        $this->assertSame(1, $service->executeCount);
+    }
+
+    public function testLoopProcessCallsExecuteExactlyOncePerTick() {
+        $service = $this->makeService();
+
+        $service->callProtected('loopProcess');
+        $service->callProtected('loopProcess');
+        $service->callProtected('loopProcess');
+
+        $this->assertSame(3, $service->executeCount);
+    }
 }

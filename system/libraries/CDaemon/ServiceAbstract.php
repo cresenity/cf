@@ -537,8 +537,28 @@ abstract class CDaemon_ServiceAbstract implements CDaemon_ServiceInterface {
 
     /**
      * Call execute in, can be override with inherit service.
+     *
+     * Traced as one span per tick when the APM agent is installed - a daemon
+     * is one PHP process for its whole lifetime, so without this every query
+     * and call it ever makes sits under a single root span that only exports
+     * once the process exits, which for a stable daemon is never. Guarded by
+     * class_exists() rather than a hard dependency: the agent lives in a
+     * separate, server-level package this class must keep working without.
      */
     protected function loopProcess() {
+        if (class_exists(\Cresenity\DevCloud\APM\Instrumentation\Queue\QueueJob::class)) {
+            \Cresenity\DevCloud\APM\Instrumentation\Queue\QueueJob::run(
+                static::class,
+                function () {
+                    $this->execute();
+                },
+                'cdaemon',
+                $this->serviceName
+            );
+
+            return;
+        }
+
         $this->execute();
     }
 
@@ -546,10 +566,10 @@ abstract class CDaemon_ServiceAbstract implements CDaemon_ServiceInterface {
      * Register a callback for the given $event. Use the event class constants for built-in events. Add and dispatch
      * your own events however you want.
      *
-     * @param mixed $event    When creating custom events, keep ints < 100 reserved for the daemon
+     * @param mixed            $event    When creating custom events, keep ints < 100 reserved for the daemon
      * @param closure|callable $callback
-     * @param int|null $throttle Optional time in seconds to throttle calls to the given $callback. For example, if $throttle = 10, the provided $callback will not be called more than once every 10 seconds, even if the given $event is dispatched more frequently than that.
-     * @param callable|null $criteria Optional. If provided, any event payload will be passed to this callable and the event dispatched only if it returns truthy.
+     * @param null|int         $throttle Optional time in seconds to throttle calls to the given $callback. For example, if $throttle = 10, the provided $callback will not be called more than once every 10 seconds, even if the given $event is dispatched more frequently than that.
+     * @param null|callable    $criteria Optional. If provided, any event payload will be passed to this callable and the event dispatched only if it returns truthy.
      *
      * @throws Exception
      *
