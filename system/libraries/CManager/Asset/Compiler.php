@@ -45,6 +45,16 @@ class CManager_Asset_Compiler {
     protected $separator = "\n";
 
     /**
+     * @var string|null
+     */
+    protected $charset;
+
+    /**
+     * @var array
+     */
+    protected $imports = [];
+
+    /**
      * @param string[] $files
      * @param array    $options
      */
@@ -159,6 +169,8 @@ class CManager_Asset_Compiler {
             //tujuan dikosongkan dulu dan diisi bertahap, sehingga permintaan yang datang
             //bersamaan dapat menerima bundel kosong atau separuh jadi
             $tempFile = $dirname . DS . uniqid(basename($this->outFile) . '.', true) . '.tmp';
+            $this->charset = null;
+            $this->imports = [];
             foreach ($this->files as $file) {
                 $compiledOutput = file_get_contents($file);
                 // strip BOM, if any
@@ -173,6 +185,7 @@ class CManager_Asset_Compiler {
                         $minifier = $this->createCssMinifier();
                         $compiledOutput = $minifier->execute($compiledOutput);
                     }
+                    $compiledOutput = $this->hoistImports($compiledOutput);
                 }
 
                 if ($this->type == 'js') {
@@ -182,7 +195,14 @@ class CManager_Asset_Compiler {
                     }
                 }
 
-                file_put_contents($tempFile, $this->separator . $compiledOutput, FILE_APPEND);
+                //`;` menutup berkas js yang berakhir tanpa titik koma, agar tidak menyambung ke berkas berikutnya
+                $separator = $this->type == 'js' ? ';' . $this->separator : $this->separator;
+                file_put_contents($tempFile, $separator . $compiledOutput, FILE_APPEND);
+            }
+
+            $header = $this->importHeader();
+            if ($header !== '') {
+                file_put_contents($tempFile, $header . file_get_contents($tempFile));
             }
 
             if (!@rename($tempFile, $this->outFile)) {
@@ -338,6 +358,74 @@ class CManager_Asset_Compiler {
 
         // replace urls
         return str_replace($search, $replace, $content);
+    }
+
+    /**
+     * Lift `@import` and `@charset` out of one file's css; the browser ignores them
+     * anywhere but the top of a stylesheet, so a bundle must collect them first.
+     *
+     * @param string $content
+     *
+     * @return string
+     */
+    protected function hoistImports($content) {
+        $comments = [];
+        if (preg_match_all('/\/\*.*?\*\//s', $content, $matches, PREG_OFFSET_CAPTURE)) {
+            foreach ($matches[0] as $match) {
+                $comments[] = [$match[1], $match[1] + strlen($match[0])];
+            }
+        }
+        $patterns = [
+            'charset' => '/@charset\s+["\'][^"\']*["\']\s*;/i',
+            'import' => '/@import\s+(?:url\(\s*["\']?[^)"\']*["\']?\s*\)|["\'][^"\']*["\'])[^;{]*;/i',
+        ];
+        $found = [];
+        foreach ($patterns as $kind => $pattern) {
+            if (!preg_match_all($pattern, $content, $matches, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+            foreach ($matches[0] as $match) {
+                $offset = $match[1];
+                foreach ($comments as $range) {
+                    if ($offset >= $range[0] && $offset < $range[1]) {
+                        continue 2;
+                    }
+                }
+                $found[] = ['offset' => $offset, 'length' => strlen($match[0]), 'kind' => $kind, 'rule' => trim($match[0])];
+            }
+        }
+        usort($found, function ($a, $b) {
+            return $a['offset'] - $b['offset'];
+        });
+        foreach ($found as $item) {
+            if ($item['kind'] == 'charset') {
+                if ($this->charset === null) {
+                    $this->charset = $item['rule'];
+                }
+            } else {
+                $this->imports[$item['rule']] = true;
+            }
+        }
+        foreach (array_reverse($found) as $item) {
+            $content = substr_replace($content, '', $item['offset'], $item['length']);
+        }
+
+        return $content;
+    }
+
+    /**
+     * @return string
+     */
+    protected function importHeader() {
+        $lines = [];
+        if ($this->charset !== null) {
+            $lines[] = $this->charset;
+        }
+        foreach (array_keys($this->imports) as $import) {
+            $lines[] = $import;
+        }
+
+        return count($lines) > 0 ? implode($this->separator, $lines) : '';
     }
 
     /**

@@ -94,6 +94,46 @@ class Manager_AssetCompilerTest extends TestCase {
         $this->assertCount(0, glob($this->dir . DIRECTORY_SEPARATOR . '*.tmp'));
     }
 
+    public function testCssImportsFromLaterFilesAreHoistedToTheTop() {
+        $first = $this->sourceFile('a.css', 'body { color: red; }');
+        $second = $this->sourceFile('b.css', "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;400&display=swap');\n.b { margin: 0; }");
+        $out = $this->dir . DIRECTORY_SEPARATOR . 'bundle.css';
+
+        $compiler = new CManager_Asset_Compiler([$first, $second], ['type' => 'css', 'outFile' => $out]);
+        $compiler->compile();
+
+        $bundle = file_get_contents($out);
+        $this->assertSame(0, strpos(ltrim($bundle), '@import'), 'browser mengabaikan @import yang tidak berada di awal stylesheet');
+        $this->assertSame(1, substr_count($bundle, '@import'));
+        $this->assertStringContainsString('fonts.googleapis.com/css2?family=Inter:wght@100;400&display=swap', $bundle);
+        $this->assertLessThan(strpos($bundle, '.b'), strpos($bundle, 'body'));
+    }
+
+    public function testCssCharsetIsKeptOnceAtTheVeryStart() {
+        $first = $this->sourceFile('a.css', "@charset \"UTF-8\";\nbody { color: red; }");
+        $second = $this->sourceFile('b.css', "@charset \"UTF-8\";\n@import url(https://example.com/x.css);\n.b { margin: 0; }");
+        $out = $this->dir . DIRECTORY_SEPARATOR . 'bundle.css';
+
+        $compiler = new CManager_Asset_Compiler([$first, $second], ['type' => 'css', 'outFile' => $out]);
+        $compiler->compile();
+
+        $bundle = file_get_contents($out);
+        $this->assertSame(0, strpos($bundle, '@charset'));
+        $this->assertSame(1, substr_count($bundle, '@charset'));
+        $this->assertLessThan(strpos($bundle, 'body'), strpos($bundle, '@import'));
+    }
+
+    public function testCssImportInsideCommentIsLeftAlone() {
+        $first = $this->sourceFile('a.css', "/* contoh: @import url(https://example.com/nope.css); */\nbody { color: red; }");
+        $out = $this->dir . DIRECTORY_SEPARATOR . 'bundle.css';
+
+        $compiler = new CManager_Asset_Compiler([$first], ['type' => 'css', 'outFile' => $out]);
+        $compiler->compile();
+
+        $bundle = file_get_contents($out);
+        $this->assertNotSame(0, strpos(ltrim($bundle), '@import'));
+    }
+
     public function testExistingBundleIsNeverTruncatedWhileRecompiling() {
         $first = $this->sourceFile('a.js', 'var a = 1;');
         $out = $this->dir . DIRECTORY_SEPARATOR . 'bundle.js';
