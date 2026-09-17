@@ -13,7 +13,7 @@ trait CModel_AccessToken_HasAccessTokenTrait {
     /**
      * Get the access tokens that belong to model.
      *
-     * @return \CModel_Relationship_MorphMany
+     * @return \CModel_Relation_MorphMany
      */
     public function accessToken() {
         return $this->morphMany(CModel_AccessToken::$accessTokenModel, 'tokenable');
