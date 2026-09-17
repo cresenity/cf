@@ -29,6 +29,27 @@ return [
         'key' => c::env('DEVCLOUD_JS_INGEST_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | PHP exception collector - key untuk push (URL-nya di collector.exceptionPush)
+    |--------------------------------------------------------------------------
+    |
+    | CDebug_Collector_Exception::collect() mencoba push langsung ke URL di
+    | collector.exceptionPush (system/config/collector.php - kosong/false berarti
+    | push mati, langsung ke file+SSH-pull yang sudah ada) SEBELUM jatuh ke
+    | penulisan file temp/collector/exception/ itu.
+    |
+    | `key` di sini adalah `app.php_exception_ingest_key` (devcloud's
+    | Manager > Project > App page, "PHP Exception Ingest Key") - TERPISAH dari
+    | `jsCollector.key` di atas: payload exception PHP bisa memuat data
+    | request/session yang sensitif, jadi key ini harus tetap rahasia
+    | server-side, tidak boleh disamakan dengan js_ingest_key yang memang
+    | didesain aman terekspos ke browser.
+    */
+    'phpExceptionCollector' => [
+        'key' => c::env('DEVCLOUD_PHP_EXCEPTION_INGEST_KEY'),
+    ],
+
     'inspector' => [
         /*
         |--------------------------------------------------------------------------
