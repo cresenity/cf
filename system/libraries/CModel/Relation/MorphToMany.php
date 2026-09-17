@@ -1,7 +1,7 @@
 <?php
 /**
- * @template TRelatedModel of \Model
- * @template TDeclaringModel of \Model
+ * @template TRelatedModel of \CModel
+ * @template TDeclaringModel of \CModel
  *
  * @extends \CModel_Relation<TRelatedModel, TDeclaringModel, \CModel_Collection<int, TRelatedModel>>
  *

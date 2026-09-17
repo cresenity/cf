@@ -169,7 +169,7 @@ class curl {
      * @param mixed  $uri    string site URI or URL to redirect to, or array of strings if method is 300
      * @param string $method HTTP method of redirect
      *
-     * @return void
+     * @return false
      */
     public static function redirect($uri = '', $method = '302') {
         if (CFEvent::hasRun('system.send_headers')) {

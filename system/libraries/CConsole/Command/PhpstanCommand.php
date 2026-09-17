@@ -60,8 +60,8 @@ class CConsole_Command_PhpstanCommand extends CConsole_Command {
         });
 
         $process->wait();
-        // executes after the command finishes
-        if (!$process->isSuccessful()) {
+        // exit code 1 berarti ada temuan, bukan gagal - pesannya akan mencemari keluaran --format=json
+        if (!$process->isSuccessful() && $process->getExitCode() !== 1) {
             $errMessage = $process->getErrorOutput();
             if (strlen($errMessage) == 0) {
                 $errMessage = 'Something went wrong on running phpstan, please manually check the command';

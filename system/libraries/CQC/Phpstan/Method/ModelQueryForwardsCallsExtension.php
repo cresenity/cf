@@ -70,7 +70,7 @@ final class CQC_Phpstan_Method_ModelQueryForwardsCallsExtension implements Metho
         }
 
         /** @var null|Type|TemplateMixedType $modelType */
-        $modelType = $classReflection->getActiveTemplateTypeMap()->getType('TModelClass');
+        $modelType = $classReflection->getActiveTemplateTypeMap()->getType(CQC_Phpstan_Service_BuilderHelper::MODEL_TEMPLATE);
 
         // Generic type is not specified
         if ($modelType === null) {

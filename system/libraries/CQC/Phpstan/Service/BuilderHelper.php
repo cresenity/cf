@@ -24,6 +24,13 @@ class CQC_Phpstan_Service_BuilderHelper {
     public const MODEL_CREATION_METHODS = ['make', 'create', 'forceCreate', 'findOrNew', 'firstOrNew', 'updateOrCreate', 'firstOrCreate'];
 
     /**
+     * Nama template model pada `CModel_Query` (`@template TModel of CModel`).
+     *
+     * @var string
+     */
+    const MODEL_TEMPLATE = 'TModel';
+
+    /**
      * The methods that should be returned from query builder.
      *
      * @var string[]
@@ -68,7 +75,7 @@ class CQC_Phpstan_Service_BuilderHelper {
             $returnClassReflection = $returnObject->getClassReflection();
 
             if ($returnClassReflection !== null) {
-                $modelType = $returnClassReflection->getActiveTemplateTypeMap()->getType('TModelClass');
+                $modelType = $returnClassReflection->getActiveTemplateTypeMap()->getType(static::MODEL_TEMPLATE);
 
                 if ($modelType === null) {
                     $modelType = $returnClassReflection->getActiveTemplateTypeMap()->getType('TRelatedModel');

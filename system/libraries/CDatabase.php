@@ -58,6 +58,8 @@ use Carbon\Carbon;
  * @method CDatabase_Configuration      getConfiguration()
  * @method array                        listFields($table)
  *
+ * @mixin CDatabase_Connection
+ *
  * @see CDatabase_Connection
  */
 class CDatabase {

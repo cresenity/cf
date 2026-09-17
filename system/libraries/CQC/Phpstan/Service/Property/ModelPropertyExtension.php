@@ -19,12 +19,12 @@ use PHPStan\Reflection\PropertiesClassReflectionExtension;
 /**
  * Properti model yang tidak ditulis sebagai `@property`.
  *
- * Tanpa ini PHPStan melapor `Access to an undefined property` untuk dua bentuk
- * yang sah dan lazim: relasi yang dibaca sebagai properti (`$model->customer`)
- * dan accessor (`$model->full_name` dari `getFullNameAttribute()`). Keduanya
- * diturunkan dari kode, bukan dari anotasi - anotasi `@property` di CF dirawat
- * tidak merata, dan salah lapor yang banyak justru membuat orang mematikan
- * pemeriksaannya.
+ * Tanpa ini PHPStan melapor `Access to an undefined property` untuk tiga bentuk
+ * yang sah dan lazim: relasi yang dibaca sebagai properti (`$model->customer`),
+ * accessor (`$model->full_name` dari `getFullNameAttribute()`), dan kolom tabel
+ * (`$model->network_id`). Semuanya diturunkan dari kode dan skema DB, bukan dari
+ * anotasi - anotasi `@property` di CF dirawat tidak merata, dan salah lapor yang
+ * banyak justru membuat orang mematikan pemeriksaannya.
  *
  * Anotasi tetap menang: bila `@property` ada, ekstensi ini mundur.
  *
@@ -77,14 +77,21 @@ final class CQC_Phpstan_Service_Property_ModelPropertyExtension implements Prope
      */
     private $relationParserHelper;
 
+    /**
+     * @var CQC_Phpstan_Service_Property_DatabaseSchemaHelper
+     */
+    private $schemaHelper;
+
     public function __construct(
         TypeStringResolver $stringResolver,
         ReflectionProvider $reflectionProvider,
-        CQC_Phpstan_Service_RelationParserHelper $relationParserHelper
+        CQC_Phpstan_Service_RelationParserHelper $relationParserHelper,
+        CQC_Phpstan_Service_Property_DatabaseSchemaHelper $schemaHelper
     ) {
         $this->stringResolver = $stringResolver;
         $this->reflectionProvider = $reflectionProvider;
         $this->relationParserHelper = $relationParserHelper;
+        $this->schemaHelper = $schemaHelper;
     }
 
     public function hasProperty(ClassReflection $classReflection, string $propertyName): bool {
@@ -114,7 +121,7 @@ final class CQC_Phpstan_Service_Property_ModelPropertyExtension implements Prope
             return true;
         }
 
-        return false;
+        return $this->findColumn($classReflection, $propertyName) !== null;
     }
 
     public function getProperty(
@@ -144,11 +151,92 @@ final class CQC_Phpstan_Service_Property_ModelPropertyExtension implements Prope
             );
         }
 
+        $column = $this->findColumn($classReflection, $propertyName);
+        if ($column !== null) {
+            return $this->columnProperty($classReflection, $column);
+        }
+
         return new CQC_Phpstan_Service_Property_ModelProperty(
             $classReflection,
             new StringType(),
             new StringType()
         );
+    }
+
+    /**
+     * Instance model tanpa konstruktor, untuk membaca tabel/kunci/casts-nya.
+     *
+     * @return null|CModel
+     */
+    private function modelInstance(ClassReflection $classReflection) {
+        try {
+            $instance = $classReflection->getNativeReflection()->newInstanceWithoutConstructor();
+        } catch (ReflectionException $e) {
+            return null;
+        }
+
+        return $instance instanceof CModel ? $instance : null;
+    }
+
+    /**
+     * Kolom tabel yang namanya sama dengan properti ini, bila ada.
+     *
+     * @return null|CQC_Phpstan_Service_Property_SchemaColumn
+     */
+    private function findColumn(ClassReflection $classReflection, string $propertyName) {
+        $modelInstance = $this->modelInstance($classReflection);
+        if ($modelInstance === null) {
+            return null;
+        }
+
+        return $this->schemaHelper->column($modelInstance, $propertyName);
+    }
+
+    /**
+     * Tipe baca/tulis sebuah kolom: casts dan `$dates` model menang atas tipe
+     * kolomnya, dan kolom tanggal/json boleh ditulis sebagai string.
+     */
+    private function columnProperty(ClassReflection $classReflection, CQC_Phpstan_Service_Property_SchemaColumn $column): PropertyReflection {
+        $modelInstance = $this->modelInstance($classReflection);
+        $casts = CModel_Console_PropertiesHelper::sanitizeCastType($modelInstance->getCasts());
+        $cast = isset($casts[$column->name]) ? $casts[$column->name] : null;
+        $isDate = in_array($column->name, $this->getModelDateColumns($modelInstance), true)
+            || in_array($cast, ['date', 'datetime', 'custom_datetime', 'immutable_date', 'immutable_datetime'], true);
+
+        if ($column->name === $modelInstance->getKeyName()) {
+            $keyType = $this->stringResolver->resolve($modelInstance->getKeyType() === 'string' ? 'string' : 'int');
+
+            return new CQC_Phpstan_Service_Property_ModelProperty($classReflection, $keyType, $keyType);
+        }
+
+        if ($isDate) {
+            $readable = $this->stringResolver->resolve($this->getDateClass());
+            $writable = TypeCombinator::union($readable, new StringType(), new ObjectType(DateTimeInterface::class));
+        } else {
+            $sqlType = $column->readableType === 'boolean' ? 'int' : $column->readableType;
+            $isDateColumn = in_array($sqlType, ['date', 'datetime', 'timestamp', 'time', 'year'], true);
+            //kolom tanggal di luar $dates/casts dibaca apa adanya: string
+            $typeString = $cast === null && $isDateColumn ? 'string' : CModel_Console_PropertiesHelper::getType($cast !== null ? $cast : $sqlType);
+            $readable = $this->stringResolver->resolve($typeString);
+            $writable = $readable;
+
+            if (in_array($cast, ['array', 'json', 'object', 'collection'], true)) {
+                //nilai json lazim ditulis sebagai hasil json_encode()
+                $writable = TypeCombinator::union($readable, new StringType());
+            } elseif (in_array($cast, ['bool', 'boolean'], true)) {
+                $writable = TypeCombinator::union($readable, new IntegerType());
+            } elseif ($isDateColumn) {
+                //tetap boleh diisi objek tanggal
+                $writable = TypeCombinator::union($readable, $this->stringResolver->resolve($this->getDateClass()), new ObjectType(DateTimeInterface::class));
+            }
+        }
+
+        if ($column->nullable) {
+            $readable = TypeCombinator::addNull($readable);
+            $writable = TypeCombinator::addNull($writable);
+        }
+
+        return new CQC_Phpstan_Service_Property_ModelProperty($classReflection, $readable, $writable);
     }
 
     private function getDateClass(): string {

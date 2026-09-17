@@ -22,7 +22,7 @@ final class CQC_Phpstan_Service_Property_SchemaColumn {
         $this->name = $name;
         $this->readableType = $readableType;
         $this->nullable = $nullable;
-        $this->$options = $options;
+        $this->options = $options;
         $this->writeableType = $readableType;
     }
 }

@@ -175,6 +175,10 @@ class CModel_Console_PropertiesHelper {
             if (cstr::startsWith($relationClass, [')', '->', '$'])) {
                 return [null, null];
             }
+            //argumen pertama morphTo() adalah nama relasi (lazim `__FUNCTION__`), bukan kelas
+            if (!class_exists($relationClass)) {
+                return [null, null];
+            }
             $isWithTrashed = strpos($codeSnippet, '->withTrashed') !== false;
 
             return [$relationClass, $isWithTrashed];

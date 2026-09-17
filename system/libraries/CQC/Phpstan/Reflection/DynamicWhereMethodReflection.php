@@ -85,6 +85,15 @@ final class CQC_Phpstan_Reflection_DynamicWhereMethodReflection implements Refle
         ];
     }
 
+    /**
+     * Satu-satunya varian; method CF tidak pernah punya lebih dari satu.
+     *
+     * @return \PHPStan\Reflection\ParametersAcceptor
+     */
+    public function getOnlyVariant() {
+        return $this->getVariants()[0];
+    }
+
     public function isDeprecated(): TrinaryLogic {
         return TrinaryLogic::createNo();
     }

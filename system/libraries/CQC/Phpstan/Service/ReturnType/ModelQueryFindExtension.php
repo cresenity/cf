@@ -49,7 +49,7 @@ final class CQC_Phpstan_Service_ReturnType_ModelQueryFindExtension implements Dy
             return false;
         }
 
-        $model = $methodReflection->getDeclaringClass()->getActiveTemplateTypeMap()->getType('TModelClass');
+        $model = $methodReflection->getDeclaringClass()->getActiveTemplateTypeMap()->getType(CQC_Phpstan_Service_BuilderHelper::MODEL_TEMPLATE);
 
         if (!$model instanceof ObjectType) {
             return false;
@@ -73,11 +73,11 @@ final class CQC_Phpstan_Service_ReturnType_ModelQueryFindExtension implements Dy
         Scope $scope
     ): Type {
         /** @var ObjectType $model */
-        $model = $methodReflection->getDeclaringClass()->getActiveTemplateTypeMap()->getType('TModelClass');
+        $model = $methodReflection->getDeclaringClass()->getActiveTemplateTypeMap()->getType(CQC_Phpstan_Service_BuilderHelper::MODEL_TEMPLATE);
         $returnType = $methodReflection->getVariants()[0]->getReturnType();
         $argType = $scope->getType($methodCall->getArgs()[0]->value);
 
-        $returnType = CQC_Phpstan_Service_Method_ModelTypeHelper::replaceStaticTypeWithModel($returnType, $model->getClassName());
+        $returnType = CQC_Phpstan_Method_ModelTypeHelper::replaceStaticTypeWithModel($returnType, $model->getClassName());
 
         if ($argType->isIterable()->yes()) {
             if (in_array(CModel_Collection::class, $returnType->getReferencedClasses(), true)) {

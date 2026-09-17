@@ -49,7 +49,7 @@ final class CQC_Phpstan_Service_ReturnType_ModelQueryExtension implements Dynami
         }
 
         $templateTypeMap = $methodReflection->getDeclaringClass()->getActiveTemplateTypeMap();
-        if (!$templateTypeMap->getType('TModelClass') instanceof ObjectType) {
+        if (!$templateTypeMap->getType(CQC_Phpstan_Service_BuilderHelper::MODEL_TEMPLATE) instanceof ObjectType) {
             return false;
         }
 
@@ -65,7 +65,7 @@ final class CQC_Phpstan_Service_ReturnType_ModelQueryExtension implements Dynami
         $templateTypeMap = $methodReflection->getDeclaringClass()->getActiveTemplateTypeMap();
 
         /** @var Type|ObjectType|TemplateMixedType $modelType */
-        $modelType = $templateTypeMap->getType('TModelClass');
+        $modelType = $templateTypeMap->getType(CQC_Phpstan_Service_BuilderHelper::MODEL_TEMPLATE);
 
         if ($modelType instanceof ObjectType && in_array(CModel_Collection::class, $returnType->getReferencedClasses(), true)) {
             $collectionClassName = $this->builderHelper->determineCollectionClassName($modelType->getClassName());

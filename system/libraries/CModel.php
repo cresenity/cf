@@ -12,12 +12,12 @@ defined('SYSPATH') or die('No direct access allowed.');
  * @method static static|null                               find($id, $columns = null)
  * @method static CModel_Collection                         findMany($ids, $columns = null)
  * @method static static                                    findOrFail($id, $columns = null)
- * @method static CModel|CModel_Query|static|null           first($columns = null)
- * @method static CModel|CModel_Query|static                firstOrFail($columns = null)
- * @method static CModel|CModel_Query|static                firstOrNew(array $attributes, array $values = [])
+ * @method static static|null                               first($columns = null)
+ * @method static static                                    firstOrFail($columns = null)
+ * @method static static                                    firstOrNew(array $attributes, array $values = [])
  * @method static CModel_Collection|CModel_Query[]|static[] get($columns = null)
  * @method mixed  value($column)
- * @method static CCollection                               pluck($column)
+ * @method static CCollection                               pluck($column, $key = null)
  * @method void   chunk($count, callable $callback)
  * @method static CCollection                               lists($column, $key = null)
  * @method static CPagination_LengthAwarePaginator          paginate($perPage = null, $columns = null, $pageName = 'page', $page = null)
@@ -26,51 +26,51 @@ defined('SYSPATH') or die('No direct access allowed.');
  * @method void   onDelete(Closure $callback)
  * @method CModel[] getModels($columns = null)
  * @method array  eagerLoadRelations(array $models)
- * @method static CModel_Query|static where($column, $operator = null, $value = null, $boolean = 'and')
- * @method static CModel_Query|static whereHas($relation, Closure $callback = null, $operator = '>=', $count = 1)
- * @method static CModel_Query|static orWhere($column, $operator = null, $value = null)
- * @method static CModel_Query|static has($relation, $operator = '>=', $count = 1, $boolean = 'and', Closure $callback = null)
- * @method static CModel_Query|static whereRaw($sql, array $bindings = [])
- * @method static CModel_Query|static whereBetween($column, array $values)
- * @method static CModel_Query|static whereNotBetween($column, array $values)
- * @method static CModel_Query|static whereNested(Closure $callback)
- * @method static CModel_Query|static addNestedWhereQuery($query)
- * @method static CModel_Query|static whereExists(Closure $callback)
- * @method static CModel_Query|static whereNotExists(Closure $callback)
- * @method static CModel_Query|static whereIn($column, $values)
- * @method static CModel_Query|static whereNotIn($column, $values)
- * @method static CModel_Query|static whereNull($column)
- * @method static CModel_Query|static whereNotNull($column)
- * @method static CModel_Query|static whereDoesntHave($table, Closure $callback)
- * @method static CModel_Query|static orWhereRaw($sql, array $bindings = [])
- * @method static CModel_Query|static orWhereBetween($column, array $values)
- * @method static CModel_Query|static orWhereNotBetween($column, array $values)
- * @method static CModel_Query|static orWhereExists(Closure $callback)
- * @method static CModel_Query|static orWhereNotExists(Closure $callback)
- * @method static CModel_Query|static orWhereIn($column, $values)
- * @method static CModel_Query|static orWhereNotIn($column, $values)
- * @method static CModel_Query|static orWhereNull($column)
- * @method static CModel_Query|static orWhereNotNull($column)
- * @method static CModel_Query|static whereDate($column, $operator, $value = null)
- * @method static CModel_Query|static whereDay($column, $operator, $value = null)
- * @method static CModel_Query|static whereMonth($column, $operator, $value = null)
- * @method static CModel_Query|static whereYear($column, $operator, $value = null)
- * @method static CModel_Query|static join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false)
- * @method static CModel_Query|static select($columns = null)
- * @method static CModel_Query|static groupBy(...$groups)
- * @method static CModel_Query|static from($table)
- * @method static CModel_Query|static newQuery()
- * @method static CModel_Query|static withTrashed()
- * @method static CModel_Query|static leftJoinSub($query, $as, $first, $operator = null, $second = null)
- * @method static CModel_Query|static addSelect($column)
- * @method static CModel_Query|static selectRaw($expression, array $bindings = [])
- * @method static CModel_Query|static orderBy($column, $direction = 'asc')
- * @method static CModel_Query|static orderByDesc($column)
- * @method static CModel_Query|static skip($value)
- * @method static CModel_Query|static offset($value)
- * @method static CModel_Query|static take($value)
- * @method static CModel_Query|static limit($value)
- * @method static CModel_Query|static lockForUpdate()
+ * @method static CModel_Query<static> where($column, $operator = null, $value = null, $boolean = 'and')
+ * @method static CModel_Query<static> whereHas($relation, Closure $callback = null, $operator = '>=', $count = 1)
+ * @method static CModel_Query<static> orWhere($column, $operator = null, $value = null)
+ * @method static CModel_Query<static> has($relation, $operator = '>=', $count = 1, $boolean = 'and', Closure $callback = null)
+ * @method static CModel_Query<static> whereRaw($sql, array $bindings = [], $boolean = 'and')
+ * @method static CModel_Query<static> whereBetween($column, array $values, $boolean = 'and', $not = false)
+ * @method static CModel_Query<static> whereNotBetween($column, array $values, $boolean = 'and')
+ * @method static CModel_Query<static> whereNested(Closure $callback, $boolean = 'and')
+ * @method static CModel_Query<static> addNestedWhereQuery($query, $boolean = 'and')
+ * @method static CModel_Query<static> whereExists(Closure $callback, $boolean = 'and', $not = false)
+ * @method static CModel_Query<static> whereNotExists(Closure $callback, $boolean = 'and')
+ * @method static CModel_Query<static> whereIn($column, $values, $boolean = 'and', $not = false)
+ * @method static CModel_Query<static> whereNotIn($column, $values, $boolean = 'and')
+ * @method static CModel_Query<static> whereNull($columns, $boolean = 'and', $not = false)
+ * @method static CModel_Query<static> whereNotNull($column, $boolean = 'and')
+ * @method static CModel_Query<static> whereDoesntHave($table, Closure $callback)
+ * @method static CModel_Query<static> orWhereRaw($sql, array $bindings = [])
+ * @method static CModel_Query<static> orWhereBetween($column, array $values)
+ * @method static CModel_Query<static> orWhereNotBetween($column, array $values)
+ * @method static CModel_Query<static> orWhereExists(Closure $callback, $not = false)
+ * @method static CModel_Query<static> orWhereNotExists(Closure $callback)
+ * @method static CModel_Query<static> orWhereIn($column, $values)
+ * @method static CModel_Query<static> orWhereNotIn($column, $values)
+ * @method static CModel_Query<static> orWhereNull($column)
+ * @method static CModel_Query<static> orWhereNotNull($column)
+ * @method static CModel_Query<static> whereDate($column, $operator, $value = null, $boolean = 'and')
+ * @method static CModel_Query<static> whereDay($column, $operator, $value = null, $boolean = 'and')
+ * @method static CModel_Query<static> whereMonth($column, $operator, $value = null, $boolean = 'and')
+ * @method static CModel_Query<static> whereYear($column, $operator, $value = null, $boolean = 'and')
+ * @method static CModel_Query<static> join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false)
+ * @method static CModel_Query<static> select($columns = null)
+ * @method static CModel_Query<static> groupBy(...$groups)
+ * @method static CModel_Query<static> from($table, $as = null)
+ * @method static CModel_Query<static> newQuery()
+ * @method static CModel_Query<static> withTrashed()
+ * @method static CModel_Query<static> leftJoinSub($query, $as, $first, $operator = null, $second = null)
+ * @method static CModel_Query<static> addSelect($column)
+ * @method static CModel_Query<static> selectRaw($expression, array $bindings = [])
+ * @method static CModel_Query<static> orderBy($column, $direction = 'asc')
+ * @method static CModel_Query<static> orderByDesc($column)
+ * @method static CModel_Query<static> skip($value)
+ * @method static CModel_Query<static> offset($value)
+ * @method static CModel_Query<static> take($value)
+ * @method static CModel_Query<static> limit($value)
+ * @method static CModel_Query<static> lockForUpdate()
  * @method static mixed               sum($column)
  * @method static void                truncate()
  * @method static CDatabase_Result    insert(array $values)
@@ -824,7 +824,7 @@ abstract class CModel implements ArrayAccess, Arrayable, Jsonable, CQueue_Queuea
      *
      * @param array|string $relations
      *
-     * @return CModel_Query|static
+     * @return CModel_Query<static>
      */
     public static function with($relations) {
         return static::query()->with(
@@ -1614,9 +1614,7 @@ abstract class CModel implements ArrayAccess, Arrayable, Jsonable, CQueue_Queuea
     /**
      * Begin querying the model.
      *
-     * @return CModel_Query|static
-     *
-     * @phpstan-return CModel_Query<static>|static
+     * @return CModel_Query<static>
      */
     public static function query() {
         return (new static())->newQuery();
@@ -1625,7 +1623,7 @@ abstract class CModel implements ArrayAccess, Arrayable, Jsonable, CQueue_Queuea
     /**
      * Get a new query builder for the model's table.
      *
-     * @return CModel_Query
+     * @return CModel_Query<static>
      */
     public function newQuery() {
         return $this->registerGlobalScopes($this->newQueryWithoutScopes());
@@ -1634,7 +1632,7 @@ abstract class CModel implements ArrayAccess, Arrayable, Jsonable, CQueue_Queuea
     /**
      * Get a new query builder that doesn't have any global scopes or eager loading.
      *
-     * @return CModel_Query|static
+     * @return CModel_Query<static>
      */
     public function newModelQuery() {
         return $this->newModelBuilder(
@@ -1669,7 +1667,7 @@ abstract class CModel implements ArrayAccess, Arrayable, Jsonable, CQueue_Queuea
     /**
      * Get a new query builder that doesn't have any global scopes.
      *
-     * @return CModel_Query|static
+     * @return CModel_Query<static>
      */
     public function newQueryWithoutScopes() {
         return $this->newModelQuery()
@@ -1704,7 +1702,7 @@ abstract class CModel implements ArrayAccess, Arrayable, Jsonable, CQueue_Queuea
      *
      * @param CDatabase_Query_Builder $query
      *
-     * @return CModel_Query|static
+     * @return CModel_Query<static>
      */
     public function newModelBuilder($query) {
         return new CModel_Query($query);

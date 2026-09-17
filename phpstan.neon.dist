@@ -8,6 +8,9 @@ parameters:
     earlyTerminatingFunctionCalls:
         - c::abort
         - cdbg::dd
+    earlyTerminatingMethodCalls:
+        curl:
+            - redirect
     #checkUnusedViews sengaja tidak ada. Ia sempat dideklarasikan tetapi tidak
     #ada kelas yang membacanya, jadi hanya memberi kesan pemeriksaan itu aktif.
     #Rule "unused views" Larastan juga tidak dapat dipindahkan apa adanya ke
@@ -18,6 +21,13 @@ parameters:
     #bentuk akan melaporkan view yang hidup sebagai mati. Lihat docs/TODO.md.
     checkModelProperties: true
     reportUnmatchedIgnoredErrors: false
+    #Kelas CF bukan PSR-4, jadi PHPStan tidak bisa menebak berkasnya dari nama;
+    #dipindai supaya dikenal tanpa autoloader, dan supaya perubahan framework
+    #ikut membatalkan result cache analisis aplikasi.
+    scanDirectories:
+        - system/core
+        - system/helpers
+        - system/libraries
     excludePaths:
         analyseAndScan:
             - system/stubs
@@ -98,6 +108,10 @@ services:
         tags:
             - phpstan.broker.dynamicStaticMethodReturnTypeExtension
     -
+        class: CQC_Phpstan_Service_ReturnType_ModelMakeExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+    -
         class: CQC_Phpstan_Service_ReturnType_ModelQueryFindExtension
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
@@ -124,6 +138,8 @@ services:
         class: CQC_Phpstan_Service_RelationParserHelper
         arguments:
             parser: @currentPhpVersionSimpleDirectParser
+    -
+        class: CQC_Phpstan_Service_Property_DatabaseSchemaHelper
     -
         class: CQC_Phpstan_Service_Rule_ModelProperty_ModelPropertiesRuleHelper
     -

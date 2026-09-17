@@ -259,7 +259,7 @@ final class CF {
      *
      * @param mixed $uri
      *
-     * @return void
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public static function invoke($uri) {
         $oldRequest = c::request();

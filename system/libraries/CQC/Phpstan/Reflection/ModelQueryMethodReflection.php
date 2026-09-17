@@ -97,6 +97,15 @@ final class CQC_Phpstan_Reflection_ModelQueryMethodReflection implements MethodR
         ];
     }
 
+    /**
+     * Satu-satunya varian; method CF tidak pernah punya lebih dari satu.
+     *
+     * @return \PHPStan\Reflection\ParametersAcceptor
+     */
+    public function getOnlyVariant() {
+        return $this->getVariants()[0];
+    }
+
     public function getDocComment(): ?string {
         return null;
     }
