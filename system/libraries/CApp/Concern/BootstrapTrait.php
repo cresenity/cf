@@ -6,102 +6,12 @@ trait CApp_Concern_BootstrapTrait {
     /**
      * @var bool
      */
-    protected static $registerComponentBooted = false;
-
-    /**
-     * @var bool
-     */
     protected static $registerControlBooted = false;
 
     /**
      * @var bool
      */
     protected static $registerBladeBooted = false;
-
-    /**
-     * @return void
-     */
-    public static function registerComponent() {
-        if (!static::$registerComponentBooted) {
-            CComponent_RenameMe_SupportEvents::init();
-            CComponent_RenameMe_SupportLocales::init();
-            CComponent_RenameMe_SupportChildren::init();
-            CComponent_RenameMe_SupportRedirects::init();
-            CComponent_RenameMe_SupportValidation::init();
-            CComponent_RenameMe_SupportFileUploads::init();
-            CComponent_RenameMe_OptimizeRenderedDom::init();
-            CComponent_RenameMe_SupportFileDownloads::init();
-            CComponent_RenameMe_SupportActionReturns::init();
-            CComponent_RenameMe_SupportBrowserHistory::init();
-
-            CComponent_RenameMe_SupportComponentTraits::init();
-            CView::blade()->precompiler(function ($string) {
-                return (new CComponent_ComponentTagCompiler())->compile($string);
-            });
-
-            CView::blade()->directive('CAppComponent', [CComponent_BladeDirective::class, 'component']);
-            CView::blade()->directive('this', [CComponent_BladeDirective::class, 'this']);
-            CView::blade()->directive('entangle', [CComponent_BladeDirective::class, 'entangle']);
-
-            CView::engineResolver()->register('blade', function () {
-                return new CComponent_ComponentCompilerEngine();
-            });
-            CComponent_LifecycleManager::registerHydrationMiddleware([
-                /* This is the core middleware stack of Livewire. It's important */
-                /* to understand that the request goes through each class by the */
-                /* order it is listed in this array, and is reversed on response */
-
-                /* ↓    Incoming Request                  Outgoing Response    ↑ */
-                /* ↓                                                           ↑ */
-                /* ↓    Secure Stuff                                           ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_SecureHydrationWithChecksum::class, /* --------------- ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_NormalizeServerMemoSansDataForJavaScript::class, /* -- ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_HashDataPropertiesForDirtyDetection::class, /* ------- ↑ */
-                /* ↓                                                           ↑ */
-                /* ↓    Hydrate Stuff                                          ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_HydratePublicProperties::class, /* ------------------- ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_CallPropertyHydrationHooks::class, /* ---------------- ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_CallHydrationHooks::class, /* ------------------------ ↑ */
-                /* ↓                                                           ↑ */
-                /* ↓    Update Stuff                                           ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_PerformDataBindingUpdates::class, /* ----------------- ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_PerformActionCalls::class, /* ------------------------ ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_PerformEventEmissions::class, /* --------------------- ↑ */
-                /* ↓                                                           ↑ */
-                /* ↓    Output Stuff                                           ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_RenderView::class, /* -------------------------------- ↑ */
-                /* ↓ */ CComponent_HydrationMiddleware_NormalizeComponentPropertiesForJavaScript::class, /* - ↑ */
-            ]);
-
-            CComponent_LifecycleManager::registerInitialDehydrationMiddleware([
-                /* Initial Response */
-                /* ↑ */ [CComponent_HydrationMiddleware_SecureHydrationWithChecksum::class, 'dehydrate'],
-                /* ↑ */ [CComponent_HydrationMiddleware_NormalizeServerMemoSansDataForJavaScript::class, 'dehydrate'],
-                /* ↑ */ [CComponent_HydrationMiddleware_HydratePublicProperties::class, 'dehydrate'],
-                /* ↑ */ [CComponent_HydrationMiddleware_CallPropertyHydrationHooks::class, 'dehydrate'],
-                /* ↑ */ [CComponent_HydrationMiddleware_CallHydrationHooks::class, 'initialDehydrate'],
-                /* ↑ */ [CComponent_HydrationMiddleware_RenderView::class, 'dehydrate'],
-                /* ↑ */ [CComponent_HydrationMiddleware_NormalizeComponentPropertiesForJavaScript::class, 'dehydrate'],
-            ]);
-
-            CComponent_LifecycleManager::registerInitialHydrationMiddleware([
-                [CComponent_HydrationMiddleware_CallHydrationHooks::class, 'initialHydrate'],
-            ]);
-
-            if (method_exists(CView_ComponentAttributeBag::class, 'macro')) {
-                CView_ComponentAttributeBag::macro('cf', function ($name) {
-                    $entries = carr::head($this->whereStartsWith('cf:' . $name));
-
-                    $directive = carr::head(array_keys($entries));
-                    $value = carr::head(array_values($entries));
-
-                    return new CComponent_CresDirective($name, $directive, $value);
-                });
-            }
-
-            static::$registerComponentBooted = true;
-        }
-    }
 
     /**
      * @return void

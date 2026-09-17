@@ -42,10 +42,6 @@ class Controller_Cresenity extends CController {
         }
     }
 
-    public function component() {
-        return CApp::component()->controllerHandler(func_get_args());
-    }
-
     public function qc($className = null) {
         if ($className == null) {
             CF::show404();

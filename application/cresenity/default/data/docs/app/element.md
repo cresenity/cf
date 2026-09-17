@@ -87,15 +87,6 @@ $app->addView('dashboard.stats', [
 ]);
 ```
 
-### Adding Components
-
-Add Livewire-style components:
-
-```php
-$div = $app->addDiv();
-$div->addComponent('user-table');
-```
-
 ### Data Table Example
 
 Build a data table programmatically:

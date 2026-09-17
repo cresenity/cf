@@ -208,9 +208,6 @@ trait CApp_Trait_Template {
         $helpers->set('element', function () {
             return $this;
         });
-        $helpers->set('component', function ($componentName) {
-            return CApp::component()->getHtml($componentName);
-        });
         $helpers->set('section', function ($sectionName) {
             $section = $this->section($sectionName);
             if ($this instanceof CElement) {

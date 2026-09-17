@@ -1,7 +1,6 @@
 import Url from './module/Url';
 import cf from './CF';
 import ScrollToTop from './module/ScrollToTop';
-import UI from './ui';
 import { mergeOptions } from './util/config';
 import {
     dispatch as dispatchWindowEvent,
@@ -26,7 +25,7 @@ import initProgressive from './module/progressive';
 import cresToast from './module/toast';
 import CresAlpine from './module/CresAlpine';
 import SSE from './cresenity/SSE';
-import { attachWaves } from './ui/waves';
+import { attachWaves } from './util/waves';
 import formatter from './formatter';
 import { initCssDomVar } from './module/css-dom-var';
 import extend from './core/extend';
@@ -75,7 +74,12 @@ export default class Cresenity {
         this.scrollToTop = new ScrollToTop();
         this.callback = {};
         this.filesAdded = [];
-        this.ui = new UI();
+        // Sisa dari cresenity.ui lama (port Livewire yang sudah dihapus): cuma utilitas waves.
+        this.ui = {
+            waves: {
+                attach: attachWaves
+            }
+        };
         this.php = php;
         this.react = cresReact;
         this.observer = {
@@ -1092,7 +1096,6 @@ export default class Cresenity {
     initAlpineAndUi() {
         window.Alpine = Alpine;
         this.alpine = new CresAlpine(window.Alpine);
-        this.ui.start();
         this.cresStyle = cresStyle;
         window.Alpine.start();
     }

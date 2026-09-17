@@ -5,29 +5,12 @@ export function getComponentName(element) {
         element.getAttribute('x-id') ||
         element.id ||
         element.getAttribute('name') ||
-        findCresID(element.getAttribute('cres:id')) ||
         findLiveViewName(element) ||
         element.getAttribute('aria-label') ||
         extractFunctionName(element.getAttribute('x-data')) ||
         element.getAttribute('role') ||
         element.tagName.toLowerCase()
     );
-}
-
-function findCresID(cresId) {
-    if (cresId && window.cresenity.ui) {
-        try {
-            const cres = window.cresenity.ui.find(cresId);
-
-            // eslint-disable-next-line no-underscore-dangle
-            if (window.cresenity.ui.__instance) {
-                // eslint-disable-next-line no-underscore-dangle
-                return 'cres:' + window.cresenity.ui.__instance.fingerprint.name;
-            }
-        } catch (e) {
-            //do nothing
-        }
-    }
 }
 
 function findLiveViewName(alpineEl) {

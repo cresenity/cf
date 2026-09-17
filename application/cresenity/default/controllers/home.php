@@ -37,7 +37,6 @@ class Controller_Home extends CController {
         $app->setLoginRequired(false);
         $app->setViewName('test2');
         $app->setTheme('cfdocs');
-        //$app->addComponent("counter");
         echo $app->render();
     }
 
@@ -50,21 +49,6 @@ class Controller_Home extends CController {
         $app->addView('member', [
             'members' => \Cresenity\Testing\MemberModel::all()
         ]);
-
-        return $app;
-    }
-
-    public function component() {
-        $app = CApp::instance();
-        $app->setLoginRequired(false);
-        $app->setViewName('test');
-        $app->setTheme('cfdocs');
-
-        CManager::registerModule('bootstrap-4');
-
-        $div = $app->addDiv()->setAttr('style', 'width:100px');
-        $div->addComponent('member-table');
-        //$template = $app->addTemplate()->setTemplate('testing');
 
         return $app;
     }

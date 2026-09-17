@@ -349,13 +349,6 @@ class CApp implements CInterface_Responsable, Renderable, Jsonable {
     }
 
     /**
-     * @return CComponent_Manager
-     */
-    public static function component() {
-        return CComponent_Manager::instance();
-    }
-
-    /**
      * @param null|mixed $domain
      * @param null|mixed $dbName
      *

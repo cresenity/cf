@@ -138,16 +138,6 @@ class CElement_Factory {
     }
 
     /**
-     * @param string $componentName
-     * @param string $id
-     *
-     * @return \CElement_ViewComponent
-     */
-    public static function createViewComponent($componentName, $id) {
-        return new CElement_ViewComponent($id, $componentName);
-    }
-
-    /**
      * @param string $id
      * @param string $type
      *

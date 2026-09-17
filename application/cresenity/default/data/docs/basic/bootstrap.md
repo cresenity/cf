@@ -96,18 +96,6 @@ c::router()->get('sitemap.xml', function () {
 
 ---
 
-### Components
-
-Register Livewire-style components that can be used in views:
-
-```php
-<?php
-CApp::component()->registerComponent('counter', \App\Component\Counter::class);
-CApp::component()->registerComponent('user-table', \App\Component\UserTableComponent::class);
-```
-
----
-
 ### Cron Jobs
 
 Schedule background tasks using the cron manager:
