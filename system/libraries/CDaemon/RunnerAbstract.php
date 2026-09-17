@@ -62,10 +62,28 @@ abstract class CDaemon_RunnerAbstract {
 
         $commandToExecute = "NSS_STRICT_NOFORK=DISABLED {$binary} {$command}";
         if ($background) {
-            $commandToExecute .= " 1> \"{$output}\" 2>&1 &";
+            $commandToExecute = static::withInheritedDescriptorsClosed("{$binary} {$command}", 'NSS_STRICT_NOFORK=DISABLED') . " 1> \"{$output}\" 2>&1 &";
         }
 
         return $commandToExecute;
+    }
+
+    /**
+     * Wrap the command so the daemon starts without the spawning process's open descriptors.
+     *
+     * @param string $command
+     * @param string $env     `VAR=value` assignments to prefix the exec with
+     *
+     * @return string
+     */
+    protected static function withInheritedDescriptorsClosed($command, $env = '') {
+        $bash = '/bin/bash';
+        if (!is_executable($bash)) {
+            return trim($env . ' ' . $command);
+        }
+        $script = 'for f in /proc/self/fd/*; do n=${f##*/}; [ "$n" -gt 2 ] && eval "exec $n>&-"; done 2>/dev/null; ' . trim($env . ' exec ' . $command);
+
+        return $bash . ' -c ' . escapeshellarg($script);
     }
 
     /**
