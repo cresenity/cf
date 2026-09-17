@@ -637,6 +637,16 @@ final class CF {
         }
 
         if (!$classNotFound) {
+            // Rujukan yang salah kapital (TBWEB, TBModel_ManualSubscriptionAddOn) tetap sah bagi PHP,
+            // tetapi is_file() di Linux tidak; cari padanannya tanpa memedulikan huruf.
+            if ($path = self::findFileCaseInsensitive($directory, $routingFile)) {
+                require $path;
+
+                if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false)) {
+                    return true;
+                }
+            }
+
             // The class could not be found
             $appPath = DOCROOT . 'application' . DS . static::appCode() . DS;
             if (file_exists($appPath . 'composer.json')) {
@@ -879,6 +889,82 @@ final class CF {
         $value = strval(str_replace("\0", '', $value));
 
         return is_file($value);
+    }
+
+    /**
+     * Berkas kelas yang cocok tanpa memedulikan huruf besar-kecil; hanya dipakai setelah
+     * pencarian persis gagal, dan hasilnya (termasuk yang tidak ada) dicache per request.
+     *
+     * @param string $directory
+     * @param string $routingFile
+     *
+     * @return false|string
+     */
+    private static function findFileCaseInsensitive($directory, $routingFile) {
+        $cacheKey = 'find_file_ci.' . $directory . '/' . $routingFile;
+        $found = static::getInternalCache($cacheKey);
+        if ($found !== null) {
+            return $found;
+        }
+
+        $found = false;
+        $segments = explode(DS, str_replace("\0", '', $routingFile));
+        $file = array_pop($segments) . EXT;
+
+        foreach (self::paths() as $path) {
+            $dir = rtrim($path . $directory, DS);
+            foreach ($segments as $segment) {
+                $dir = static::matchDirectoryEntry($dir, $segment);
+                if ($dir === false) {
+                    break;
+                }
+            }
+            if ($dir === false) {
+                continue;
+            }
+
+            $match = static::matchDirectoryEntry($dir, $file);
+            if ($match !== false && is_file($match)) {
+                $found = $match;
+
+                break;
+            }
+        }
+
+        static::setInternalCache($cacheKey, $found);
+
+        return $found;
+    }
+
+    /**
+     * Isi direktori yang namanya sama dengan $name tanpa memedulikan huruf.
+     *
+     * @param string $dir
+     * @param string $name
+     *
+     * @return false|string
+     */
+    private static function matchDirectoryEntry($dir, $name) {
+        if (!is_dir($dir)) {
+            return false;
+        }
+        if (file_exists($dir . DS . $name)) {
+            return $dir . DS . $name;
+        }
+
+        $cacheKey = 'dir_listing.' . $dir;
+        $listing = static::getInternalCache($cacheKey);
+        if ($listing === null) {
+            $listing = [];
+            foreach ((array) scandir($dir) as $entry) {
+                $listing[strtolower($entry)] = $entry;
+            }
+            static::setInternalCache($cacheKey, $listing);
+        }
+
+        $lower = strtolower($name);
+
+        return isset($listing[$lower]) ? $dir . DS . $listing[$lower] : false;
     }
 
     /**

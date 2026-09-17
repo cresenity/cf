@@ -3,11 +3,17 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Penurunan path berkas controller.
+ * Penurunan path berkas controller, dan rujukan kelas yang salah kapital.
  *
  * Yang diuji `CF::controllerFileCandidates()` — bagian murni dari
  * `CF::autoLoad()`. Kandidat pertama adalah bentuk lama, sisanya cadangan
  * untuk folder yang kapitalisasinya berbeda dari nama kelas.
+ *
+ * Bagian kedua: nama kelas PHP tidak memedulikan huruf, tetapi `is_file()` di Linux iya.
+ * `TBWEB::foo()` atau `TBModel_ManualSubscriptionAddOn::find()` (berkasnya
+ * `ManualSubscriptionAddon.php`) fatal hanya bila kelasnya belum termuat — jadi lolos di
+ * dev dan meledak di produksi (#-13889). Autoloader kini mencari padanan tanpa memedulikan
+ * huruf setelah pencarian persis gagal.
  */
 class Core_AutoLoadTest extends TestCase {
     /**
@@ -54,5 +60,23 @@ class Core_AutoLoadTest extends TestCase {
         $candidates = $this->candidates('Controller_Admin_Setting_Web_CmsHome');
 
         $this->assertSame($candidates, array_values(array_unique($candidates)));
+    }
+
+    public function testLoadsAClassReferencedWithTheWrongCase() {
+        $this->assertFalse(class_exists('CVendor_Namecheap_Command_Domains_Ns', false), 'fixture harus belum termuat agar autoloader yang diuji');
+
+        $this->assertTrue(class_exists('cvendor_namecheap_command_domains_NS'));
+        $this->assertTrue(class_exists('CVendor_Namecheap_Command_Domains_Ns', false));
+    }
+
+    public function testLoadsAClassWhoseDirectorySegmentHasTheWrongCase() {
+        $this->assertFalse(class_exists('CVendor_Namecheap_Command_Domains_Transfer', false));
+
+        $this->assertTrue(class_exists('CVendor_Namecheap_Command_DOMAINS_Transfer'));
+    }
+
+    public function testStillReportsAGenuinelyMissingClass() {
+        $this->assertFalse(class_exists('CVendor_Namecheap_Command_Domains_TidakAda'));
+        $this->assertFalse(class_exists('CVendor_TidakAda_Sama_Sekali'));
     }
 }
