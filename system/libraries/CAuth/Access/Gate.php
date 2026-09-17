@@ -78,11 +78,12 @@ final class CAuth_Access_Gate implements CAuth_Contract_GateInterface {
         array $policies = [],
         array $beforeCallbacks = [],
         array $afterCallbacks = [],
-        ?callable $guessPolicyNamesUsingCallback = null
+        ?callable $guessPolicyNamesUsingCallback = null,
+        ?callable $userResolver = null
     ) {
         $this->policies = $policies;
         $this->abilities = $abilities;
-        $this->userResolver = function () {
+        $this->userResolver = $userResolver ?: function () {
             return call_user_func(CAuth::manager()->userResolver());
         };
         $this->afterCallbacks = $afterCallbacks;
@@ -771,7 +772,8 @@ final class CAuth_Access_Gate implements CAuth_Contract_GateInterface {
             $this->policies,
             $this->beforeCallbacks,
             $this->afterCallbacks,
-            $this->guessPolicyNamesUsingCallback
+            $this->guessPolicyNamesUsingCallback,
+            $callback
         );
     }
 
