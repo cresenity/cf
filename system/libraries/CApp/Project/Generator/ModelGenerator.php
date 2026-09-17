@@ -169,7 +169,7 @@ class CApp_Project_Generator_ModelGenerator extends CApp_Project_AbstractGenerat
      * @return string
      */
     public function getStub() {
-        return DOCROOT . 'modules/cresenity/data/stub/generator/model.stub';
+        return SYSPATH . 'data/stub/generator/model.stub';
     }
 
     /**

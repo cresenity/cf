@@ -91,7 +91,7 @@ class CGeo_IP {
         $adapter = new \Http\Adapter\Guzzle6\Client();
         switch ($providerClass) {
             case 'CGeo_Provider_GeoIP2':
-                $databaseFile = DOCROOT . 'modules/cresenity/data/GeoLite2/Country.mmdb';
+                $databaseFile = SYSPATH . 'data/GeoLite2/Country.mmdb';
                 $adapter = new CGeo_Provider_GeoIP2_Adapter(new \GeoIp2\Database\Reader($databaseFile), CGeo_Provider_GeoIP2_Adapter::GEOIP2_MODEL_COUNTRY);
 
                 break;
