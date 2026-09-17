@@ -1498,8 +1498,6 @@ class carr {
         $callable = c::baseIteratee($iteratee);
         $keys = \array_keys($values);
         $items = \array_map(function ($value, $index) use ($callable, $collection) {
-            $test = $callable($value, $index, $collection);
-
             return $callable($value, $index, $collection);
         }, $values, $keys);
 

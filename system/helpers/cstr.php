@@ -679,9 +679,13 @@ class cstr {
             return static::$studlyCache[$key];
         }
 
-        $value = ucwords(str_replace(['-', '_'], ' ', $value));
+        $words = preg_split('/\s+/u', str_replace(['-', '_'], ' ', $value), -1, PREG_SPLIT_NO_EMPTY);
 
-        return static::$studlyCache[$key] = str_replace(' ', '', $value);
+        $studlyWords = array_map(function ($word) {
+            return static::ucfirst($word);
+        }, $words);
+
+        return static::$studlyCache[$key] = implode('', $studlyWords);
     }
 
     /**
@@ -1671,7 +1675,13 @@ class cstr {
      * @return string
      */
     public static function padBoth($value, $length, $pad = ' ') {
-        return str_pad($value, $length, $pad, STR_PAD_BOTH);
+        $short = max(0, $length - mb_strlen($value));
+        $shortLeft = (int) floor($short / 2);
+        $shortRight = (int) ceil($short / 2);
+
+        return mb_substr(str_repeat($pad, $shortLeft), 0, $shortLeft)
+            . $value
+            . mb_substr(str_repeat($pad, $shortRight), 0, $shortRight);
     }
 
     /**
@@ -1684,7 +1694,9 @@ class cstr {
      * @return string
      */
     public static function padLeft($value, $length, $pad = ' ') {
-        return str_pad($value, $length, $pad, STR_PAD_LEFT);
+        $short = max(0, $length - mb_strlen($value));
+
+        return mb_substr(str_repeat($pad, $short), 0, $short) . $value;
     }
 
     /**
@@ -1697,7 +1709,9 @@ class cstr {
      * @return string
      */
     public static function padRight($value, $length, $pad = ' ') {
-        return str_pad($value, $length, $pad, STR_PAD_RIGHT);
+        $short = max(0, $length - mb_strlen($value));
+
+        return $value . mb_substr(str_repeat($pad, $short), 0, $short);
     }
 
     /**

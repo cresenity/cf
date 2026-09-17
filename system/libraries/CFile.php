@@ -119,8 +119,8 @@ class CFile {
      *
      * @return bool
      */
-    public function missing($path) {
-        return !$this->exists($path);
+    public static function missing($path) {
+        return !static::exists($path);
     }
 
     /**
@@ -152,8 +152,8 @@ class CFile {
      *
      * @return array
      */
-    public function json($path, $flags = 0, $lock = false) {
-        return json_decode($this->get($path, $lock), true, 512, $flags);
+    public static function json($path, $flags = 0, $lock = false) {
+        return json_decode(static::get($path, $lock), true, 512, $flags);
     }
 
     /**
@@ -225,7 +225,7 @@ class CFile {
             $function = static function () use ($__path, $__data) {
                 extract($__data, EXTR_SKIP);
 
-                return require $__path;
+                return require_once $__path;
             };
 
             return $function();

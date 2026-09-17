@@ -505,6 +505,14 @@ class SupportCarrTest extends TestCase {
         //beda dari hulu: iteratee bergaya lodash - string adalah shorthand properti, bukan nama fungsi
         $users = [['user' => 'barney'], ['user' => 'fred']];
         $this->assertEquals(['barney', 'fred'], carr::map($users, 'user'));
+
+        $calls = 0;
+        carr::map([1, 2, 3], function ($value) use (&$calls) {
+            $calls++;
+
+            return $value;
+        });
+        $this->assertSame(3, $calls, 'callback dipanggil tepat sekali per elemen');
     }
 
     public function testPrepend() {

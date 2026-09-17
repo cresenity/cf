@@ -546,7 +546,7 @@ class SupportCstrTest extends TestCase {
         $this->assertSame('FooBar', cstr::studly('foo_bar'));
         $this->assertSame('FooBarBaz', cstr::studly('foo-barBaz'));
         $this->assertSame('FooBarBaz', cstr::studly('foo-bar_baz'));
-        //huruf pertama multibyte (öffentliche) belum dikapitalkan - lihat docs/NOTES.md
+        $this->assertSame('ÖffentlicheÜberraschungen', cstr::studly('öffentliche-überraschungen'));
     }
 
     public function testMask() {
@@ -660,17 +660,22 @@ class SupportCstrTest extends TestCase {
     public function testPadBoth() {
         $this->assertSame('__Alien___', cstr::padBoth('Alien', 10, '_'));
         $this->assertSame('  Alien   ', cstr::padBoth('Alien', 10));
-        //multibyte: str_pad menghitung byte, bukan karakter - lihat docs/NOTES.md
+        $this->assertSame('  ❤MultiByte☆   ', cstr::padBoth('❤MultiByte☆', 16));
+        $this->assertSame('❤☆❤MultiByte☆❤☆❤', cstr::padBoth('❤MultiByte☆', 16, '❤☆'));
     }
 
     public function testPadLeft() {
         $this->assertSame('-=-=-Alien', cstr::padLeft('Alien', 10, '-='));
         $this->assertSame('     Alien', cstr::padLeft('Alien', 10));
+        $this->assertSame('     ❤MultiByte☆', cstr::padLeft('❤MultiByte☆', 16));
+        $this->assertSame('❤☆❤☆❤❤MultiByte☆', cstr::padLeft('❤MultiByte☆', 16, '❤☆'));
     }
 
     public function testPadRight() {
         $this->assertSame('Alien-=-=-', cstr::padRight('Alien', 10, '-='));
         $this->assertSame('Alien     ', cstr::padRight('Alien', 10));
+        $this->assertSame('❤MultiByte☆     ', cstr::padRight('❤MultiByte☆', 16));
+        $this->assertSame('❤MultiByte☆❤☆❤☆❤', cstr::padRight('❤MultiByte☆', 16, '❤☆'));
     }
 
     public function testSwap() {

@@ -346,13 +346,28 @@ class FilesystemFileTest extends TestCase {
         $this->assertTrue(CFile::isDirectory($this->path('a/b/c')));
     }
 
-    public function testRequireOnceRequiresFile() {
+    public function testRequireOnceRequiresFileProperly() {
         mkdir($this->path('scripts'));
         file_put_contents($this->path('scripts/foo.php'), '<?php function cf_file_test_random_function_xyz(){};');
         CFile::requireOnce($this->path('scripts/foo.php'));
+        file_put_contents($this->path('scripts/foo.php'), '<?php function cf_file_test_random_function_xyz_changed(){};');
+        CFile::requireOnce($this->path('scripts/foo.php'));
         $this->assertTrue(function_exists('cf_file_test_random_function_xyz'));
-        //bahwa pemanggilan kedua TIDAK memuat ulang berkasnya belum dijamin: implementasinya
-        //memakai `require`, bukan `require_once` - lihat docs/NOTES.md
+        $this->assertFalse(function_exists('cf_file_test_random_function_xyz_changed'));
+    }
+
+    public function testMissingFile() {
+        $this->assertTrue(CFile::missing($this->path('file.txt')));
+        file_put_contents($this->path('file.txt'), 'x');
+        $this->assertFalse(CFile::missing($this->path('file.txt')));
+    }
+
+    public function testJsonReturnsDecodedJsonData() {
+        file_put_contents($this->path('file.json'), '{"foo": "bar"}');
+        $this->assertSame(['foo' => 'bar'], CFile::json($this->path('file.json')));
+
+        file_put_contents($this->path('rusak.json'), '{"foo":');
+        $this->assertNull(CFile::json($this->path('rusak.json')));
     }
 
     public function testRequireOnceThrowsExceptionNonexistingFile() {
