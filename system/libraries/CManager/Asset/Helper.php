@@ -11,6 +11,13 @@ class CManager_Asset_Helper {
     protected static $releaseVersion = false;
 
     /**
+     * Cache per-request hash isi berkas, kunci path|mtime|size.
+     *
+     * @var array
+     */
+    protected static $contentVersions = [];
+
+    /**
      * @param string $file
      * @param bool   $withHttp
      *
@@ -70,10 +77,15 @@ class CManager_Asset_Helper {
     }
 
     /**
+     * Versi untuk sebuah berkas: identitas rilis bila ada, kalau tidak hash isinya.
+     *
+     * $interval (pembulatan mtime ke kelipatan menit) tidak lagi berpengaruh: versi berbasis isi
+     * sudah identik di semua server untuk isi yang sama, jadi tidak perlu dibulatkan.
+     *
      * @param string $file
      * @param int    $interval
      *
-     * @return int
+     * @return string
      */
     public static function getFileVersion($file, $interval = 0) {
         $release = static::getReleaseVersion();
@@ -81,14 +93,7 @@ class CManager_Asset_Helper {
             return $release;
         }
 
-        $version = filemtime($file);
-        if ($interval) {
-            $roundVar = $interval * 60;
-            $mod = $version % $roundVar;
-            $version = $version - $mod;
-        }
-
-        return $version;
+        return static::getContentVersion($file);
     }
 
     /**
@@ -104,7 +109,45 @@ class CManager_Asset_Helper {
             return $release;
         }
 
-        return md5(CFile::lastModified($file));
+        return static::getContentVersion($file);
+    }
+
+    /**
+     * 12 hex pertama md5 isi berkas — sama di setiap server untuk isi yang sama, tidak seperti
+     * mtime yang berbeda antar node bila deploy tidak serempak. Hash disimpan di cache dengan
+     * kunci path+mtime+size, jadi biaya steady-state hanya satu stat() per berkas.
+     *
+     * @param string $file
+     *
+     * @return string
+     */
+    public static function getContentVersion($file) {
+        $stat = @stat($file);
+        if ($stat === false) {
+            return '0';
+        }
+        $key = $file . '|' . $stat['mtime'] . '|' . $stat['size'];
+        if (isset(static::$contentVersions[$key])) {
+            return static::$contentVersions[$key];
+        }
+        $cacheKey = 'cf-asset-version:' . md5($key);
+        $version = null;
+        try {
+            $version = c::cache()->get($cacheKey);
+        } catch (Throwable $e) {
+            $version = null;
+        }
+        if (!is_string($version) || strlen($version) != 12) {
+            $version = substr((string) md5_file($file), 0, 12);
+            try {
+                c::cache()->put($cacheKey, $version, 60 * 60 * 24 * 30);
+            } catch (Throwable $e) {
+                // tanpa cache persisten pun tetap benar, cuma menghitung ulang per request
+            }
+        }
+        static::$contentVersions[$key] = $version;
+
+        return $version;
     }
 
     /**
