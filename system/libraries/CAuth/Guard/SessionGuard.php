@@ -402,6 +402,24 @@ class CAuth_Guard_SessionGuard implements CAuth_Contract_StatefulGuardInterface,
     }
 
     /**
+     * Determine if the user should login by executing the given callbacks.
+     *
+     * @param null|array|callable            $callbacks
+     * @param \CAuth_AuthenticatableInterface $user
+     *
+     * @return bool
+     */
+    protected function shouldLogin($callbacks, CAuth_AuthenticatableInterface $user) {
+        foreach (carr::wrap($callbacks) as $callback) {
+            if (!$callback($user, $this)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Determine if the user matches the credentials.
      *
      * @param mixed $user

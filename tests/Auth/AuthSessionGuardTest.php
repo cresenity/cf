@@ -122,19 +122,38 @@ class AuthSessionGuardTest extends TestCase {
         $this->assertSame(['Attempting', 'Failed'], $this->fired);
     }
 
-    /**
-     * attemptWhen() memanggil $this->shouldLogin() yang tidak ada di kelas manapun, jadi
-     * begitu kredensialnya valid ia meledak lewat __call Macroable. Test ini mengunci keadaan
-     * rusak itu supaya perbaikannya kelihatan - lihat docs/NOTES.md.
-     */
-    public function testAttemptWhenIsBrokenBecauseShouldLoginIsMissing() {
+    public function testAttemptWhenRunsTheExtraCallbacks() {
+        $guard = $this->guard();
+        $seen = [];
+
+        $this->assertFalse($guard->attemptWhen(['email' => 'hery@example.com', 'password' => 'rahasia'], function ($user, $g) use (&$seen, $guard) {
+            $seen[] = [$user->getAuthIdentifier(), $g === $guard];
+
+            return false;
+        }));
+        $this->assertSame([[1, true]], $seen);
+        $this->assertNull($guard->user());
+        $this->assertSame(['Attempting', 'Validated', 'Failed'], $this->fired);
+
+        $this->fired = [];
+        $this->assertTrue($guard->attemptWhen(['email' => 'hery@example.com', 'password' => 'rahasia'], [
+            function ($user) {
+                return true;
+            },
+            function ($user) {
+                return $user->email === 'hery@example.com';
+            },
+        ]));
+        $this->assertSame(1, $guard->user()->getAuthIdentifier());
+        $this->assertSame(['Attempting', 'Validated', 'Login', 'Authenticated'], $this->fired);
+    }
+
+    public function testAttemptWhenWithoutCallbacksBehavesLikeAttempt() {
         $guard = $this->guard();
 
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('shouldLogin');
-        $guard->attemptWhen(['email' => 'hery@example.com', 'password' => 'rahasia'], function ($user) {
-            return true;
-        });
+        $this->assertTrue($guard->attemptWhen(['email' => 'hery@example.com', 'password' => 'rahasia']));
+        $this->assertSame(1, $guard->user()->getAuthIdentifier());
+        $this->assertFalse($this->guard()->attemptWhen(['email' => 'hery@example.com', 'password' => 'salah']));
     }
 
     public function testValidateChecksCredentialsWithoutLoggingIn() {
