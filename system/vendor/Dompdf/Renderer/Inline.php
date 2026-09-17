@@ -117,7 +117,7 @@ class Inline extends AbstractRenderer {
                 $w += (float) $child_w;
             }
 
-            $h = max($h, $child_h);
+            $h = max((float) $h, (float) $child_h);
 
             if ($DEBUGLAYOUTINLINE) {
                 $this->_debug_layout($child->get_border_box(), 'blue');
