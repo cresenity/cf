@@ -123,11 +123,7 @@ class AuthAccessGateTest extends TestCase {
         $this->assertFalse($gate->check('bar'));
     }
 
-    /**
-     * Beda dari hulu: hasil false dari callback ability masih bisa dibalik oleh callback after
-     * (`$result ?: $afterResult`), hulu hanya mengisi yang null. Lihat docs/NOTES.md.
-     */
-    public function testAfterCallbacksOverrideAFalseResult() {
+    public function testAfterCallbacksDoNotOverridePreviousResult() {
         $gate = $this->gate();
         $gate->define('deny', function ($user) {
             return false;
@@ -140,7 +136,7 @@ class AuthAccessGateTest extends TestCase {
         });
 
         $this->assertTrue($gate->allows('allow'));
-        $this->assertTrue($gate->allows('deny'));
+        $this->assertTrue($gate->denies('deny'));
     }
 
     public function testAfterCallbackCanDecideWhenAbilityIsUndefined() {

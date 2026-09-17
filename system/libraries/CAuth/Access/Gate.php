@@ -519,7 +519,10 @@ final class CAuth_Access_Gate implements CAuth_Contract_GateInterface {
 
             $afterResult = $after($user, $ability, $result, $arguments);
 
-            $result = $result ?: $afterResult;
+            // hanya hasil yang masih null yang diisi; false dari callback ability tidak boleh dibalik
+            if ($result === null) {
+                $result = $afterResult;
+            }
         }
 
         return $result;
