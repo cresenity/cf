@@ -266,8 +266,7 @@ class CExporter {
     }
 
     public static function queueAjax($ajaxMethod, $filePath, $disk = null, $writerType = null, $diskOptions = []) {
-        $filename = $ajaxMethod . '.tmp';
-        $file = CTemporary::getPath('ajax', $filename);
+        $file = CAjax::temporaryFile($ajaxMethod);
         $disk = CTemporary::disk();
         if (!$disk->exists($file)) {
             throw new Exception(c::__('failed to get temporary file :filename', ['filename' => $file]));

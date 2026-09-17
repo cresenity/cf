@@ -168,9 +168,7 @@ class CAjax_Method implements Jsonable {
 
         $ajaxMethod = date('Ymd') . cutils::randmd5();
         $disk = CTemporary::disk();
-        $filename = $ajaxMethod . '.tmp';
-
-        $file = CTemporary::getPath('ajax', $filename);
+        $file = CAjax::temporaryFile($ajaxMethod);
         $disk->put($file, $json);
 
         $base_url = curl::httpbase();

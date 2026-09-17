@@ -41,6 +41,40 @@ class CAjax {
     }
 
     /**
+     * Folder temp method ajax untuk app yang sedang berjalan.
+     *
+     * @return string
+     */
+    public static function temporaryFolder() {
+        $appCode = (string) CF::appCode();
+
+        return 'ajax' . DIRECTORY_SEPARATOR . (strlen($appCode) > 0 ? $appCode : 'common');
+    }
+
+    /**
+     * Path file temp sebuah method ajax. Berkas baru selalu per app (ajax/<appCode>/...); id yang
+     * dibuat sebelum pemisahan masih ditemukan di lokasi lama bersama (ajax/...) selama berkasnya ada.
+     *
+     * @param string $ajaxMethodId
+     *
+     * @return string
+     */
+    public static function temporaryFile($ajaxMethodId) {
+        $filename = $ajaxMethodId . '.tmp';
+        $perApp = CTemporary::getPath(static::temporaryFolder(), $filename);
+        $disk = CTemporary::disk();
+        if ($disk->exists($perApp)) {
+            return $perApp;
+        }
+        $legacy = CTemporary::getPath('ajax', $filename);
+        if ($disk->exists($legacy)) {
+            return $legacy;
+        }
+
+        return $perApp;
+    }
+
+    /**
      * @param string $file
      *
      * @throws Exception
@@ -48,9 +82,7 @@ class CAjax {
      * @return array
      */
     public static function getData($file) {
-        $filename = $file . '.tmp';
-
-        $file = CTemporary::getPath('ajax', $filename);
+        $file = static::temporaryFile($file);
 
         $disk = CTemporary::disk();
         if (!$disk->exists($file)) {
@@ -70,9 +102,7 @@ class CAjax {
      * @return array
      */
     public static function setData($file, $data) {
-        $filename = $file . '.tmp';
-
-        $file = CTemporary::getPath('ajax', $filename);
+        $file = static::temporaryFile($file);
 
         $disk = CTemporary::disk();
 

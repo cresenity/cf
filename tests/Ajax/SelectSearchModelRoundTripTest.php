@@ -68,7 +68,7 @@ class SelectSearchModelRoundTripTest extends TestCase {
         $segments = array_values(array_filter(explode('/', $path)));
         $methodId = end($segments);
 
-        $file = CTemporary::getPath('ajax', $methodId . '.tmp');
+        $file = CAjax::temporaryFile($methodId);
         $json = CTemporary::disk()->get($file);
 
         $_GET = array_merge(['q' => '', 'page' => 1, 'limit' => 10], $get);

@@ -14,7 +14,16 @@ class CHouseKeeping_FileTemp_AjaxFileTemp {
 
         $basePath = 'ajax';
 
-        $directories = $disk->directories($basePath);
+        // ajax/<Ymd> (lokasi lama bersama) dan ajax/<appCode>/<Ymd> (per app) dua-duanya dipangkas;
+        // nama folder yang bukan Ymd dianggap folder app dan diturunkan satu tingkat.
+        $directories = [];
+        foreach ($disk->directories($basePath) as $directory) {
+            if (strlen(carr::last(explode('/', $directory))) == 8) {
+                $directories[] = $directory;
+            } else {
+                $directories = array_merge($directories, $disk->directories($directory));
+            }
+        }
         foreach ($directories as $directory) {
             //get last path
             $ymd = carr::last(explode('/', $directory));

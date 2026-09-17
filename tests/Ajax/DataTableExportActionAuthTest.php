@@ -21,7 +21,7 @@ class DataTableExportActionAuthTest extends TestCase {
         $segments = array_values(array_filter(explode('/', $path)));
         $methodId = end($segments);
 
-        $json = CTemporary::disk()->get(CTemporary::getPath('ajax', $methodId . '.tmp'));
+        $json = CTemporary::disk()->get(CAjax::temporaryFile($methodId));
 
         return CAjax::createMethod($json)->setArgs([$methodId]);
     }
