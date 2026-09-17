@@ -247,7 +247,7 @@ class CContainer_Container implements CContainer_ContainerInterface, ArrayAccess
                 return $container->build($concrete);
             }
 
-            return $container->make($concrete, $parameters);
+            return $container->resolve($concrete, $parameters, false);
         };
     }
 
@@ -468,6 +468,7 @@ class CContainer_Container implements CContainer_ContainerInterface, ArrayAccess
      * @return void
      */
     public function alias($abstract, $alias) {
+        $this->removeAbstractAlias($alias);
         $this->aliases[$alias] = $abstract;
         $this->abstractAliases[$abstract][] = $alias;
     }
@@ -510,8 +511,11 @@ class CContainer_Container implements CContainer_ContainerInterface, ArrayAccess
      * @return void
      */
     protected function rebound($abstract) {
+        if (!$callbacks = $this->getReboundCallbacks($abstract)) {
+            return;
+        }
         $instance = $this->make($abstract);
-        foreach ($this->getReboundCallbacks($abstract) as $callback) {
+        foreach ($callbacks as $callback) {
             call_user_func($callback, $this, $instance);
         }
     }
@@ -615,10 +619,11 @@ class CContainer_Container implements CContainer_ContainerInterface, ArrayAccess
      *
      * @param string $abstract
      * @param array  $parameters
+     * @param bool   $raiseEvents
      *
      * @return mixed
      */
-    protected function resolve($abstract, $parameters = []) {
+    protected function resolve($abstract, $parameters = [], $raiseEvents = true) {
         $abstract = $this->getAlias($abstract);
         $needsContextualBuild = !empty($parameters) || !is_null(
             $this->getContextualConcrete($abstract)
@@ -654,7 +659,9 @@ class CContainer_Container implements CContainer_ContainerInterface, ArrayAccess
             $this->instances[$abstract] = $object;
         }
 
-        $this->fireResolvingCallbacks($abstract, $object);
+        if ($raiseEvents) {
+            $this->fireResolvingCallbacks($abstract, $object);
+        }
         // Before returning, we will also set the resolved flag to "true" and pop off
         // the parameter overrides for this build. After those two things are done
         // we will be ready to return back the fully constructed class instance.

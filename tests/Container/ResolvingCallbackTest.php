@@ -152,11 +152,8 @@ class ResolvingCallbackTest extends TestCase {
 
     /**
      * Callback pada interface ikut menyala untuk kelas konkret yang dibangun
-     * untuknya — dan menyala **dua kali**, bukan sekali. Sebabnya resolve()
-     * atas interface memanggil make() lagi untuk kelas konkretnya, sehingga ada
-     * dua bingkai resolusi, dan callback yang cocok secara instanceof menyala
-     * di keduanya. Dicatat apa adanya di sini supaya perubahan pada perilaku
-     * itu ketahuan, bukan lolos diam-diam.
+     * untuknya — tepat sekali: bingkai resolusi dalam (kelas konkret) tidak
+     * memancarkan event lagi, hanya bingkai luar (interface yang diminta).
      */
     public function testACallbackOnAnInterfaceFiresForItsImplementation() {
         $container = $this->makeContainer();
@@ -167,7 +164,7 @@ class ResolvingCallbackTest extends TestCase {
         });
         $container->make(ResolvingCallbackContract::class);
 
-        $this->assertSame(2, $fired);
+        $this->assertSame(1, $fired);
     }
 
     public function testACallbackFiresForAnAlias() {
