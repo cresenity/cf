@@ -3,13 +3,27 @@
 class CResources_Helpers_TemporaryDirectory {
     const DEFAULT_FOLDER = 'resource';
 
+    /**
+     * Temp folder of this app, `resource/<appCode>`, unless the config names one.
+     *
+     * @return string
+     */
     protected static function folder() {
         $folder = CF::config('resource.temporary_directory_path');
         if (strlen($folder) == 0) {
-            $folder = static::DEFAULT_FOLDER;
+            $folder = static::DEFAULT_FOLDER . '/' . CF::appCode();
         }
 
         return $folder;
+    }
+
+    /**
+     * Base of the per-call temporary directories, `temp/resource/<appCode>/temp` unless the config names one.
+     *
+     * @return string
+     */
+    public static function basePath() {
+        return CF::config('resource.temporary_directory_path') ?: DOCROOT . 'temp' . DS . 'resource' . DS . CF::appCode() . DS . 'temp';
     }
 
     public static function generateLocalFilePath($extension = null) {
@@ -40,8 +54,6 @@ class CResources_Helpers_TemporaryDirectory {
     }
 
     protected static function getTemporaryDirectoryPath() {
-        $path = CF::config('resource.temporary_directory_path') ?: DOCROOT . 'temp' . DS . 'resource' . DS . 'temp';
-
-        return $path . DIRECTORY_SEPARATOR . cstr::random(32);
+        return static::basePath() . DIRECTORY_SEPARATOR . cstr::random(32);
     }
 }
