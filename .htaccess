@@ -53,6 +53,9 @@ RewriteRule ^application/[^/]+/default/data/(vendor|key)/ - [R=404,L]
 # hanya direktori docs dan berkas markdown, yang tidak pernah menjadi aset.
 RewriteRule ^application/[^/]+/(docs|default/data/docs)/ - [R=404,L]
 RewriteRule ^application/[^/]+/default/data/.*\.md$ - [R=404,L]
+# Catatan kerja di akar framework (`docs/`, `papers/`) juga gitignored, tetapi mesin
+# yang membuatnya (dev, workstation) tetap menyajikannya bila tidak diblokir.
+RewriteRule ^(docs|papers)/ - [R=404,L]
 
 # Berkas titik dan metadata editor/VCS
 RewriteRule ^(.*/)?\.((claude|git(hub)?|vscode|idea)/|(DS_Store|git.*|editorconfig|htaccess.*|php_cs.*|stylelintrc|prettierrc|eslintrc|eslintignore|php-cs-fixer\.cache|phpunit\.result\.cache)$) - [R=404,L]
