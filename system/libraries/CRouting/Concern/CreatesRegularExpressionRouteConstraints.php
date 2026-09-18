@@ -58,6 +58,29 @@ trait CRouting_Concern_CreatesRegularExpressionRouteConstraints {
      *
      * @return $this
      */
+    /**
+     * Specify that the given route parameters must be ULIDs.
+     *
+     * @param array|string $parameters
+     *
+     * @return $this
+     */
+    public function whereUlid($parameters) {
+        return $this->assignExpressionToParameters($parameters, '[0-7][0-9a-hjkmnp-tv-zA-HJKMNP-TV-Z]{25}');
+    }
+
+    /**
+     * Specify that the given route parameters must be one of the given values.
+     *
+     * @param array|string $parameters
+     * @param array        $values
+     *
+     * @return $this
+     */
+    public function whereIn($parameters, array $values) {
+        return $this->assignExpressionToParameters($parameters, implode('|', $values));
+    }
+
     protected function assignExpressionToParameters($parameters, $expression) {
         return $this->where(c::collect(carr::wrap($parameters))
             ->mapWithKeys(function ($parameter) use ($expression) {

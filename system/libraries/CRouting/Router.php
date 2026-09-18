@@ -246,7 +246,7 @@ class CRouting_Router {
      * @return CRouting_Route
      */
     public function redirect($uri, $destination, $status = 302) {
-        return $this->any($uri, 'CController_RedirectController')
+        return $this->any($uri, '\\CController_RedirectController')
             ->defaults('destination', $destination)
             ->defaults('status', $status);
     }
@@ -275,7 +275,7 @@ class CRouting_Router {
      * @return CRouting_Route
      */
     public function view($uri, $view, $data = [], $status = 200, array $headers = []) {
-        return $this->match(['GET', 'HEAD'], $uri, '\Illuminate\Routing\ViewController')
+        return $this->match(['GET', 'HEAD'], $uri, '\\CController_ViewController')
             ->setDefaults([
                 'view' => $view,
                 'data' => $data,
@@ -903,6 +903,30 @@ class CRouting_Router {
     }
 
     /**
+     * Remove the given middleware from the specified group.
+     *
+     * @param string $group
+     * @param string $middleware
+     *
+     * @return $this
+     */
+    public function removeMiddlewareFromGroup($group, $middleware) {
+        if (!$this->hasMiddlewareGroup($group)) {
+            return $this;
+        }
+
+        $reversedMiddlewaresArray = array_flip($this->middlewareGroups[$group]);
+
+        if (!array_key_exists($middleware, $reversedMiddlewaresArray)) {
+            return $this;
+        }
+
+        unset($this->middlewareGroups[$group][$reversedMiddlewaresArray[$middleware]]);
+
+        return $this;
+    }
+
+    /**
      * Add a new route parameter binder.
      *
      * @param string          $key
@@ -1206,7 +1230,11 @@ class CRouting_Router {
             return $routeRegistrar->attribute($method, is_array($parameters[0]) ? $parameters[0] : $parameters);
         }
 
-        return $routeRegistrar->attribute($method, $parameters[0]);
+        if ($method !== 'where' && cstr::startsWith($method, 'where')) {
+            return $routeRegistrar->{$method}(...$parameters);
+        }
+
+        return $routeRegistrar->attribute($method, array_key_exists(0, $parameters) ? $parameters[0] : true);
     }
 
     /**

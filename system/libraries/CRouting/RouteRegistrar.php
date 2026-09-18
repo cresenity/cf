@@ -15,8 +15,11 @@
  * @method CRouting_RouteRegistrar namespace(null|string $value)
  * @method CRouting_RouteRegistrar prefix(string  $prefix)
  * @method CRouting_RouteRegistrar where(array  $where)
+ * @method CRouting_RouteRegistrar withoutMiddleware(array|string $middleware)
  */
 class CRouting_RouteRegistrar {
+    use CRouting_Concern_CreatesRegularExpressionRouteConstraints;
+
     /**
      * The router instance.
      *
@@ -46,7 +49,7 @@ class CRouting_RouteRegistrar {
      * @var string[]
      */
     protected $allowedAttributes = [
-        'as', 'domain', 'middleware', 'name', 'namespace', 'prefix', 'where',
+        'as', 'domain', 'middleware', 'name', 'namespace', 'prefix', 'where', 'withoutMiddleware',
     ];
 
     /**
@@ -56,6 +59,7 @@ class CRouting_RouteRegistrar {
      */
     protected $aliases = [
         'name' => 'as',
+        'withoutMiddleware' => 'excluded_middleware',
     ];
 
     /**
@@ -84,7 +88,13 @@ class CRouting_RouteRegistrar {
             throw new InvalidArgumentException("Attribute [{$key}] does not exist.");
         }
 
-        $this->attributes[carr::get($this->aliases, $key, $key)] = $value;
+        $attributeKey = carr::get($this->aliases, $key, $key);
+
+        if ($key === 'withoutMiddleware') {
+            $value = array_merge((array) carr::get($this->attributes, $attributeKey, []), carr::wrap($value));
+        }
+
+        $this->attributes[$attributeKey] = $value;
 
         return $this;
     }
@@ -174,7 +184,7 @@ class CRouting_RouteRegistrar {
 
         if (is_array($action)
             && !carr::isAssoc($action)
-            && CBase_Reflector::isCallable($action)
+            && CBase_Reflector::isCallable($action, true)
         ) {
             if (strncmp($action[0], '\\', 1)) {
                 $action[0] = '\\' . $action[0];
