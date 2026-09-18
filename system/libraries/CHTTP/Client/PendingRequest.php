@@ -157,6 +157,13 @@ class CHTTP_Client_PendingRequest {
     protected $preventStrayRequests = false;
 
     /**
+     * The URL patterns still allowed while stray requests are prevented.
+     *
+     * @var array
+     */
+    protected $allowedStrayRequestUrls = [];
+
+    /**
      * The middleware callables added by users that will handle requests.
      *
      * @var \CCollection
@@ -571,14 +578,14 @@ class CHTTP_Client_PendingRequest {
     /**
      * Specify the number of times the request should be attempted.
      *
-     * @param int           $times
-     * @param int           $sleep
+     * @param array|int     $times backoff array of delays in milliseconds, or the number of attempts
+     * @param \Closure|int   $sleep
      * @param null|callable $when
      * @param bool          $throw
      *
      * @return $this
      */
-    public function retry(int $times, int $sleep = 0, ?callable $when = null, bool $throw = true) {
+    public function retry($times, $sleep = 0, ?callable $when = null, bool $throw = true) {
         $this->tries = $times;
         $this->retryDelay = $sleep;
         $this->retryThrow = $throw;
@@ -1041,9 +1048,10 @@ class CHTTP_Client_PendingRequest {
             return $exception;
         }
 
-        if ($attempt < $this->tries && $shouldRetry) {
-            $options['delay'] = c::value(
-                $this->retryDelay,
+        $potentialTries = is_array($this->tries) ? count($this->tries) + 1 : $this->tries;
+
+        if ($attempt < $potentialTries && $shouldRetry) {
+            $options['delay'] = $this->retryDelayInMilliseconds(
                 $attempt,
                 $response instanceof CHTTP_Client_Response ? $response->toException() : $response
             );
@@ -1062,11 +1070,25 @@ class CHTTP_Client_PendingRequest {
             }
         }
 
-        if ($this->tries > 1 && $this->retryThrow) {
+        if ($potentialTries > 1 && $this->retryThrow) {
             return $response instanceof CHTTP_Client_Response ? $response->toException() : $response;
         }
 
         return $response;
+    }
+
+    /**
+     * Get the delay before the next retry, from the backoff array or the configured sleep.
+     *
+     * @param int        $attempt
+     * @param \Exception $exception
+     *
+     * @return int
+     */
+    protected function retryDelayInMilliseconds($attempt, $exception) {
+        return is_array($this->tries)
+            ? ($this->tries[$attempt - 1] ?? 0)
+            : c::value($this->retryDelay ?? 100, $attempt, $exception);
     }
 
     /**
@@ -1287,7 +1309,7 @@ class CHTTP_Client_PendingRequest {
                     ->first();
 
                 if (is_null($response)) {
-                    if ($this->preventStrayRequests) {
+                    if (!$this->isAllowedRequestUrl((string) $request->getUri())) {
                         throw new CHTTP_Client_Exception_StrayRequestException((string) $request->getUri());
                     }
 
@@ -1413,6 +1435,40 @@ class CHTTP_Client_PendingRequest {
         $this->preventStrayRequests = $prevent;
 
         return $this;
+    }
+
+    /**
+     * Allow the given URL patterns to be sent for real while stray requests are prevented.
+     *
+     * @param array $only
+     *
+     * @return $this
+     */
+    public function allowStrayRequests(array $only) {
+        $this->allowedStrayRequestUrls = array_values($only);
+
+        return $this;
+    }
+
+    /**
+     * Determine if the given URL may be sent without a matching fake.
+     *
+     * @param string $url
+     *
+     * @return bool
+     */
+    public function isAllowedRequestUrl($url) {
+        if (!$this->preventStrayRequests) {
+            return true;
+        }
+
+        foreach ($this->allowedStrayRequestUrls as $pattern) {
+            if (cstr::is($pattern, $url)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

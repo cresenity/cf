@@ -51,6 +51,17 @@ class CHTTP_Client_ResponseSequence {
     }
 
     /**
+     * Push a failed connection to the sequence.
+     *
+     * @param null|string $message
+     *
+     * @return $this
+     */
+    public function pushFailedConnection($message = null) {
+        return $this->pushResponse(CHTTP_Client::failedConnection($message));
+    }
+
+    /**
      * Push a response with the given status code to the sequence.
      *
      * @param int   $status

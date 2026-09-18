@@ -110,6 +110,8 @@ final class CHTTP_Client {
      */
     protected $preventStrayRequests = false;
 
+    protected $allowedStrayRequestUrls = [];
+
     private static $instance;
 
     public static function instance() {
@@ -369,12 +371,33 @@ final class CHTTP_Client {
     }
 
     /**
-     * Indicate that an exception should not be thrown if any request is not faked.
+     * Allow stray requests again, or only for the given URL patterns while still preventing the rest.
+     *
+     * @param null|array $only
      *
      * @return $this
      */
-    public function allowStrayRequests() {
-        return $this->preventStrayRequests(false);
+    public function allowStrayRequests(?array $only = null) {
+        if (is_null($only)) {
+            $this->preventStrayRequests(false);
+
+            $this->allowedStrayRequestUrls = [];
+        } else {
+            $this->allowedStrayRequestUrls = array_values($only);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Determine if the given URL may be sent without a matching fake.
+     *
+     * @param string $url
+     *
+     * @return bool
+     */
+    public function isAllowedRequestUrl($url) {
+        return $this->createPendingRequest()->isAllowedRequestUrl($url);
     }
 
     /**
@@ -517,7 +540,9 @@ final class CHTTP_Client {
      */
     public function createPendingRequest() {
         return c::tap($this->newPendingRequest(), function ($request) {
-            $request->stub($this->stubCallbacks)->preventStrayRequests($this->preventStrayRequests);
+            $request->stub($this->stubCallbacks)
+                ->preventStrayRequests($this->preventStrayRequests)
+                ->allowStrayRequests($this->allowedStrayRequestUrls);
         });
     }
 
