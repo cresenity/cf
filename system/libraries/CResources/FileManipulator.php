@@ -12,8 +12,9 @@ class CResources_FileManipulator {
      * @param array                             $only
      * @param bool                              $onlyIfMissing
      * @param bool                              $withResponsiveImages
+     * @param bool                              $queueAll             queue the non-queued conversions too
      */
-    public function createDerivedFiles(CModel_Resource_ResourceInterface $resource, array $only = [], $onlyIfMissing = false, $withResponsiveImages = false) {
+    public function createDerivedFiles(CModel_Resource_ResourceInterface $resource, array $only = [], $onlyIfMissing = false, $withResponsiveImages = false, $queueAll = false) {
         $profileCollection = CResources_ConversionCollection::createForResource($resource);
         if (!empty($only)) {
             $profileCollection = $profileCollection->filter(function ($collection) use ($only) {
@@ -21,13 +22,16 @@ class CResources_FileManipulator {
             });
         }
 
-        $this->performConversions(
-            $profileCollection->getNonQueuedConversions($resource->collection_name),
-            $resource,
-            $onlyIfMissing
-        );
-
-        $queuedConversions = $profileCollection->getQueuedConversions($resource->collection_name);
+        if ($queueAll) {
+            $queuedConversions = $profileCollection->getConversions($resource->collection_name);
+        } else {
+            $this->performConversions(
+                $profileCollection->getNonQueuedConversions($resource->collection_name),
+                $resource,
+                $onlyIfMissing
+            );
+            $queuedConversions = $profileCollection->getQueuedConversions($resource->collection_name);
+        }
         if ($queuedConversions->isNotEmpty()) {
             $this->dispatchQueuedConversions($resource, $queuedConversions, $onlyIfMissing);
         }

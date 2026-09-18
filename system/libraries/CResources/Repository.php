@@ -48,8 +48,36 @@ class CResources_Repository {
         return $resource->filter($filter);
     }
 
+    /**
+     * @return CModel_Resource_ResourceInterface|CModel
+     */
+    public function getModel() {
+        return $this->model;
+    }
+
     public function all() {
         return $this->model->all();
+    }
+
+    /**
+     * @return CCollection
+     */
+    public function allIds() {
+        return $this->query()->pluck($this->model->getKeyName());
+    }
+
+    /**
+     * Every disk named by a resource row, original or conversions.
+     *
+     * @return CCollection
+     */
+    public function allDiskNames() {
+        $diskNames = $this->query()->distinct()->pluck('disk');
+        if ($this->model->hasConversionsDiskColumn()) {
+            $diskNames = $diskNames->merge($this->query()->distinct()->pluck('conversions_disk'));
+        }
+
+        return $diskNames->filter()->unique()->values();
     }
 
     public function getByModelType($modelType) {
@@ -57,7 +85,7 @@ class CResources_Repository {
     }
 
     public function getByIds($ids) {
-        return $this->model->whereIn('id', $ids)->get();
+        return $this->model->whereIn($this->model->getKeyName(), $ids)->get();
     }
 
     /**
@@ -87,6 +115,85 @@ class CResources_Repository {
         return $this->model
             ->where('collection_name', $collectionName)
             ->get();
+    }
+
+    /**
+     * Resources whose owning model row no longer exists (soft-deleted owners still count as present).
+     *
+     * @return CModel_Collection
+     */
+    public function getOrphans() {
+        return $this->orphansQuery()->get();
+    }
+
+    /**
+     * @param string $collectionName
+     *
+     * @return CModel_Collection
+     */
+    public function getOrphansByCollectionName($collectionName) {
+        return $this->orphansQuery()->where('collection_name', $collectionName)->get();
+    }
+
+    /**
+     * Query narrowed by model type and/or collection name; both null for every resource.
+     *
+     * @param null|string $modelType
+     * @param null|string $collectionName
+     *
+     * @return CModel_Query
+     */
+    public function queryFor($modelType = null, $collectionName = null) {
+        return $this->query()
+            ->when($modelType !== null && $modelType !== '', function (CModel_Query $q) use ($modelType) {
+                $q->where('model_type', $modelType);
+            })
+            ->when($collectionName !== null && $collectionName !== '', function (CModel_Query $q) use ($collectionName) {
+                $q->where('collection_name', $collectionName);
+            });
+    }
+
+    /**
+     * Orphan query over the model types that resolve to a class; see getUnresolvableModelTypes() for the rest.
+     *
+     * @return CModel_Query
+     */
+    public function orphansQuery() {
+        $types = $this->resolvableModelTypes();
+        if ($types->isEmpty()) {
+            return $this->query()->whereRaw('0 = 1');
+        }
+
+        return $this->query()->whereDoesntHaveMorph('model', $types->all(), function (CModel_Query $q) {
+            return $q->hasMacro('withTrashed') ? $q->withTrashed() : $q;
+        });
+    }
+
+    /**
+     * Distinct model_type values with no loadable class; their rows cannot be checked for orphans.
+     *
+     * @return CCollection
+     */
+    public function getUnresolvableModelTypes() {
+        return $this->distinctModelTypes()->reject(function ($type) {
+            return class_exists(CModel_Relation::getMorphedModel($type) ?: $type);
+        })->values();
+    }
+
+    /**
+     * @return CCollection
+     */
+    protected function resolvableModelTypes() {
+        return $this->distinctModelTypes()->filter(function ($type) {
+            return class_exists(CModel_Relation::getMorphedModel($type) ?: $type);
+        })->values();
+    }
+
+    /**
+     * @return CCollection
+     */
+    protected function distinctModelTypes() {
+        return $this->query()->distinct()->pluck('model_type')->filter()->values();
     }
 
     /**
