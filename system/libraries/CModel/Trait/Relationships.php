@@ -717,6 +717,19 @@ trait CModel_Trait_Relationships {
     }
 
     /**
+     * Unset a loaded relationship.
+     *
+     * @param string $relation
+     *
+     * @return $this
+     */
+    public function unsetRelation($relation) {
+        unset($this->relations[$relation]);
+
+        return $this;
+    }
+
+    /**
      * Unset all the loaded relations for the instance.
      *
      * @return $this

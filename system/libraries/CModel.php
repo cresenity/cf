@@ -12,6 +12,7 @@ defined('SYSPATH') or die('No direct access allowed.');
  * @method static static|null                               find($id, $columns = null)
  * @method static CModel_Collection                         findMany($ids, $columns = null)
  * @method static static                                    findOrFail($id, $columns = null)
+ * @method static static|null                               findOr($id, $columns = null, ?\Closure $callback = null)
  * @method static static|null                               first($columns = null)
  * @method static static                                    firstOrFail($columns = null)
  * @method static static                                    firstOrNew(array $attributes, array $values = [])
@@ -78,7 +79,7 @@ defined('SYSPATH') or die('No direct access allowed.');
  *
  * @see CModel_Query
  */
-abstract class CModel implements ArrayAccess, Arrayable, Jsonable, CQueue_QueueableEntityInterface, CBase_Contract_CanBeEscapedWhenCastToStringInterface {
+abstract class CModel implements ArrayAccess, Arrayable, Jsonable, JsonSerializable, CQueue_QueueableEntityInterface, CBase_Contract_CanBeEscapedWhenCastToStringInterface {
     use CModel_Trait_GuardsAttributes,
         CModel_Trait_Attributes,
         CModel_Trait_Relationships,

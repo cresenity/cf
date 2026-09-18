@@ -457,6 +457,32 @@ class CModel_Query {
     }
 
     /**
+     * Find a model by its primary key or call a callback.
+     *
+     * @param mixed         $id
+     * @param array|Closure $columns
+     * @param null|Closure  $callback
+     *
+     * @return null|CModel|CModel_Collection|mixed
+     */
+    public function findOr($id, $columns = ['*'], ?Closure $callback = null) {
+        if ($columns instanceof Closure) {
+            $callback = $columns;
+            $columns = ['*'];
+        }
+        $result = $this->find($id, $columns);
+        if (is_array($id) || $id instanceof CInterface_Arrayable) {
+            if (count($result) === count(array_unique(is_array($id) ? $id : $id->toArray()))) {
+                return $result;
+            }
+        } elseif (!is_null($result)) {
+            return $result;
+        }
+
+        return $callback ? $callback() : null;
+    }
+
+    /**
      * Find a model by its primary key or return fresh model instance.
      *
      * @param mixed $id
