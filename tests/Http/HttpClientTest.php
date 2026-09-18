@@ -1102,6 +1102,73 @@ class HttpClientTest extends TestCase {
         }
     }
 
+    public function testFakeConnectionExceptionWithinSequenceIsRetried() {
+        $this->factory->fake([
+            '*' => $this->factory->sequence()->pushFailedConnection('Fake')->push('Success'),
+        ]);
+        $exception = null;
+
+        $response = $this->factory->retry(3, 0, function ($e) use (&$exception) {
+            $exception = $e;
+
+            return true;
+        })->post('https://example.com');
+
+        $this->assertSame('Success', $response->body());
+        $this->assertInstanceOf(CHTTP_Client_Exception_ConnectionException::class, $exception);
+        $this->assertSame('Fake', $exception->getMessage());
+        $this->factory->assertSentCount(2);
+    }
+
+    public function testRetryAcceptsABackoffArray() {
+        $this->factory->fake(['*' => CHTTP_Client::response(['error'], 403)]);
+
+        //dua jeda → tiga percobaan
+        $response = $this->factory->retry([0, 0], 0, null, false)->get('http://foo.com/get');
+
+        $this->assertTrue($response->failed());
+        $this->factory->assertSentCount(3);
+    }
+
+    public function testRetryBackoffArrayThrowsWhenExhausted() {
+        $this->factory->fake(['*' => CHTTP_Client::response(['error'], 403)]);
+
+        $this->expectException(CHTTP_Client_Exception_RequestException::class);
+
+        try {
+            $this->factory->retry([0, 0])->get('http://foo.com/get');
+        } finally {
+            $this->factory->assertSentCount(3);
+        }
+    }
+
+    public function testRetryAcceptsAClosureForTheDelay() {
+        $this->factory->fake([
+            '*' => $this->factory->sequence()->push(['error'], 500)->push(['ok'], 200),
+        ]);
+        $seen = [];
+
+        $response = $this->factory->retry(3, function ($attempt, $exception) use (&$seen) {
+            $seen[] = [$attempt, get_class($exception)];
+
+            return 0;
+        })->get('http://foo.com/get');
+
+        $this->assertTrue($response->successful());
+        $this->assertSame([[1, CHTTP_Client_Exception_RequestException::class]], $seen);
+    }
+
+    public function testAsyncRequestRetriesWithBackoffArray() {
+        $this->factory->fake([
+            '*' => $this->factory->sequence()->push(['error'], 500)->push(['error'], 500)->push(['ok'], 200),
+        ]);
+
+        $response = $this->factory->async()->retry([0, 0], 0, null, false)->get('http://foo.com/get')->wait();
+
+        $this->assertTrue($response->successful());
+        $this->factory->assertSentCount(3);
+    }
+
     public function testMiddlewareRunsWhenFaked() {
         $this->factory->fake(function (CHTTP_Client_Request $request) {
             return CHTTP_Client::response('Fake');
@@ -1309,6 +1376,24 @@ class HttpClientTest extends TestCase {
 
         $factory->allowStrayRequests();
         $this->assertFalse($factory->preventingStrayRequests());
+    }
+
+    public function testAllowingStrayRequestUrls() {
+        $factory = new CHTTP_Client();
+        $this->assertTrue($factory->isAllowedRequestUrl('127.0.0.1'));
+
+        $factory->preventStrayRequests();
+        $this->assertFalse($factory->isAllowedRequestUrl('127.0.0.1'));
+
+        $factory->allowStrayRequests(['127.0.0.1', 'https://internal.example/*']);
+        $this->assertTrue($factory->preventingStrayRequests());
+        $this->assertTrue($factory->isAllowedRequestUrl('127.0.0.1'));
+        $this->assertTrue($factory->isAllowedRequestUrl('https://internal.example/health'));
+        $this->assertFalse($factory->isAllowedRequestUrl('https://example.com'));
+
+        $factory->allowStrayRequests();
+        $this->assertFalse($factory->preventingStrayRequests());
+        $this->assertTrue($factory->isAllowedRequestUrl('https://example.com'));
     }
 
     public function testItCanAddAuthorizationHeaderIntoRequestUsingBeforeSendingCallback() {
