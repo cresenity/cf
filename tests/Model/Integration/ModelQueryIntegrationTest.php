@@ -108,6 +108,10 @@ class ModelQueryIntegrationTest extends UjiModel_IntegrationTestCase {
         $this->assertSame(['a', 'b'], $simple->getCollection()->pluck('name')->all());
         $this->assertTrue($simple->hasMorePages());
 
+        // test lain (DatabaseQueryBuilderPortTest) meninggalkan resolver cursor statis; netralkan untuk request "halaman pertama"
+        CPagination_CursorPaginator::currentCursorResolver(function () {
+            return null;
+        });
         $cursor = UjiModel_User::orderBy('name')->cursorPaginate(2);
         $this->assertInstanceOf(CPagination_CursorPaginator::class, $cursor);
         $this->assertSame(['a', 'b'], $cursor->getCollection()->pluck('name')->all());
