@@ -111,7 +111,7 @@ return [
          */
         //        'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
         'mail' => [
-            'to' => 'hery@ittron.co.id',
+            'to' => c::env('BACKUP_MAIL_TO'),
             'from' => [
                 'address' => 'no-reply@core.capp',
                 'name' => 'Core CApp',
