@@ -163,6 +163,13 @@ abstract class CModel implements ArrayAccess, Arrayable, Jsonable, JsonSerializa
     public $wasRecentlyCreated = false;
 
     /**
+     * Indicates if lazy loading will be prevented on this model (set on models hydrated in bulk).
+     *
+     * @var bool
+     */
+    public $preventsLazyLoading = false;
+
+    /**
      * Indicates that the object's string representation should be escaped when __toString is invoked.
      *
      * @var bool
