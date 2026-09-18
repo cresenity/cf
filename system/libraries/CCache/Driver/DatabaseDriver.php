@@ -355,7 +355,7 @@ class CCache_Driver_DatabaseDriver extends CCache_DriverAbstract implements CCac
     protected function serialize($value) {
         $result = serialize($value);
 
-        if ($this->connection->driver() instanceof CDatabase_Driver_Pgsql && cstr::contains($result, "\0")) {
+        if ($this->isPostgres() && cstr::contains($result, "\0")) {
             $result = base64_encode($result);
         }
 
@@ -370,10 +370,17 @@ class CCache_Driver_DatabaseDriver extends CCache_DriverAbstract implements CCac
      * @return mixed
      */
     protected function unserialize($value) {
-        if ($this->connection->driver() instanceof CDatabase_Driver_Pgsql && !cstr::contains($value, [':', ';'])) {
+        if ($this->isPostgres() && !cstr::contains($value, [':', ';'])) {
             $value = base64_decode($value);
         }
 
         return unserialize($value);
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isPostgres() {
+        return in_array($this->connection->getDriverName(), ['pgsql', 'postgres', 'postgresql'], true);
     }
 }

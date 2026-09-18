@@ -15,8 +15,12 @@ trait CCache_Trait_RetrievesMultipleKeys {
     public function many(array $keys) {
         $return = [];
 
-        foreach ($keys as $key) {
-            $return[$key] = $this->get($key);
+        foreach ($keys as $key => $default) {
+            if (!is_string($key)) {
+                list($key, $default) = [$default, null];
+            }
+            $value = $this->get($key, $default);
+            $return[$key] = $value === null ? $default : $value;
         }
 
         return $return;

@@ -50,10 +50,10 @@ class CCache_TaggedCache extends CCache_Repository {
      * @param string $key
      * @param mixed  $value
      *
-     * @return void
+     * @return int|bool
      */
     public function increment($key, $value = 1) {
-        $this->driver->increment($this->itemKey($key), $value);
+        return $this->driver->increment($this->itemKey($key), $value);
     }
 
     /**
@@ -62,10 +62,10 @@ class CCache_TaggedCache extends CCache_Repository {
      * @param string $key
      * @param mixed  $value
      *
-     * @return void
+     * @return int|bool
      */
     public function decrement($key, $value = 1) {
-        $this->driver->decrement($this->itemKey($key), $value);
+        return $this->driver->decrement($this->itemKey($key), $value);
     }
 
     /**

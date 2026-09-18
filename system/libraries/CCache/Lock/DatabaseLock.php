@@ -4,7 +4,7 @@ class CCache_Lock_DatabaseLock extends CCache_LockAbstract {
     /**
      * The database connection instance.
      *
-     * @var \CDatabase
+     * @var \CDatabase_Connection
      */
     protected $connection;
 
@@ -25,16 +25,16 @@ class CCache_Lock_DatabaseLock extends CCache_LockAbstract {
     /**
      * Create a new lock instance.
      *
-     * @param \CDatabase  $connection
-     * @param string      $table
-     * @param string      $name
-     * @param int         $seconds
-     * @param null|string $owner
-     * @param array       $lottery
+     * @param \CDatabase_Connection $connection
+     * @param string                $table
+     * @param string                $name
+     * @param int                   $seconds
+     * @param null|string           $owner
+     * @param array                 $lottery
      *
      * @return void
      */
-    public function __construct(CDatabase $connection, $table, $name, $seconds, $owner = null, $lottery = [2, 100]) {
+    public function __construct($connection, $table, $name, $seconds, $owner = null, $lottery = [2, 100]) {
         parent::__construct($name, $seconds, $owner);
 
         $this->connection = $connection;
@@ -67,8 +67,7 @@ class CCache_Lock_DatabaseLock extends CCache_LockAbstract {
                     'owner' => $this->owner,
                     'expiration' => $this->expiresAt(),
                 ]);
-            $updated = $updatedResult->count();
-            $acquired = $updated >= 1;
+            $acquired = $updatedResult >= 1;
         }
 
         if (random_int(1, $this->lottery[1]) <= $this->lottery[0]) {
