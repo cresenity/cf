@@ -14,10 +14,20 @@ return [
      */
     'max_file_size' => 1024 * 1024 * 10,
     /*
+     * This queue connection will be used to generate derived and responsive images.
+     * Leave empty to use the default connection.
+     */
+    'queue_connection_name' => '',
+    /*
      * This queue will be used to generate derived and responsive images.
      * Leave empty to use the default queue.
      */
     'queue_name' => '',
+    /*
+     * Conversions run on the queue unless a conversion calls nonQueued();
+     * set to false to run every conversion synchronously unless it calls queued().
+     */
+    'queue_conversions_by_default' => true,
     /*
      * The fully qualified class name of the media model.
      */

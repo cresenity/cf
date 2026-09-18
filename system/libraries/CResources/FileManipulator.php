@@ -149,6 +149,9 @@ class CResources_FileManipulator {
         $job = new $performConversionsJobClass($queuedConversions, $resource, $onlyIfMissing);
 
         /** @var CQueue_AbstractTask $job */
+        if ($customConnection = CF::config('resource.queue_connection_name')) {
+            $job->onConnection($customConnection);
+        }
         if ($customQueue = CF::config('resource.queue_name')) {
             $job->onQueue($customQueue);
         }
@@ -173,6 +176,9 @@ class CResources_FileManipulator {
 
         /** @var CResources_TaskQueue_GenerateResponsiveImage $job */
         $job = (new $generateResponsiveImagesJobClass($resource));
+        if ($customConnection = CF::config('resource.queue_connection_name')) {
+            $job->onConnection($customConnection);
+        }
         if ($customQueue = CF::config('resource.queue_name')) {
             $job->onQueue($customQueue);
         }

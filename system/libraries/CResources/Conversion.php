@@ -55,6 +55,7 @@ class CResources_Conversion {
 
     public function __construct($name) {
         $this->name = $name;
+        $this->performOnQueue = (bool) (CF::config('resource.queue_conversions_by_default') ?? true);
         $this->manipulations = (new CImage_Manipulations())
             ->optimize(CF::config('resource.image_optimizers'))
             ->format('jpg');
