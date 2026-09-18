@@ -240,9 +240,7 @@ class UrlGeneratorTest extends TestCase {
         $model2->key = 'routable-2';
 
         $this->assertSame('/foo/routable-1/test-slug', $url->route('routable', ['bar' => $model1, 'baz' => $model2], false));
-        //parameter posisional belum dipetakan ke nama parameter rute (hulu baru melakukannya di
-        //formatParameters), jadi bidang binding dicari per indeks: indeks 0 mendapat 'slug'
-        $this->assertSame('/foo/test-slug/routable-2', $url->route('routable', [$model1, $model2], false));
+        $this->assertSame('/foo/routable-1/test-slug', $url->route('routable', [$model1, $model2], false));
     }
 
     public function testRoutesMaintainRequestScheme() {
@@ -317,7 +315,36 @@ class UrlGeneratorTest extends TestCase {
         }]));
 
         $this->expectException(CRouting_Exception_UrlGenerationException::class);
-        $this->expectExceptionMessage('Missing required parameters for [Route: foo] [URI: foo/{one}/{two?}/{three?}].');
+        $this->expectExceptionMessage('Missing required parameter for [Route: foo] [URI: foo/{one}/{two?}/{three?}] [Missing parameter: one].');
+        $url->route('foo', $parameters);
+    }
+
+    /**
+     * @return array
+     */
+    public function meaningfulMissingParameterMessageProvider() {
+        return [
+            [[], 'Missing required parameters for [Route: foo] [URI: foo/{one}/{two}/{three}/{four?}] [Missing parameters: one, two, three].'],
+            [['one' => '123'], 'Missing required parameters for [Route: foo] [URI: foo/{one}/{two}/{three}/{four?}] [Missing parameters: two, three].'],
+            [['two' => '123'], 'Missing required parameters for [Route: foo] [URI: foo/{one}/{two}/{three}/{four?}] [Missing parameters: one, three].'],
+            [['one' => '123', 'two' => '123'], 'Missing required parameter for [Route: foo] [URI: foo/{one}/{two}/{three}/{four?}] [Missing parameter: three].'],
+            [['two' => '123', 'three' => '123'], 'Missing required parameter for [Route: foo] [URI: foo/{one}/{two}/{three}/{four?}] [Missing parameter: one].'],
+        ];
+    }
+
+    /**
+     * @dataProvider meaningfulMissingParameterMessageProvider
+     *
+     * @param array  $parameters
+     * @param string $expectedMessage
+     */
+    public function testUrlGenerationNamesTheMissingParameters($parameters, $expectedMessage) {
+        $url = $this->generator('http://www.foo.com:8080/');
+        $url->routes->add($this->route(['GET'], 'foo/{one}/{two}/{three}/{four?}', ['as' => 'foo', function () {
+        }]));
+
+        $this->expectException(CRouting_Exception_UrlGenerationException::class);
+        $this->expectExceptionMessage($expectedMessage);
         $url->route('foo', $parameters);
     }
 
@@ -403,19 +430,33 @@ class UrlGeneratorTest extends TestCase {
         $url->route('not_exists_route');
     }
 
-    public function testRouteParametersContainingPercentSigns() {
+    public function testRouteParametersContainingPercentSignsAreEncoded() {
         $url = $this->generator();
         $url->routes->add($this->route(['GET'], 'foo/{bar}', ['as' => 'foo', function () {
         }]));
 
-        //nilai parameter yang mengandung '%' dilewatkan mentah (hulu terbaru meng-encode-nya jadi
-        //'%2566oo' dan '100%25'): '%66oo' terbaca 'foo' saat router mendekode kembali, dan '100%'
-        //menghasilkan URL yang tidak sah. Dicatat apa adanya; mengubahnya berarti nilai yang sudah
-        //di-encode pemanggil ikut di-encode dua kali
-        $this->assertSame('http://www.foo.com/foo/%66oo', $url->route('foo', ['bar' => '%66oo']));
-        $this->assertSame('http://www.foo.com/foo/100%', $url->route('foo', ['bar' => '100%']));
+        //tanda persen mentah akan didekode lagi saat router mencocokkan URL, jadi nilainya harus
+        //selamat melewati rawurldecode()
+        $this->assertSame('http://www.foo.com/foo/%2566oo', $url->route('foo', ['bar' => '%66oo']));
+        $this->assertSame('http://www.foo.com/foo/100%25', $url->route('foo', ['bar' => '100%']));
+        $this->assertSame('%66oo', rawurldecode('%2566oo'));
+        $this->assertSame('100%', rawurldecode('100%25'));
+
+        $this->assertSame('http://www.foo.com/foo/a%3Fb%23c', $url->route('foo', ['bar' => 'a?b#c']));
         $this->assertSame('http://www.foo.com/foo/bar', $url->route('foo', ['bar' => 'bar']));
         $this->assertSame('http://www.foo.com/foo/1', $url->route('foo', ['bar' => 1]));
+    }
+
+    public function testEncodedRouteParametersAreNotEncodedAgain() {
+        $url = $this->generator();
+        $url->routes->add($this->route(['GET'], 'foo/{bar}', ['as' => 'foo', function () {
+        }]));
+
+        //nilai yang sudah di-encode pemanggil ditandai supaya dipakai apa adanya
+        $this->assertSame('http://www.foo.com/foo/foo%20bar', $url->route('foo', ['bar' => new CRouting_EncodedParameter('foo%20bar')]));
+        $this->assertSame('http://www.foo.com/foo/%66oo', $url->route('foo', ['bar' => new CRouting_EncodedParameter('%66oo')]));
+        $this->assertSame('http://www.foo.com/foo/foo%2520bar', $url->route('foo', ['bar' => 'foo%20bar']));
+        $this->assertSame('x%2F', (string) new CRouting_EncodedParameter('x%2F'));
     }
 
     public function testSignedUrl() {
@@ -517,7 +558,7 @@ class UrlGeneratorTest extends TestCase {
         $url->signedRoute('foo', ['signature' => 'bar']);
     }
 
-    public function testNamedParametersHavePrecedenceOverDefaults() {
+    public function testPassedParametersHavePrecedenceOverDefaults() {
         $url = $this->generator('https://www.foo.com/');
         $url->defaults(['tenant' => 'defaultTenant']);
         $url->routes->add($this->route(['GET'], 'bar/{tenant}/{post}', ['as' => 'bar', function () {
@@ -529,10 +570,47 @@ class UrlGeneratorTest extends TestCase {
         $post->key = 'concretePost';
 
         $this->assertSame('https://www.foo.com/bar/concreteTenant/concretePost', $url->route('bar', ['tenant' => $tenant, 'post' => $post]));
-        //posisional: placeholder yang punya default diisi lebih dulu, baru sisanya dari urutan
-        //(aturan hulu lama; hulu terbaru memetakan posisional ke parameter yang belum terisi)
-        $this->assertSame('https://www.foo.com/bar/defaultTenant/concreteTenant?concretePost', $url->route('bar', [$tenant, $post]));
+        $this->assertSame('https://www.foo.com/bar/concreteTenant/concretePost', $url->route('bar', [$tenant, $post]));
         $this->assertSame(['tenant' => 'defaultTenant'], $url->getDefaultParameters());
+    }
+
+    public function testComplexRouteGenerationWithDefaultsAndMixedParameterSyntax() {
+        $url = $this->generator('https://www.foo.com/');
+        $url->defaults(['tenant' => 'defaultTenant', 'user' => 'defaultUser']);
+        $url->routes->add($this->route(['GET'], 'tenantPostUser/{tenant}/{post}/{user}', ['as' => 'tenantPostUser']));
+        $url->routes->add($this->route(['GET'], 'tenantPostCommentUser/{tenant}/{post}/{comment}/{user}', ['as' => 'tenantPostCommentUser']));
+
+        //post lewat kunci, posisional jatuh ke user
+        $this->assertSame('https://www.foo.com/tenantPostUser/defaultTenant/concretePost/concreteUser', $url->route('tenantPostUser', ['post' => 'concretePost', 'concreteUser']));
+
+        $base = 'https://www.foo.com/tenantPostCommentUser/defaultTenant/concretePost/concreteComment/';
+        $this->assertSame($base . 'defaultUser', $url->route('tenantPostCommentUser', ['post' => 'concretePost', 'concreteComment']));
+        $this->assertSame($base . 'defaultUser', $url->route('tenantPostCommentUser', ['concretePost', 'comment' => 'concreteComment']));
+        $this->assertSame($base . 'defaultUser', $url->route('tenantPostCommentUser', ['comment' => 'concreteComment', 'concretePost']));
+        $this->assertSame($base . 'concreteUser', $url->route('tenantPostCommentUser', ['post' => 'concretePost', 'comment' => 'concreteComment', 'concreteUser']));
+        $this->assertSame($base . 'concreteUser', $url->route('tenantPostCommentUser', ['post' => 'concretePost', 'concreteComment', 'concreteUser']));
+        $this->assertSame($base . 'concreteUser', $url->route('tenantPostCommentUser', ['concretePost', 'comment' => 'concreteComment', 'concreteUser']));
+
+        $full = 'https://www.foo.com/tenantPostCommentUser/concreteTenant/concretePost/concreteComment/concreteUser';
+        $this->assertSame($full, $url->route('tenantPostCommentUser', ['concreteTenant', 'post' => 'concretePost', 'comment' => 'concreteComment', 'concreteUser']));
+        $this->assertSame($full, $url->route('tenantPostCommentUser', ['post' => 'concretePost', 'comment' => 'concreteComment', 'concreteTenant', 'concreteUser']));
+    }
+
+    public function testDefaultsCanBeCombinedWithExtraQueryParameters() {
+        $url = $this->generator('https://www.foo.com/');
+        $url->defaults(['tenant' => 'defaultTenant', 'tenant:slug' => 'defaultTenantSlug', 'user' => 'defaultUser']);
+        $url->routes->add($this->route(['GET'], 'tenantPost/{tenant}/{post}', ['as' => 'tenantPost']));
+        $url->routes->add($this->route(['GET'], 'tenantSlugPost/{tenant:slug}/{post}', ['as' => 'tenantSlugPost']));
+        $slug = new UrlGeneratorTestRoutable();
+        $slug->slug = 'concreteTenantSlug';
+
+        $this->assertSame('https://www.foo.com/tenantPost/concreteTenant/concretePost?extraQuery', $url->route('tenantPost', ['concreteTenant', 'concretePost', 'extraQuery']));
+        $this->assertSame('https://www.foo.com/tenantPost/concreteTenant/concretePost?extra=query&extraQuery', $url->route('tenantPost', ['concreteTenant', 'concretePost', 'extraQuery', 'extra' => 'query']));
+        $this->assertSame('https://www.foo.com/tenantPost/defaultTenant/concretePost?extra=query', $url->route('tenantPost', ['concretePost', 'extra' => 'query']));
+        $this->assertSame('https://www.foo.com/tenantPost/concreteTenant/concretePost?extra=query', $url->route('tenantPost', ['concreteTenant', 'extra' => 'query', 'concretePost']));
+
+        $this->assertSame('https://www.foo.com/tenantSlugPost/concreteTenantSlug/concretePost?extraQuery', $url->route('tenantSlugPost', [$slug, 'concretePost', 'extraQuery']));
+        $this->assertSame('https://www.foo.com/tenantSlugPost/defaultTenantSlug/concretePost', $url->route('tenantSlugPost', ['concretePost']));
     }
 
     public function testDefaultsFillAMissingRouteParameter() {
