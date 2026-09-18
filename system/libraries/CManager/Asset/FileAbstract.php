@@ -95,6 +95,15 @@ abstract class CManager_Asset_FileAbstract {
         return $assetFile;
     }
 
+    /**
+     * The file as it was registered (relative name or remote url), before path resolution.
+     *
+     * @return string
+     */
+    public function getScript() {
+        return $this->script;
+    }
+
     abstract protected function fullpath($file);
 
     abstract protected function render();

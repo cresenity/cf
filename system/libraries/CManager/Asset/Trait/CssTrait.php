@@ -72,15 +72,20 @@ trait CManager_Asset_Trait_CssTrait {
         $fullpathFile = $this->fullpathCssFile($file);
         //we will locate all pos for this pos if pos =null;
         if ($pos == null) {
-            $pos = self::allAvailablePos();
+            $pos = CManager_Asset::allAvailablePos();
         }
         if (!is_array($pos)) {
             $pos = [$pos];
         }
         foreach ($pos as $p) {
+            if (!isset($this->scripts[$p]['css_file'])) {
+                continue;
+            }
             $cssFiles = &$this->scripts[$p]['css_file'];
             foreach ($cssFiles as $k => $cssFile) {
-                if ($cssFile == $fullpathFile) {
+                // registered files are CManager_Asset_File_* objects; match on the registered name or the resolved path
+                $registered = $cssFile instanceof CManager_Asset_FileAbstract ? $cssFile->getScript() : $cssFile;
+                if ($registered == $file || $registered == $fullpathFile || $cssFile == $fullpathFile) {
                     unset($cssFiles[$k]);
                 }
             }

@@ -85,15 +85,20 @@ trait CManager_Asset_Trait_JsTrait {
         $fullpathFile = $this->fullpathJsFile($file);
         //we will locate all pos for this pos if pos =null;
         if ($pos == null) {
-            $pos = self::allAvailablePos();
+            $pos = CManager_Asset::allAvailablePos();
         }
         if (!is_array($pos)) {
             $pos = [$pos];
         }
         foreach ($pos as $p) {
+            if (!isset($this->scripts[$p]['js_file'])) {
+                continue;
+            }
             $jsFiles = &$this->scripts[$p]['js_file'];
             foreach ($jsFiles as $k => $jsFile) {
-                if ($jsFile == $fullpathFile) {
+                // registered files are CManager_Asset_File_* objects; match on the registered name or the resolved path
+                $registered = $jsFile instanceof CManager_Asset_FileAbstract ? $jsFile->getScript() : $jsFile;
+                if ($registered == $file || $registered == $fullpathFile || $jsFile == $fullpathFile) {
                     unset($jsFiles[$k]);
                 }
             }
