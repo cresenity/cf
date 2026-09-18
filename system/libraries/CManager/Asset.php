@@ -106,23 +106,17 @@ class CManager_Asset {
     }
 
     public function getAllCssFileUrl() {
-        $themeCss = $this->themeContainer->getAllCssFileUrl();
         $runTimeCss = $this->runTimeContainer->getAllCssFileUrl();
-        $moduleThemeCss = $this->module->getThemeContainer()->getAllCssFileUrl();
         $moduleRunTimeCss = $this->module->getRunTimeContainer()->getAllCssFileUrl();
 
-        return array_merge($moduleThemeCss, $themeCss, $moduleRunTimeCss, $runTimeCss);
+        return array_merge($this->themeFileUrls(static::TYPE_CSS_FILE), $moduleRunTimeCss, $runTimeCss);
     }
 
     public function getAllJsFileUrl() {
-        $moduleThemeJs = $this->module->getThemeContainer()->getAllJsFileUrl();
-        $themeJs = $this->themeContainer->getAllJsFileUrl();
         $moduleRunTimeJs = $this->module->getRunTimeContainer()->getAllJsFileUrl();
         $runTimeJs = $this->runTimeContainer->getAllJsFileUrl();
 
-        $allJs = array_merge($moduleThemeJs, $themeJs, $moduleRunTimeJs, $runTimeJs);
-
-        return $allJs;
+        return array_merge($this->themeFileUrls(static::TYPE_JS_FILE), $moduleRunTimeJs, $runTimeJs);
     }
 
     public function varJs() {
@@ -191,42 +185,84 @@ class CManager_Asset {
         return $jsBefore . $this->wrapJs($jsOpen . $js . $jsClose);
     }
 
+    /**
+     * Skrip tema (modul tema + tema) untuk satu posisi, urutan persis seperti yang dirender.
+     *
+     * @param string $pos
+     *
+     * @return array
+     */
+    protected function themeScripts($pos) {
+        $themeScriptArray = [];
+        $themeScriptArray = carr::merge($themeScriptArray, $this->module->getThemeContainer()->getScripts($pos));
+        $themeScriptArray = carr::merge($themeScriptArray, $this->themeContainer->getScripts($pos));
+
+        return $themeScriptArray;
+    }
+
+    /**
+     * Ganti daftar berkas tema dengan satu bundel bila `assets.*.compile` menyala.
+     *
+     * @param array $themeScriptArray
+     *
+     * @return array
+     */
+    protected function compileThemeScripts(array $themeScriptArray) {
+        if (CF::config('assets.css.compile', false)) {
+            $cssScriptArray = carr::get($themeScriptArray, static::TYPE_CSS_FILE, []);
+            if (count($cssScriptArray) > 0) {
+                $themeScriptArray[static::TYPE_CSS_FILE] = [$this->compileCss($cssScriptArray)];
+            }
+        }
+        if (CF::config('assets.js.compile', false)) {
+            $jsScriptArray = carr::get($themeScriptArray, static::TYPE_JS_FILE, []);
+            if (count($jsScriptArray) > 0) {
+                $themeScriptArray[static::TYPE_JS_FILE] = [$this->compileJs($jsScriptArray)];
+            }
+        }
+
+        return $themeScriptArray;
+    }
+
+    /**
+     * URL berkas tema seperti yang dirender halaman: bundel bila compile menyala, sehingga daftar aset
+     * respons ajax cocok dengan tag <script>/<link> yang sudah ada dan tidak memuat ulang skrip tema.
+     *
+     * @param string $type
+     *
+     * @return string[]
+     */
+    protected function themeFileUrls($type) {
+        $configType = $type == static::TYPE_CSS_FILE ? 'css' : 'js';
+        if (!CF::config('assets.' . $configType . '.compile', false)) {
+            $method = $type == static::TYPE_CSS_FILE ? 'getAllCssFileUrl' : 'getAllJsFileUrl';
+
+            return array_merge($this->module->getThemeContainer()->$method(), $this->themeContainer->$method());
+        }
+
+        $urls = [];
+        foreach (static::allAvailablePos() as $pos) {
+            $scripts = $this->compileThemeScripts($this->themeScripts($pos));
+            foreach (carr::get($scripts, $type, []) as $script) {
+                if ($script instanceof CManager_Asset_FileAbstract) {
+                    $urls[] = $script->getUrl();
+                } else {
+                    $urls[] = $type == static::TYPE_CSS_FILE ? CManager_Asset_Helper::urlCssFile($script) : CManager_Asset_Helper::urlJsFile($script);
+                }
+            }
+        }
+
+        return $urls;
+    }
+
     public function render($pos, $type = null) {
-        $moduleThemeScripts = $this->module->getThemeContainer()->getScripts($pos);
-        $themeScripts = $this->themeContainer->getScripts($pos);
         $moduleRunTimeScripts = $this->module->getRunTimeContainer()->getScripts($pos);
         $runTimeScripts = $this->runTimeContainer->getScripts($pos);
-        $themeScriptArray = [];
         $runtimeScriptArray = [];
-
-        $themeScriptArray = carr::merge($themeScriptArray, $moduleThemeScripts);
-        $themeScriptArray = carr::merge($themeScriptArray, $themeScripts);
         $runtimeScriptArray = carr::merge($runtimeScriptArray, $moduleRunTimeScripts);
         $runtimeScriptArray = carr::merge($runtimeScriptArray, $runTimeScripts);
 
-        //do recompile for theme script
-        $compileCss = CF::config('assets.css.compile', false);
-        if ($compileCss) {
-            $cssScriptArray = carr::get($themeScriptArray, static::TYPE_CSS_FILE);
-
-            if (count($cssScriptArray) > 0) {
-                $compiledScript = $this->compileCss($cssScriptArray);
-
-                $themeScriptArray[static::TYPE_CSS_FILE] = [$compiledScript];
-            }
-        }
-
-        //do recompile for theme script
-        $compileJs = CF::config('assets.js.compile', false);
-        if ($compileJs) {
-            $jsScriptArray = carr::get($themeScriptArray, static::TYPE_JS_FILE);
-
-            if (count($jsScriptArray) > 0) {
-                $compiledScript = $this->compileJs($jsScriptArray);
-
-                $themeScriptArray[static::TYPE_JS_FILE] = [$compiledScript];
-            }
-        }
+        $themeScriptArray = $this->compileThemeScripts($this->themeScripts($pos));
 
         $scriptArray = carr::merge($themeScriptArray, $runtimeScriptArray);
         $script = '';
