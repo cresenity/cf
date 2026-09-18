@@ -14,4 +14,11 @@ class CHouseKeeping {
     public static function fileTemp() {
         return new CBase_ForwarderStaticClass(CHouseKeeping_FileTemp::class);
     }
+
+    /**
+     * @return CHouseKeeping_FileLog
+     */
+    public static function fileLog() {
+        return new CBase_ForwarderStaticClass(CHouseKeeping_FileLog::class);
+    }
 }
