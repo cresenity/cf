@@ -29,7 +29,7 @@ class CResources_FileManipulator {
 
         $queuedConversions = $profileCollection->getQueuedConversions($resource->collection_name);
         if ($queuedConversions->isNotEmpty()) {
-            $this->dispatchQueuedConversions($resource, $queuedConversions);
+            $this->dispatchQueuedConversions($resource, $queuedConversions, $onlyIfMissing);
         }
 
         $this->generateResponsiveImages($resource, $withResponsiveImages);
@@ -52,11 +52,29 @@ class CResources_FileManipulator {
         }
 
         $resourceFileSystem = CResources_Factory::createFileSystem();
-        $temporaryDirectoryPath = CResources_Helpers_TemporaryDirectory::generateLocalFilePath($resource->getExtensionAttribute());
+        //satu direktori sementara per pemanggilan: hasil konversi dibuat di sebelah salinan asli, jadi ikut terhapus bersama direktorinya
+        $temporaryDirectory = CResources_Helpers_TemporaryDirectory::create();
         $copiedOriginalFile = $resourceFileSystem->copyFromResourceLibrary(
             $resource,
-            $temporaryDirectoryPath
+            $temporaryDirectory->path(cstr::random(16) . '.' . $resource->getExtensionAttribute())
         );
+        try {
+            $this->convertEach($conversions, $resource, $onlyIfMissing, $imageGenerator, $copiedOriginalFile);
+        } finally {
+            $temporaryDirectory->delete();
+        }
+    }
+
+    /**
+     * @param CResources_ConversionCollection            $conversions
+     * @param CModel_Resource_ResourceInterface          $resource
+     * @param bool                                       $onlyIfMissing
+     * @param CResources_ImageGenerator_FileTypeAbstract $imageGenerator
+     * @param string                                     $copiedOriginalFile
+     *
+     * @return void
+     */
+    protected function convertEach(CResources_ConversionCollection $conversions, CModel_Resource_ResourceInterface $resource, $onlyIfMissing, $imageGenerator, $copiedOriginalFile) {
         $conversions
             ->reject(function (CResources_Conversion $conversion) use ($onlyIfMissing, $resource) {
                 $relativePath = $resource->getPath($conversion->getName());
@@ -87,8 +105,6 @@ class CResources_FileManipulator {
                 $resource->markAsConversionGenerated($conversion->getName(), true);
                 CEvent::dispatcher()->dispatch(new CResources_Event_Conversion_ConversionHasBeenCompleted($resource, $conversion));
             });
-
-        CResources_Helpers_TemporaryDirectory::delete($temporaryDirectoryPath);
     }
 
     public function performManipulations(CModel_Resource_ResourceInterface $resource, CResources_Conversion $conversion, $imageFile) {
@@ -114,15 +130,16 @@ class CResources_FileManipulator {
     /**
      * @param CModel_Resource_ResourceInterface $resource
      * @param CResources_ConversionCollection   $queuedConversions
+     * @param bool                              $onlyIfMissing
      *
      * @return $this
      */
-    protected function dispatchQueuedConversions(CModel_Resource_ResourceInterface $resource, CResources_ConversionCollection $queuedConversions) {
+    protected function dispatchQueuedConversions(CModel_Resource_ResourceInterface $resource, CResources_ConversionCollection $queuedConversions, $onlyIfMissing = false) {
         if ($queuedConversions->isEmpty()) {
             return $this;
         }
         $performConversionsJobClass = CF::config('resource.task_queue.perform_conversions', CResources_TaskQueue_PerformConversions::class);
-        $job = new $performConversionsJobClass($queuedConversions, $resource);
+        $job = new $performConversionsJobClass($queuedConversions, $resource, $onlyIfMissing);
 
         /** @var CQueue_AbstractTask $job */
         if ($customQueue = CF::config('resource.queue_name')) {
