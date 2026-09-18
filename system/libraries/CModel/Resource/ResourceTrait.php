@@ -496,4 +496,20 @@ trait CModel_Resource_ResourceTrait {
         /** @var CModel $this */
         return $this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), 'version');
     }
+
+    /**
+     * Whether the resource table has a conversions_disk column (checked once per table).
+     *
+     * @return bool
+     */
+    public function hasConversionsDiskColumn() {
+        static $tables = [];
+        /** @var CModel $this */
+        $key = $this->getConnectionName() . '.' . $this->getTable();
+        if (!array_key_exists($key, $tables)) {
+            $tables[$key] = $this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), 'conversions_disk');
+        }
+
+        return $tables[$key];
+    }
 }

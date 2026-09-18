@@ -307,8 +307,12 @@ class CModel_HasResource_FileAdder_FileAdder {
 
         $resource->disk = $this->determineDiskName($diskName, $collectionName);
         $this->ensureDiskExists($resource->disk);
-        $resource->conversions_disk = $this->determineConversionsDiskName($resource->disk, $collectionName);
-        $this->ensureDiskExists($resource->conversions_disk);
+        $conversionsDisk = $this->determineConversionsDiskName($resource->disk, $collectionName);
+        $this->ensureDiskExists($conversionsDisk);
+        // the default resource table has no conversions_disk column; only persist it where one exists
+        if ($resource->hasConversionsDiskColumn()) {
+            $resource->conversions_disk = $conversionsDisk;
+        }
 
         $resource->collection_name = $collectionName;
 
@@ -316,7 +320,6 @@ class CModel_HasResource_FileAdder_FileAdder {
         $resource->size = $storage->size($this->pathToFile);
         $resource->custom_properties = $this->customProperties;
 
-        $resource->generated_conversions = [];
         $resource->responsive_images = [];
 
         $resource->manipulations = $this->manipulations;
@@ -482,7 +485,11 @@ class CModel_HasResource_FileAdder_FileAdder {
             throw CResources_Exception_FileCannotBeAdded_DiskCannotBeAccessed::create($resource->disk);
         }
         if (!$fileAdder->preserveOriginal) {
-            unlink($fileAdder->pathToFile);
+            if ($fileAdder->file instanceof CResources_Support_RemoteFile) {
+                CStorage::instance()->disk($fileAdder->file->getDisk())->delete($fileAdder->file->getKey());
+            } else {
+                unlink($fileAdder->pathToFile);
+            }
         }
         if ($this->generateResponsiveImages && (new ImageGenerator())->canConvert($resource)) {
             $generateResponsiveImagesJobClass = CF::config('resource.jobs.generate_responsive_images', CResources_TaskQueue_GenerateResponsiveImage::class);
