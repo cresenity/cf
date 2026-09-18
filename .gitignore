@@ -168,6 +168,7 @@ capp.code-workspace
 
 # Catatan kerja lokal — tidak ikut repo
 /docs
+/papers
 /reference
 
 # CLAUDE.md sekarang disinkron dari devcloud (appCode "cf"), bukan git —
