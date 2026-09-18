@@ -1900,6 +1900,44 @@ trait CModel_Trait_Attributes {
     }
 
     /**
+     * Get all attributes except the given ones.
+     *
+     * @param array|mixed $attributes
+     *
+     * @return array
+     */
+    public function except($attributes) {
+        $attributes = is_array($attributes) ? $attributes : func_get_args();
+        $results = [];
+        foreach (array_keys($this->getAttributes()) as $key) {
+            if (!in_array($key, $attributes, true)) {
+                $results[$key] = $this->getAttribute($key);
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Whether the model has the given attribute (an attribute value or a mutator/cast for it).
+     *
+     * @param string $key
+     *
+     * @return bool
+     */
+    public function hasAttribute($key) {
+        if (!$key) {
+            return false;
+        }
+
+        return array_key_exists($key, $this->attributes)
+            || array_key_exists($key, $this->casts)
+            || $this->hasGetMutator($key)
+            || $this->hasAttributeMutator($key)
+            || $this->isClassCastable($key);
+    }
+
+    /**
      * Sync the original attributes with the current.
      *
      * @return $this
@@ -2063,7 +2101,7 @@ trait CModel_Trait_Attributes {
      *
      * @return bool
      */
-    protected function originalIsEquivalent($key, $current) {
+    public function originalIsEquivalent($key, $current = null) {
         if (!array_key_exists($key, $this->original)) {
             return false;
         }
@@ -2163,6 +2201,15 @@ trait CModel_Trait_Attributes {
         $this->appends = $appends;
 
         return $this;
+    }
+
+    /**
+     * Get the accessors that are being appended to model arrays.
+     *
+     * @return array
+     */
+    public function getAppends() {
+        return $this->appends;
     }
 
     /**
