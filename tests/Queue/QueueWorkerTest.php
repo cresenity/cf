@@ -33,10 +33,12 @@ class QueueWorkerTest extends TestCase {
      * @return CQueue_WorkerOptions
      */
     protected function makeOptions(array $override = []) {
+        // 4 GB: suite penuh sudah memakai >128 MB saat file ini berjalan, jadi batas nyata
+        // hanya dipakai oleh test yang sengaja menyetelnya (['memory' => 1])
         $option = $override + [
             'name' => 'default',
             'backoff' => 0,
-            'memory' => 128,
+            'memory' => 4096,
             'timeout' => 60,
             'sleep' => 3,
             'maxTries' => 5,
