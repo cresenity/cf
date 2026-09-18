@@ -6,10 +6,7 @@ class CAjax_Engine_AjaxHandler extends CAjax_Engine {
     public function execute() {
         $input = $this->input;
         $data = $this->ajaxMethod->getData();
-        $callback = carr::get($data, 'callback');
-        if (is_string($callback) && strncmp($callback, 'O:', 2) === 0) {
-            $callback = unserialize($callback);
-        }
+        $callback = $this->resolveCallable(carr::get($data, 'callback'));
         $json = carr::get($data, 'json');
 
         if ($callback != null) {

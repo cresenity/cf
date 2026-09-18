@@ -199,12 +199,12 @@ class CAjax_FileAjax {
             $identifier = substr($identifier, 1);
         }
         $identifier = explode('|', $identifier);
-        $result = [];
-        $result['fileId'] = $identifier[0];
-        $result['resourceId'] = $identifier[1];
-        $result['url'] = $identifier[2];
 
-        return $result;
+        return [
+            'fileId' => carr::get($identifier, 0),
+            'resourceId' => carr::get($identifier, 1),
+            'url' => carr::get($identifier, 2),
+        ];
     }
 
     public function saveToResource() {

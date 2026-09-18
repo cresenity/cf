@@ -11,7 +11,7 @@ class CAjax_Engine_ImgUpload extends CAjax_Engine {
         $data = $this->ajaxMethod->getData();
         $inputName = carr::get($data, 'inputName');
         $allowedExtension = carr::get($data, 'allowedExtension', []);
-        $validationCallback = carr::get($data, 'validationCallback');
+        $validationCallback = $this->resolveCallable(carr::get($data, 'validationCallback'));
         $withInfo = carr::get($data, 'withInfo', false);
         $diskName = carr::get($data, 'disk', CF::config('storage.temp'));
         $fileId = '';

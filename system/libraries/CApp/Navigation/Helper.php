@@ -46,7 +46,7 @@ class CApp_Navigation_Helper {
             }
 
             foreach ($navs as $navItem) {
-                $res = self::nav($navItem, $controller, $method);
+                $res = self::nav($navItem, $controller, $method, $path);
                 if ($res !== false) {
                     return $res;
                 }
@@ -127,7 +127,7 @@ class CApp_Navigation_Helper {
                 }
             }
             foreach (CNavigation_Data::resolveSubnav($nav) as $sn) {
-                $res = self::nav($sn, $controller, $method);
+                $res = self::nav($sn, $controller, $method, $path);
                 if ($res !== false) {
                     return $res;
                 }
@@ -341,7 +341,7 @@ class CApp_Navigation_Helper {
      * @return bool
      */
     public static function isLeaf($nav) {
-        return CNavigation_Data::hasSubnav($nav);
+        return !CNavigation_Data::hasSubnav($nav);
     }
 
     /**

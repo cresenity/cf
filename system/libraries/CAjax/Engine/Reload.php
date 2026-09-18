@@ -7,10 +7,7 @@ class CAjax_Engine_Reload extends CAjax_Engine {
         $input = $this->input;
         $data = $this->ajaxMethod->getData();
         $json = carr::get($data, 'json');
-        $callback = carr::get($data, 'callback');
-        if (is_string($callback) && strncmp($callback, 'O:', 2) === 0) {
-            $callback = unserialize($callback);
-        }
+        $callback = $this->resolveCallable(carr::get($data, 'callback'));
         if ($callback != null) {
             $parameters = [];
 

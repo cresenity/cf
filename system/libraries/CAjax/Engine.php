@@ -110,6 +110,24 @@ abstract class CAjax_Engine implements CAjax_EngineInterface {
     }
 
     /**
+     * A callable from the method data; a closure arrives as its serialize() string (see CAjax_Method::setData()).
+     *
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    protected function resolveCallable($value) {
+        if (is_string($value) && strncmp($value, 'O:', 2) === 0) {
+            $unserialized = @unserialize($value);
+            if ($unserialized instanceof CFunction_SerializableClosure || $unserialized instanceof \Opis\Closure\SerializableClosure) {
+                return $unserialized;
+            }
+        }
+
+        return $value;
+    }
+
+    /**
      * Invoke a callback function with the given arguments.
      *
      * @param callable $callback
