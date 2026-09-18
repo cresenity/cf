@@ -38,6 +38,9 @@ class CHouseKeeping_FileTemp_AjaxFileTemp {
                     if (CDaemon::isDaemon()) {
                         CDaemon::log('deleting folder ' . $directory);
                     }
+                    if (CCron::isCron()) {
+                        CCron::log('deleting folder ' . $directory);
+                    }
 
                     $disk->deleteDirectory($directory);
                     $executed = true;

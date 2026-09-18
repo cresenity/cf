@@ -12,7 +12,17 @@ class CHouseKeeping_Database_LogActivity {
         $modelName = CF::config('app.model.log_activity', CApp_Model_LogActivity::class);
         $bottomDate = c::now()->subDays($keepDays);
         $query = $modelName::query()->where('created', '<', $bottomDate);
-        $query->forceDelete();
+        $deleted = $query->forceDelete();
+
+        if ($deleted > 0) {
+            if (CDaemon::isDaemon()) {
+                CDaemon::log('log_activity: ' . $deleted . ' rows deleted');
+            }
+            if (CCron::isCron()) {
+                CCron::log('log_activity: ' . $deleted . ' rows deleted');
+            }
+        }
+
         return true;
     }
 }

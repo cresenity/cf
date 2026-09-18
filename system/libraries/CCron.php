@@ -87,4 +87,16 @@ class CCron {
             static::$runningEvent->log($message);
         }
     }
+
+    /**
+     * Whether the current request is executing inside a scheduled cron event
+     * (set by {@see setEvent()}) - lets shared code (e.g. a CHouseKeeping_*
+     * class) decide whether CCron::log() will actually go anywhere before
+     * calling it, the same way CDaemon::isDaemon() guards CDaemon::log().
+     *
+     * @return bool
+     */
+    public static function isCron() {
+        return static::$runningEvent !== null;
+    }
 }

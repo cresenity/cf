@@ -39,6 +39,9 @@ class CHouseKeeping_FileLog_AppLog {
                     if (CDaemon::isDaemon()) {
                         CDaemon::log('deleting folder ' . $monthDir);
                     }
+                    if (CCron::isCron()) {
+                        CCron::log('deleting folder ' . $monthDir);
+                    }
 
                     CFile::deleteDirectory($monthDir);
                     $executed = true;
