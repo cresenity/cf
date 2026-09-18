@@ -156,10 +156,17 @@ class CContainer_BoundMethod {
         } elseif ($className && array_key_exists($className, $parameters)) {
             $dependencies[] = $parameters[$className];
             unset($parameters[$className]);
+        } elseif ($className && $parameter->isDefaultValueAvailable() && !$container->bound($className)) {
+            $dependencies[] = $parameter->getDefaultValue();
         } elseif ($className) {
             $dependencies[] = $container->make($className);
         } elseif ($parameter->isDefaultValueAvailable()) {
             $dependencies[] = $parameter->getDefaultValue();
+        } elseif (!$parameter->isOptional() && !array_key_exists($parameter->name, $parameters)) {
+            $declaringClass = $parameter->getDeclaringClass();
+            $message = "Unable to resolve dependency [{$parameter}]" . ($declaringClass ? " in class {$declaringClass->getName()}" : '');
+
+            throw new CContainer_Exception_BindingResolutionException($message);
         }
     }
 

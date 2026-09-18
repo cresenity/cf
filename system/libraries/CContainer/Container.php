@@ -559,7 +559,48 @@ class CContainer_Container implements CContainer_ContainerInterface, ArrayAccess
      * @return mixed
      */
     public function call($callback, array $parameters = [], $defaultMethod = null) {
-        return CContainer_BoundMethod::call($this, $callback, $parameters, $defaultMethod);
+        $pushedToBuildStack = false;
+
+        if (($className = $this->getClassForCallable($callback)) && !in_array($className, $this->buildStack, true)) {
+            $this->buildStack[] = $className;
+
+            $pushedToBuildStack = true;
+        }
+
+        try {
+            return CContainer_BoundMethod::call($this, $callback, $parameters, $defaultMethod);
+        } finally {
+            if ($pushedToBuildStack) {
+                array_pop($this->buildStack);
+            }
+        }
+    }
+
+    /**
+     * Get the class name for the given callback, if one can be determined.
+     *
+     * @param callable|string $callback
+     *
+     * @return string|false
+     */
+    protected function getClassForCallable($callback) {
+        if ($callback instanceof Closure || !is_callable($callback)) {
+            return false;
+        }
+
+        if (is_array($callback)) {
+            return is_object($callback[0]) ? get_class($callback[0]) : (string) $callback[0];
+        }
+
+        if (is_object($callback)) {
+            return get_class($callback);
+        }
+
+        if (is_string($callback) && strpos($callback, '::') !== false) {
+            return explode('::', $callback)[0];
+        }
+
+        return false;
     }
 
     /**
