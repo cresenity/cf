@@ -38,6 +38,11 @@ return [
         'uri' => 'docs/phpcf/database',
     ],
     [
+        'name' => 'phpcf.resource',
+        'label' => c::__('Resource'),
+        'uri' => 'docs/phpcf/resource',
+    ],
+    [
         'name' => 'phpcf.cron',
         'label' => c::__('Cron'),
         'uri' => 'docs/phpcf/cron',
