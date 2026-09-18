@@ -17,7 +17,12 @@ class CApi_Kernel {
 
     public function handle(CHTTP_Request $request, Closure $methodResolver) {
         try {
-            $request = CApi_HTTP_Request::createFromBase($request);
+            if (!$request instanceof CApi_HTTP_Request) {
+                $request = CApi_HTTP_Request::createFromBaseHttp($request);
+            }
+            if ($request->group() === null) {
+                $request->setGroup($this->group);
+            }
             CEvent::dispatch(new CApi_Event_IncomingRequest($request));
             $response = $this->sendRequestThroughPipeline($request, $methodResolver);
         } catch (Exception $e) {
