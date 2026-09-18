@@ -37,6 +37,15 @@ class CCollection implements ArrayAccess, CInterface_Enumerable, CBase_Contract_
     }
 
     /**
+     * Create a new, empty collection.
+     *
+     * @return static
+     */
+    public static function empty() {
+        return new static([]);
+    }
+
+    /**
      * Get all of the items in the collection.
      *
      * @return array
@@ -519,12 +528,16 @@ class CCollection implements ArrayAccess, CInterface_Enumerable, CBase_Contract_
     /**
      * Concatenate values of a given key as a string.
      *
-     * @param string      $value
-     * @param null|string $glue
+     * @param callable|string $value
+     * @param null|string     $glue
      *
      * @return string
      */
     public function implode($value, $glue = null) {
+        if ($this->useAsCallable($value)) {
+            return implode($glue ?: '', $this->map($value)->all());
+        }
+
         $first = $this->first();
 
         if (is_array($first) || (is_object($first) && !$first instanceof Stringable)) {
@@ -775,8 +788,8 @@ class CCollection implements ArrayAccess, CInterface_Enumerable, CBase_Contract_
 
         $position = 0;
 
-        foreach ($this->items as $item) {
-            if ($position % $step === $offset) {
+        foreach ($this->slice($offset)->items as $item) {
+            if ($position % $step === 0) {
                 $new[] = $item;
             }
 
@@ -1183,18 +1196,19 @@ class CCollection implements ArrayAccess, CInterface_Enumerable, CBase_Contract_
     /**
      * Chunk the collection into chunks of the given size.
      *
-     * @param int $size
+     * @param int  $size
+     * @param bool $preserveKeys
      *
      * @return static
      */
-    public function chunk($size) {
+    public function chunk($size, $preserveKeys = true) {
         if ($size <= 0) {
             return new static();
         }
 
         $chunks = [];
 
-        foreach (array_chunk($this->items, $size, true) as $chunk) {
+        foreach (array_chunk($this->items, $size, $preserveKeys) as $chunk) {
             $chunks[] = new static($chunk);
         }
 
