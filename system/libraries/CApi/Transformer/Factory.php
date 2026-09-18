@@ -175,7 +175,7 @@ class CApi_Transformer_Factory {
      */
     public function setAdapter($adapter) {
         if (is_callable($adapter)) {
-            $adapter = call_user_func($adapter, $this->container);
+            $adapter = call_user_func($adapter, $this->contaniner());
         }
 
         $this->adapter = $adapter;
@@ -191,15 +191,15 @@ class CApi_Transformer_Factory {
     }
 
     /**
-     * Get the request from the container.
+     * Get the current API request, falling back to the framework request.
      *
-     * @return \CApi_HTTP_Request_Request
+     * @return \CApi_HTTP_Request
      */
     public function getRequest() {
-        $request = $this->container['request'];
+        $request = CApi::request() ?: c::request();
 
         if ($request instanceof CHTTP_Request && !$request instanceof CApi_HTTP_Request) {
-            $request = (new CApi_HTTP_Request())->createFromBaseHttp($request);
+            $request = CApi_HTTP_Request::createFromBaseHttp($request);
         }
 
         return $request;

@@ -62,7 +62,7 @@ class CApi_Transformer_Binding {
         if (is_string($this->resolver)) {
             return $this->container()->make($this->resolver);
         } elseif (is_callable($this->resolver)) {
-            return call_user_func($this->resolver, $this->container);
+            return call_user_func($this->resolver, $this->container());
         } elseif (is_object($this->resolver)) {
             return $this->resolver;
         }
