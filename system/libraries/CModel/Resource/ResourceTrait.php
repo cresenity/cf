@@ -36,6 +36,15 @@ trait CModel_Resource_ResourceTrait {
         static::observe(new CModel_Resource_ResourceObserver());
     }
 
+    /**
+     * Every resource model stores its conversion flags as an array, whichever model class an app uses.
+     *
+     * @return void
+     */
+    public function initializeResourceTrait() {
+        $this->mergeCasts(['generated_conversions' => 'array']);
+    }
+
     public function model() {
         return $this->morphTo();
     }
