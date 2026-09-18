@@ -1,7 +1,7 @@
 <?php
 
 class CVendor_Namecheap_Command_Domains_Dns extends CVendor_Namecheap_AbstractCommand {
-    protected $command = 'namecheap.domains.dns';
+    protected $command = 'namecheap.domains.dns.';
 
     /**
      * @todo Sets domain to use our default DNS servers. Required for free services like Host record management, URL forwarding, email forwarding, dynamic dns and other value added services.
@@ -10,7 +10,7 @@ class CVendor_Namecheap_Command_Domains_Dns extends CVendor_Namecheap_AbstractCo
      * @param string $tld TLD of the DomainName
      */
     public function setDefault($std, $tld) {
-        return $this->api->get($this->command . __FUNCTION__, ['STD' => $std, 'TLD' => $tld]);
+        return $this->api->get($this->command . __FUNCTION__, ['SLD' => $std, 'TLD' => $tld]);
     }
 
     /**
@@ -23,7 +23,7 @@ class CVendor_Namecheap_Command_Domains_Dns extends CVendor_Namecheap_AbstractCo
      * @NOTE: Services like URL forwarding, Email forwarding, Dynamic DNS will not work for domains using custom nameservers
      */
     public function setCustom($std, $tld, $ns) {
-        return $this->api->get($this->command . __FUNCTION__, ['STD' => $std, 'TLD' => $tld, 'Nameservers' => $ns]);
+        return $this->api->get($this->command . __FUNCTION__, ['SLD' => $std, 'TLD' => $tld, 'Nameservers' => $ns]);
     }
 
     /**
@@ -33,7 +33,7 @@ class CVendor_Namecheap_Command_Domains_Dns extends CVendor_Namecheap_AbstractCo
      * @param string $tld TLD of the DomainName
      */
     public function getList($std, $tld) {
-        return $this->api->get($this->command . __FUNCTION__, ['STD' => $std, 'TLD' => $tld]);
+        return $this->api->get($this->command . __FUNCTION__, ['SLD' => $std, 'TLD' => $tld]);
     }
 
     /**
@@ -43,7 +43,7 @@ class CVendor_Namecheap_Command_Domains_Dns extends CVendor_Namecheap_AbstractCo
      * @param string $tld TLD of the DomainName
      */
     public function getHosts($std, $tld) {
-        return $this->api->get($this->command . __FUNCTION__, ['STD' => $std, 'TLD' => $tld]);
+        return $this->api->get($this->command . __FUNCTION__, ['SLD' => $std, 'TLD' => $tld]);
     }
 
     /**
