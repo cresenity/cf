@@ -193,13 +193,18 @@ class clog {
 
     public static function log($filename, $type, $message) {
         $date = date('Y-m-d H:i:s');
+        $type = str_replace(["\r", "\n"], ' ', (string) $type);
+        $message = str_replace(["\r", "\n"], ' ', (string) $message);
         $str = $date . ' ' . $type . ' ' . $message . "\r\n";
         $dir = DOCROOT . 'logs/';
         if (!is_dir($dir)) {
             @mkdir($dir);
         }
-        $filename = $dir . date('Ymd') . '_' . $filename;
+        $filename = $dir . date('Ymd') . '_' . basename($filename);
         $fh = @fopen($filename, 'a+');
+        if ($fh === false) {
+            return;
+        }
         fwrite($fh, $str);
         @fclose($fh);
     }
