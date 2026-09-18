@@ -18,8 +18,17 @@ abstract class CAjax_Engine implements CAjax_EngineInterface {
      */
     protected $args;
 
-    public function __construct(CAjax_Method $ajaxMethod) {
+    /**
+     * @param CAjax_Method $ajaxMethod
+     * @param null|array   $input      explicit input; null reads the request (GET/POST by the method's verb)
+     */
+    public function __construct(CAjax_Method $ajaxMethod, ?array $input = null) {
         $this->ajaxMethod = $ajaxMethod;
+        if ($input !== null) {
+            $this->input = $input;
+
+            return;
+        }
         $this->input = array_merge($_GET, $_POST);
         if (strtoupper($ajaxMethod->getMethod()) == 'GET') {
             $this->input = $_GET;

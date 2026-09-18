@@ -60,7 +60,7 @@ class CElement_Depends_DependsOn {
      * @return $this
      */
     public function setResolver($resolver) {
-        $this->resolver = new CFunction_SerializableClosure($resolver);
+        $this->resolver = c::toSerializableClosure($resolver);
 
         return $this;
     }

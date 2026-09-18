@@ -59,6 +59,13 @@ class CAjax_Method implements Jsonable {
      * @return $this
      */
     public function setData($key, $data) {
+        // the method is stored as JSON, so a closure has to travel as its serialize() string
+        if ($data instanceof Closure) {
+            $data = c::toSerializableClosure($data);
+        }
+        if ($data instanceof CFunction_SerializableClosure || $data instanceof \Opis\Closure\SerializableClosure) {
+            $data = serialize($data);
+        }
         $this->data[$key] = $data;
 
         return $this;
@@ -261,11 +268,8 @@ class CAjax_Method implements Jsonable {
 
     protected function checkAuth() {
         if ($this->auth) {
-            $guard = null;
-            if (is_array($this->auth)) {
-                $guardName = carr::get($this->auth, 'guard');
-                $guard = c::auth($guardName);
-            }
+            // auth === true (enableAuth() without a resolvable guard) means the default guard
+            $guard = c::auth(is_array($this->auth) ? carr::get($this->auth, 'guard') : null);
             if ($guard->check()) {
                 if (get_class($guard) == CAuth_Guard_SessionGuard::class) {
                     if (carr::get($this->auth, 'id') != $guard->id()) {

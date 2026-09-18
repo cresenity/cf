@@ -34,7 +34,7 @@ trait CObservable_Listener_Handler_Trait_AjaxHandlerTrait {
 
             $ajaxUrl = CAjax::createMethod()->setType('AjaxHandler')
                 ->setData('json', $this->content->json())
-                ->setData('callback', $callback)
+                ->setData('callback', $callback ? serialize($callback) : null)
                 ->makeUrl();
 
             $link = $ajaxUrl;

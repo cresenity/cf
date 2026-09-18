@@ -22,6 +22,13 @@ class CFunction {
         if ($func instanceof Closure) {
             $func = new CFunction_SerializableClosure($func);
         }
+        // a closure that travelled through an ajax method file arrives as its serialize() string
+        if (is_string($func) && strncmp($func, 'O:', 2) === 0) {
+            $unserialized = @unserialize($func);
+            if ($unserialized instanceof CFunction_SerializableClosure || $unserialized instanceof OpisSerializableClosure) {
+                $func = $unserialized;
+            }
+        }
         $this->func = $func;
     }
 
