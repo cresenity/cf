@@ -4,6 +4,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use League\Flysystem\CorruptedPathDetected;
 use League\Flysystem\PathTraversalDetected;
 
 class CApi_ExceptionHandler implements CApi_Contract_ExceptionHandlerInterface, CException_ExceptionHandlerInterface {
@@ -136,7 +137,7 @@ class CApi_ExceptionHandler implements CApi_Contract_ExceptionHandlerInterface, 
         }
         // Flysystem's own path normalizer already refuses the traversal before touching
         // any adapter - malformed/malicious input, not a server error.
-        if ($exception instanceof PathTraversalDetected) {
+        if ($exception instanceof PathTraversalDetected || $exception instanceof CorruptedPathDetected) {
             $exception = new NotFoundHttpException('Not Found.', $exception);
         }
 
