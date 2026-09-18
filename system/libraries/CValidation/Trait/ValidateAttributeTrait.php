@@ -141,6 +141,10 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return bool
      */
     public function validateAscii($attribute, $value) {
+        if (!is_string($value)) {
+            return false;
+        }
+
         return cstr::isAscii($value);
     }
 
@@ -646,6 +650,9 @@ trait CValidation_Trait_ValidateAttributeTrait {
     public function validateDigitsBetween($attribute, $value, $parameters) {
         $this->requireParameterCount(2, $parameters, 'digits_between');
 
+        if (!is_string($value) && !is_numeric($value)) {
+            return false;
+        }
         $length = strlen((string) $value);
 
         return !preg_match('/[^0-9]/', $value) && $length >= $parameters[0] && $length <= $parameters[1];
@@ -925,7 +932,7 @@ trait CValidation_Trait_ValidateAttributeTrait {
         // The presence verifier is responsible for counting rows within this store
         // mechanism which might be a relational database or any other permanent
         // data store like Redis, etc. We will use it to determine uniqueness.
-        $verifier = $this->getPresenceVerifier($connection);
+        $verifier = $this->getPresenceVerifierFor($connection);
 
         $extra = $this->getUniqueExtra($parameters);
 
@@ -1251,6 +1258,10 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return bool
      */
     public function validateLowercase($attribute, $value, $parameters) {
+        if (!is_string($value)) {
+            return false;
+        }
+
         return cstr::lower($value) === $value;
     }
 
@@ -1264,6 +1275,10 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return bool
      */
     public function validateUppercase($attribute, $value, $parameters) {
+        if (!is_string($value)) {
+            return false;
+        }
+
         return cstr::upper($value) === $value;
     }
 
@@ -1437,6 +1452,9 @@ trait CValidation_Trait_ValidateAttributeTrait {
     public function validateMaxDigits($attribute, $value, $parameters) {
         $this->requireParameterCount(1, $parameters, 'max_digits');
 
+        if (!is_string($value) && !is_numeric($value)) {
+            return false;
+        }
         $length = strlen((string) $value);
 
         return !preg_match('/[^0-9]/', $value) && $length <= $parameters[0];
@@ -1538,6 +1556,9 @@ trait CValidation_Trait_ValidateAttributeTrait {
     public function validateMinDigits($attribute, $value, $parameters) {
         $this->requireParameterCount(1, $parameters, 'min_digits');
 
+        if (!is_string($value) && !is_numeric($value)) {
+            return false;
+        }
         $length = strlen((string) $value);
 
         return !preg_match('/[^0-9]/', $value) && $length >= $parameters[0];
@@ -2227,6 +2248,10 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return bool
      */
     public function validateStartsWith($attribute, $value, $parameters) {
+        if (!is_string($value)) {
+            return false;
+        }
+
         return cstr::startsWith($value, $parameters);
     }
 
@@ -2240,6 +2265,10 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return bool
      */
     public function validateDoesntStartWith($attribute, $value, $parameters) {
+        if (!is_string($value)) {
+            return false;
+        }
+
         return !cstr::startsWith($value, $parameters);
     }
 
@@ -2253,6 +2282,10 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return bool
      */
     public function validateEndsWith($attribute, $value, $parameters) {
+        if (!is_string($value)) {
+            return false;
+        }
+
         return cstr::endsWith($value, $parameters);
     }
 
@@ -2266,6 +2299,10 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return bool
      */
     public function validateDoesntEndWith($attribute, $value, $parameters) {
+        if (!is_string($value)) {
+            return false;
+        }
+
         return !cstr::endsWith($value, $parameters);
     }
 

@@ -46,10 +46,12 @@ class CHTTP_Testing_File extends CHTTP_UploadedFile {
         $this->name = $name;
         $this->tempFile = $tempFile;
 
+        // vendored UploadedFile takes ($path, $originalName, $mimeType, $size, $error, $test)
         parent::__construct(
             $this->tempFilePath(),
             $name,
             $this->getMimeType(),
+            null,
             null,
             true
         );

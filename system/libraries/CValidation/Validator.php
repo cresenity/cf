@@ -852,7 +852,7 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
      *
      * @return void
      */
-    protected function addFailure($attribute, $rule, $parameters) {
+    public function addFailure($attribute, $rule, $parameters = []) {
         if (!$this->messages) {
             $this->passes();
         }

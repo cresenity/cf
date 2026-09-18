@@ -211,6 +211,8 @@ trait CValidation_Trait_FormatMessageTrait {
         );
 
         $message = $this->replaceInputPlaceholder($message, $attribute);
+        $message = $this->replaceIndexPlaceholder($message, $attribute);
+        $message = $this->replacePositionPlaceholder($message, $attribute);
 
         if (isset($this->replacers[cstr::snake($rule)])) {
             return $this->callReplacer($message, $attribute, cstr::snake($rule), $parameters, $this);
@@ -284,6 +286,64 @@ trait CValidation_Trait_FormatMessageTrait {
             [$value, cstr::upper($value), cstr::ucfirst($value)],
             $message
         );
+    }
+
+    /**
+     * Replace the :index placeholder (and :second-index, ...) with the numeric segments of a wildcard attribute.
+     *
+     * @param string $message
+     * @param string $attribute
+     *
+     * @return string
+     */
+    protected function replaceIndexPlaceholder($message, $attribute) {
+        return $this->replaceIndexOrPositionPlaceholder($message, $attribute, 'index');
+    }
+
+    /**
+     * Replace the :position placeholder (index + 1, and :second-position, ...).
+     *
+     * @param string $message
+     * @param string $attribute
+     *
+     * @return string
+     */
+    protected function replacePositionPlaceholder($message, $attribute) {
+        return $this->replaceIndexOrPositionPlaceholder($message, $attribute, 'position', function ($segment) {
+            return $segment + 1;
+        });
+    }
+
+    /**
+     * @param string       $message
+     * @param string       $attribute
+     * @param string       $placeholder
+     * @param null|Closure $modifier
+     *
+     * @return string
+     */
+    protected function replaceIndexOrPositionPlaceholder($message, $attribute, $placeholder, ?Closure $modifier = null) {
+        if (strpos($message, ':') === false) {
+            return $message;
+        }
+        $modifier = $modifier ?: function ($value) {
+            return $value;
+        };
+        $numericIndex = 1;
+        foreach (explode('.', $attribute) as $segment) {
+            if (is_numeric($segment)) {
+                if ($numericIndex === 1) {
+                    $message = str_ireplace(':' . $placeholder, $modifier((int) $segment), $message);
+                }
+                $ordinal = carr::get(['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'], $numericIndex - 1);
+                if ($ordinal) {
+                    $message = str_ireplace(':' . $ordinal . '-' . $placeholder, $modifier((int) $segment), $message);
+                }
+                $numericIndex++;
+            }
+        }
+
+        return $message;
     }
 
     /**
