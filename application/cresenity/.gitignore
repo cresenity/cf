@@ -15,3 +15,8 @@ composer.phar
 composer.lock
 
 env.php
+
+# Playwright (e2e/)
+node_modules/
+e2e-report/
+test-results/

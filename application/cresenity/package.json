@@ -1,0 +1,11 @@
+{
+    "name": "cresenity-e2e",
+    "private": true,
+    "description": "Browser test untuk demo site framework (dev.cresenity.com) - jalankan di dev server",
+    "scripts": {
+        "e2e": "playwright test"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.48.0"
+    }
+}
