@@ -1170,10 +1170,10 @@ class CDatabase_Schema_Blueprint {
      * @param string $name
      * @param array  $parameters
      *
-     * @return CBase_Fluent
+     * @return CDatabase_Schema_ColumnDefinition
      */
     public function addColumn($type, $name, array $parameters = []) {
-        $this->columns[] = $column = new CBase_Fluent(
+        $this->columns[] = $column = new CDatabase_Schema_ColumnDefinition(
             array_merge(compact('type', 'name'), $parameters)
         );
 
