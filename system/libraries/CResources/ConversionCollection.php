@@ -132,7 +132,7 @@ class CResources_ConversionCollection extends CCollection {
      * @param mixed $collectionName
      */
     public function getConversionsFiles($collectionName = '') {
-        $fileName = pathinfo($this->resource->file_name, PATHINFO_FILENAME);
+        $fileName = $this->resource->file_name;
 
         return $this->getConversions($collectionName)->map(function (CResources_Conversion $conversion) use ($fileName) {
             return $conversion->getConversionFile($fileName);
