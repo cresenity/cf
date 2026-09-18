@@ -119,7 +119,13 @@ trait CDatabase_Query_Concern_BuilderWhereTrait {
         return $this->whereNested(function ($query) use ($column, $method, $boolean) {
             foreach ($column as $key => $value) {
                 if (is_numeric($key) && is_array($value)) {
-                    $query->{$method}(...array_values($value));
+                    // [kolom, (operator,) nilai] mewarisi boolean pemanggilnya, sama seperti bentuk asosiatif
+                    $arguments = array_values($value);
+                    if (count($arguments) < 4) {
+                        $arguments = array_pad($arguments, 3, null);
+                        $arguments[] = $boolean;
+                    }
+                    $query->{$method}(...$arguments);
                 } else {
                     $query->$method($key, '=', $value, $boolean);
                 }

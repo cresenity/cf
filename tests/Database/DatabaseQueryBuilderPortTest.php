@@ -1169,11 +1169,10 @@ class DatabaseQueryBuilderPortTest extends TestCase {
         $builder->select('*')->from('users')->where('xxxx', 'xxxx')->orWhere([['foo', 1], ['bar', 2]]);
         $queries[] = $builder->toSql();
 
-        //bentuk daftar-pasangan [['foo', 1], ['bar', 2]] digabung `and` di dalam kurung (hulu terbaru
-        //menyamakannya jadi `or`); dibiarkan karena mengubahnya mengubah hasil query yang sudah jalan
+        //kedua bentuk array mewarisi `or` pemanggilnya, juga daftar-pasangan [['foo', 1], ['bar', 2]]
         $this->assertSame([
             'select * from "users" where "xxxx" = ? or ("foo" = ? or "bar" = ?)',
-            'select * from "users" where "xxxx" = ? or ("foo" = ? and "bar" = ?)',
+            'select * from "users" where "xxxx" = ? or ("foo" = ? or "bar" = ?)',
         ], $queries);
 
         $queries = [];
@@ -1187,8 +1186,20 @@ class DatabaseQueryBuilderPortTest extends TestCase {
 
         $this->assertSame([
             'select * from "users" where "xxxx" = ? or ("foo" = "_foo" or "bar" = "_bar")',
-            'select * from "users" where "xxxx" = ? or ("foo" = "_foo" and "bar" = "_bar")',
+            'select * from "users" where "xxxx" = ? or ("foo" = "_foo" or "bar" = "_bar")',
         ], $queries);
+    }
+
+    public function testListOfPairsWhereKeepsExplicitOperatorAndCallerBoolean() {
+        $builder = $this->getBuilder();
+        $builder->select('*')->from('users')->where('xxxx', 'xxxx')->orWhere([['foo', '>', 1], ['bar', 2]]);
+        $this->assertSame('select * from "users" where "xxxx" = ? or ("foo" > ? or "bar" = ?)', $builder->toSql());
+        $this->assertSame(['xxxx', 1, 2], $builder->getBindings());
+
+        //where() biasa tetap `and` di dalam kurung
+        $builder = $this->getBuilder();
+        $builder->select('*')->from('users')->where([['foo', 1], ['bar', null]]);
+        $this->assertSame('select * from "users" where ("foo" = ? and "bar" is null)', $builder->toSql());
     }
 
     public function testNestedWhereBindings() {
