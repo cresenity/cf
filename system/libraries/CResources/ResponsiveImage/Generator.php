@@ -1,19 +1,5 @@
 <?php
 
-use Illuminate\Support\Str;
-use Spatie\MediaLibrary\Support\File;
-use Spatie\MediaLibrary\Support\ImageFactory;
-use Spatie\MediaLibrary\Conversions\Conversion;
-use Spatie\MediaLibrary\Support\TemporaryDirectory;
-use Spatie\MediaLibrary\MediaCollections\Filesystem;
-use Spatie\MediaLibrary\Support\FileNamer\FileNamer;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Spatie\MediaLibrary\ResponsiveImages\Exceptions\InvalidTinyJpg;
-use Spatie\MediaLibrary\ResponsiveImages\WidthCalculator\WidthCalculator;
-use Spatie\MediaLibrary\ResponsiveImages\Events\ResponsiveImagesGenerated;
-use Spatie\TemporaryDirectory\TemporaryDirectory as BaseTemporaryDirectory;
-use Spatie\MediaLibrary\ResponsiveImages\TinyPlaceholderGenerator\TinyPlaceholderGenerator;
-
 class CResources_ResponsiveImage_Generator {
     const DEFAULT_CONVERSION_QUALITY = 90;
 

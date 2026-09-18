@@ -1,7 +1,5 @@
 <?php
 
-use Spatie\MediaLibrary\MediaCollections\Exceptions\InvalidPathGenerator;
-
 class CResources_PathGeneratorFactory {
     /**
      * @param CModel_Resource_ResourceInterface $resource
