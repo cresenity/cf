@@ -134,6 +134,31 @@ class ResourceCollectionSerializationTest extends TestCase {
         $this->assertSame($resource, $resource->markAsConversionNotGenerated('thumb'));
         $this->assertFalse($resource->hasGeneratedConversion('thumb'));
         $this->assertSame(['thumb' => false], $resource->getGeneratedConversions()->all());
-        $this->assertSame(['generated_conversions' => ['thumb' => false]], $resource->custom_properties, 'tetap di custom_properties, tanpa kolom baru');
+        $this->assertSame(['generated_conversions' => ['thumb' => false]], $resource->custom_properties, 'tanpa kolom generated_conversions → custom_properties');
+    }
+
+    public function testConversionFlagsUseTheGeneratedConversionsColumnWhenTheRowHasOne() {
+        $model = new class() extends CApp_Model_Resource {
+            public function save(array $options = []) {
+                return true;
+            }
+
+        };
+        $resource = $model->newFromBuilder([
+            'resource_id' => 11,
+            'file_name' => 'a.jpg',
+            'custom_properties' => '[]',
+            'generated_conversions' => '{"thumb":true}',
+        ]);
+
+        //baris dimuat dengan atribut generated_conversions → tabelnya punya kolom itu
+        $this->assertTrue($resource->hasGeneratedConversion('thumb'), 'dibaca dari kolom');
+        $resource->markAsConversionGenerated('preview', true);
+        $this->assertSame(['thumb' => true, 'preview' => true], $resource->generated_conversions);
+        $this->assertSame([], $resource->custom_properties, 'custom_properties tidak disentuh bila kolom ada');
+
+        $resource->markAsConversionNotGenerated('thumb');
+        $this->assertFalse($resource->hasGeneratedConversion('thumb'));
+        $this->assertTrue($resource->hasGeneratedConversion('preview'));
     }
 }

@@ -313,7 +313,13 @@ trait CModel_Resource_ResourceTrait {
     }
 
     public function markAsConversionGenerated($conversionName, $generated) {
-        $this->setCustomProperty("generated_conversions.{$conversionName}", $generated);
+        if ($this->usesGeneratedConversionsAttribute()) {
+            $generatedConversions = $this->getGeneratedConversions()->all();
+            $generatedConversions[$conversionName] = $generated;
+            $this->generated_conversions = $generatedConversions;
+        } else {
+            $this->setCustomProperty("generated_conversions.{$conversionName}", $generated);
+        }
         $this->save();
 
         return $this;
@@ -331,7 +337,28 @@ trait CModel_Resource_ResourceTrait {
     }
 
     public function getGeneratedConversions() {
+        if ($this->usesGeneratedConversionsAttribute()) {
+            $fromColumn = $this->generated_conversions;
+            if (is_string($fromColumn)) {
+                $fromColumn = json_decode($fromColumn, true);
+            }
+            if (!empty($fromColumn)) {
+                return c::collect($fromColumn);
+            }
+        }
+
         return c::collect($this->getCustomProperty('generated_conversions', []));
+    }
+
+    /**
+     * True when this row carries a generated_conversions attribute (the table has the column);
+     * decided from the loaded attributes so no schema query is needed on the read path.
+     *
+     * @return bool
+     */
+    protected function usesGeneratedConversionsAttribute() {
+        /** @var CModel $this */
+        return array_key_exists('generated_conversions', $this->getAttributes());
     }
 
     /**
@@ -503,13 +530,33 @@ trait CModel_Resource_ResourceTrait {
      * @return bool
      */
     public function hasConversionsDiskColumn() {
-        static $tables = [];
+        return $this->hasResourceColumn('conversions_disk');
+    }
+
+    /**
+     * Whether the resource table has a generated_conversions column (checked once per table).
+     *
+     * @return bool
+     */
+    public function hasGeneratedConversionsColumn() {
+        return $this->hasResourceColumn('generated_conversions');
+    }
+
+    /**
+     * Column presence on the resource table, checked once per connection.table.column.
+     *
+     * @param string $column
+     *
+     * @return bool
+     */
+    protected function hasResourceColumn($column) {
+        static $columns = [];
         /** @var CModel $this */
-        $key = $this->getConnectionName() . '.' . $this->getTable();
-        if (!array_key_exists($key, $tables)) {
-            $tables[$key] = $this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), 'conversions_disk');
+        $key = $this->getConnectionName() . '.' . $this->getTable() . '.' . $column;
+        if (!array_key_exists($key, $columns)) {
+            $columns[$key] = $this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $column);
         }
 
-        return $tables[$key];
+        return $columns[$key];
     }
 }

@@ -320,6 +320,9 @@ class CModel_HasResource_FileAdder_FileAdder {
         $resource->size = $storage->size($this->pathToFile);
         $resource->custom_properties = $this->customProperties;
 
+        if ($resource->hasGeneratedConversionsColumn()) {
+            $resource->generated_conversions = [];
+        }
         $resource->responsive_images = [];
 
         $resource->manipulations = $this->manipulations;
