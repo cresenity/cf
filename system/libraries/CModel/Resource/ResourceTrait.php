@@ -111,6 +111,24 @@ trait CModel_Resource_ResourceTrait {
     }
 
     /**
+     * Url of the original file, exposed as the `original_url` attribute.
+     *
+     * @return string
+     */
+    public function getOriginalUrlAttribute() {
+        return $this->getFullUrl();
+    }
+
+    /**
+     * Url of the `preview` conversion when it exists, exposed as the `preview_url` attribute.
+     *
+     * @return string
+     */
+    public function getPreviewUrlAttribute() {
+        return $this->hasGeneratedConversion('preview') ? $this->getFullUrl('preview') : '';
+    }
+
+    /**
      * @param array $conversionNames
      *
      * @return string
@@ -299,6 +317,17 @@ trait CModel_Resource_ResourceTrait {
         $this->save();
 
         return $this;
+    }
+
+    /**
+     * Flag a conversion as missing again, e.g. before regenerating it or after it failed.
+     *
+     * @param string $conversionName
+     *
+     * @return $this
+     */
+    public function markAsConversionNotGenerated($conversionName) {
+        return $this->markAsConversionGenerated($conversionName, false);
     }
 
     public function getGeneratedConversions() {

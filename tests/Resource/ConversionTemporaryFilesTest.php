@@ -9,6 +9,7 @@ class UjiKonversi extends CModel implements CModel_HasResourceInterface {
 
     public function registerResourceConversions(?CModel_Resource_ResourceInterface $resource = null) {
         $this->addResourceConversion('thumb')->width(10)->nonQueued();
+        $this->addResourceConversion('rusak')->width(5)->nonQueued();
     }
 }
 
@@ -108,5 +109,29 @@ class Resource_ConversionTemporaryFilesTest extends TestCase {
 
         $this->assertFileExists($this->baseDir . '/conversions/uji-thumb.jpg', 'hasil konversi harus tersimpan di library');
         $this->assertSame($before, $this->countTemporaryEntries(), 'temp/resource tidak boleh bertambah sesudah konversi');
+        $this->assertTrue($this->resource->hasGeneratedConversion('thumb'));
+    }
+
+    public function testAFailedConversionIsFlaggedAsNotGenerated() {
+        $this->resource->markAsConversionGenerated('rusak', true);
+        $conversions = new CResources_ConversionCollection([
+            new Resource_ConversionTemporaryFilesTest_FailingConversion('rusak'),
+        ]);
+
+        try {
+            (new CResources_FileManipulator())->performConversions($conversions, $this->resource);
+            $this->fail('konversi yang gagal harus melempar');
+        } catch (RuntimeException $e) {
+            $this->assertSame('manipulasi gagal', $e->getMessage());
+        }
+
+        $this->assertFalse($this->resource->hasGeneratedConversion('rusak'), 'flag kembali false, bukan tetap true');
+        $this->assertFileDoesNotExist($this->baseDir . '/conversions/uji-rusak.jpg');
+    }
+}
+
+class Resource_ConversionTemporaryFilesTest_FailingConversion extends CResources_Conversion {
+    public function getManipulations() {
+        throw new RuntimeException('manipulasi gagal');
     }
 }

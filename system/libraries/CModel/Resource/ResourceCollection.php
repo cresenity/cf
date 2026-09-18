@@ -35,7 +35,16 @@ class CModel_Resource_ResourceCollection extends CModel_Collection implements Ht
     }
 
     public function toHtml(): string {
-        return c::e(json_encode(c::old($this->formFieldName ?? $this->collectionName) ?? $this->map(function (CModel_Resource_ResourceInterface $resource) {
+        return c::e(json_encode(c::old($this->formFieldName ?? $this->collectionName) ?? $this->serializeItems()));
+    }
+
+    /**
+     * One entry per resource, keyed by uuid when the table has one and by primary key otherwise.
+     *
+     * @return CCollection
+     */
+    protected function serializeItems() {
+        return $this->map(function (CModel_Resource_ResourceInterface $resource) {
             return [
                 'name' => $resource->name,
                 'file_name' => $resource->file_name,
@@ -47,7 +56,9 @@ class CModel_Resource_ResourceCollection extends CModel_Collection implements Ht
                 'extension' => $resource->extension,
                 'size' => $resource->size,
             ];
-        })->keyBy('uuid')));
+        })->keyBy(function ($item, $key) {
+            return $item['uuid'] ?: (string) $this->items[$key]->getKey();
+        });
     }
 
     public function jsonSerialize(): array {
@@ -59,18 +70,6 @@ class CModel_Resource_ResourceCollection extends CModel_Collection implements Ht
             return [];
         }
 
-        return c::old($this->formFieldName ?? $this->collectionName) ?? $this->map(function (CModel_Resource_ResourceInterface $resource) {
-            return [
-                'name' => $resource->name,
-                'file_name' => $resource->file_name,
-                'uuid' => $resource->uuid,
-                'preview_url' => $resource->preview_url,
-                'original_url' => $resource->original_url,
-                'order' => $resource->order_column,
-                'custom_properties' => $resource->custom_properties,
-                'extension' => $resource->extension,
-                'size' => $resource->size,
-            ];
-        })->keyBy('uuid')->toArray();
+        return c::old($this->formFieldName ?? $this->collectionName) ?? $this->serializeItems()->toArray();
     }
 }

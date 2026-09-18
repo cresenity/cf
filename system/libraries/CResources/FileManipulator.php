@@ -88,20 +88,27 @@ class CResources_FileManipulator {
             ->each(function (CResources_Conversion $conversion) use ($resource, $imageGenerator, $copiedOriginalFile) {
                 CEvent::dispatcher()->dispatch(new CResources_Event_Conversion_WillStart($resource, $conversion, $copiedOriginalFile));
 
-                $copiedOriginalFile = $imageGenerator->convert($copiedOriginalFile, $conversion);
-                $manipulationResult = $this->performManipulations($resource, $conversion, $copiedOriginalFile);
-                $newFileName = pathinfo($resource->file_name, PATHINFO_FILENAME)
-                        . '-' . $conversion->getName()
-                        . '.' . $conversion->getResultExtension(pathinfo($copiedOriginalFile, PATHINFO_EXTENSION));
-                $renamedFile = ResourceLibraryFileHelper::renameInDirectory($manipulationResult, $newFileName);
-                if ($conversion->shouldGenerateResponsiveImages()) {
-                    CResources_Factory::createResponsiveImageGenerator()->generateResponsiveImagesForConversion(
-                        $resource,
-                        $conversion,
-                        $renamedFile
-                    );
+                try {
+                    $copiedOriginalFile = $imageGenerator->convert($copiedOriginalFile, $conversion);
+                    $manipulationResult = $this->performManipulations($resource, $conversion, $copiedOriginalFile);
+                    $newFileName = pathinfo($resource->file_name, PATHINFO_FILENAME)
+                            . '-' . $conversion->getName()
+                            . '.' . $conversion->getResultExtension(pathinfo($copiedOriginalFile, PATHINFO_EXTENSION));
+                    $renamedFile = ResourceLibraryFileHelper::renameInDirectory($manipulationResult, $newFileName);
+                    if ($conversion->shouldGenerateResponsiveImages()) {
+                        CResources_Factory::createResponsiveImageGenerator()->generateResponsiveImagesForConversion(
+                            $resource,
+                            $conversion,
+                            $renamedFile
+                        );
+                    }
+                    CResources_Factory::createFileSystem()->copyToResourceLibrary($renamedFile, $resource, 'conversions');
+                } catch (Throwable $e) {
+                    // a half-made conversion must not keep reporting itself as generated
+                    $resource->markAsConversionNotGenerated($conversion->getName());
+
+                    throw $e;
                 }
-                CResources_Factory::createFileSystem()->copyToResourceLibrary($renamedFile, $resource, 'conversions');
                 $resource->markAsConversionGenerated($conversion->getName(), true);
                 CEvent::dispatcher()->dispatch(new CResources_Event_Conversion_ConversionHasBeenCompleted($resource, $conversion));
             });
