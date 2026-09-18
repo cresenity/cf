@@ -75,17 +75,18 @@ export default function (Alpine) {
             const changeHandler = valueChangeCallback(el);
             $(el).bind('blur focusout change', changeHandler);
 
-            // satu effect saja: cleanup elementBoundEffect hanya melepas effect terakhir yang didaftarkan
-            effect(() => {
-                Alpine.mutateDom(() => {
-                    if (el._x_model) {
-                        setValue(el, el._x_model.get());
-                    }
-                    if (el._x_bindings && el._x_bindings.value) {
-                        setValue(el, el._x_bindings.value);
-                    }
+            // satu effect saja (cleanup elementBoundEffect hanya melepas effect terakhir), dan
+            // x-model menang: _x_bindings.value masih menyimpan nilai awal yang ditulis x-model
+            // sebelum dilepas, jadi tidak boleh ikut dibaca kalau ada x-model
+            if (el._x_model) {
+                effect(() => {
+                    Alpine.mutateDom(() => setValue(el, el._x_model.get()));
                 });
-            });
+            } else if (el._x_bindings && el._x_bindings.value) {
+                effect(() => {
+                    Alpine.mutateDom(() => setValue(el, el._x_bindings.value));
+                });
+            }
             cleanup(()=>{
                 $(el).unbind('blur focusout change', changeHandler);
                 if (isInitialized(el)) {
