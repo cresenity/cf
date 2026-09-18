@@ -297,7 +297,7 @@ trait CHTTP_Trait_InteractsWithInput {
      * @return \CBase_String
      */
     public function string($key, $default = null) {
-        return c::str($this->input($key, $default));
+        return cstr::of($this->input($key, $default));
     }
 
     /**
