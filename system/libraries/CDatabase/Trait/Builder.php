@@ -355,7 +355,7 @@ trait CDatabase_Trait_Builder {
         }
 
         if ($result->count() > 1) {
-            throw new CDatabase_Exception_MultipleRecordsFoundException();
+            throw new CDatabase_Exception_MultipleRecordsFoundException($result->count());
         }
 
         return $result->first();

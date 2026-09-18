@@ -750,6 +750,17 @@ trait CModel_Trait_QueriesRelationships {
     }
 
     /**
+     * Add subselect queries to include the existence of related models.
+     *
+     * @param mixed $relation
+     *
+     * @return $this
+     */
+    public function withExists($relation) {
+        return $this->withAggregate($relation, '*', 'exists');
+    }
+
+    /**
      * Add the "has" condition where clause to the query.
      *
      * @param CModel_Query    $hasQuery

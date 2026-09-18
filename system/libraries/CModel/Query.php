@@ -281,6 +281,9 @@ class CModel_Query {
      * @return $this
      */
     public function whereKey($id) {
+        if ($id instanceof CModel) {
+            $id = $id->getKey();
+        }
         if (is_array($id) || $id instanceof Arrayable) {
             $this->query->whereIn($this->model->getQualifiedKeyName(), $id);
 
@@ -298,6 +301,9 @@ class CModel_Query {
      * @return $this
      */
     public function whereKeyNot($id) {
+        if ($id instanceof CModel) {
+            $id = $id->getKey();
+        }
         if (is_array($id) || $id instanceof Arrayable) {
             $this->query->whereNotIn($this->model->getQualifiedKeyName(), $id);
 
@@ -389,7 +395,7 @@ class CModel_Query {
      */
     public function fromQuery($query, $bindings = []) {
         return $this->hydrate(
-            $this->query->getConnection()->query($query, $bindings)
+            $this->query->getConnection()->select($query, $bindings)
         );
     }
 
@@ -609,7 +615,7 @@ class CModel_Query {
      *
      * @param string|\CDatabase_Contract_Query_ExpressionInterface $column
      *
-     * @throws \CModel_Exception_ModelNotFoundException<\CModel>
+     * @throws \CDatabase_Exception_RecordsNotFoundException
      * @throws \CDatabase_Exception_MultipleRecordsFoundException
      *
      * @return mixed
@@ -801,6 +807,15 @@ class CModel_Query {
      *
      * @return bool
      */
+    /**
+     * Key column used by the *ById helpers when none is given.
+     *
+     * @return string
+     */
+    protected function defaultKeyName() {
+        return $this->getModel()->getKeyName();
+    }
+
     public function chunkById($count, callable $callback, $column = null, $alias = null) {
         $column = is_null($column) ? $this->getModel()->getKeyName() : $column;
 
