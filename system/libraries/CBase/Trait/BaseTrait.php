@@ -3,7 +3,6 @@
 /**
  * Description of Base.
  *
- * @author Hery
  *
  * @deprecated use CApp_Trait_BaseTrait
  */

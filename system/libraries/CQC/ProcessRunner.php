@@ -2,8 +2,6 @@
 
 /**
  * Description of ProcessRunner
- *
- * @author Hery
  */
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;

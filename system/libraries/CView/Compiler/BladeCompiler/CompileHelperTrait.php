@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileHelperTrait.
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileHelperTrait {
     /**

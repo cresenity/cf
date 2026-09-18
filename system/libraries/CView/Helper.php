@@ -2,8 +2,6 @@
 
 /**
  * Description of Helper
- *
- * @author Hery
  */
 class CView_Helper {
     /**

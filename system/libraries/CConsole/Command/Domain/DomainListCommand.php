@@ -2,8 +2,6 @@
 
 /**
  * Description of DomainListCommand.
- *
- * @author Hery
  */
 class CConsole_Command_Domain_DomainListCommand extends CConsole_Command {
     /**

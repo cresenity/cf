@@ -2,8 +2,6 @@
 
 /**
  * Description of MakeConfigCommand
- *
- * @author Hery
  */
 class CConsole_Command_Make_MakeConfigCommand extends CConsole_Command {
     /**

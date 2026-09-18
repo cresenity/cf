@@ -2,8 +2,6 @@
 
 /**
  * Description of RedirectResponse.
- *
- * @author Hery
  */
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse as BaseRedirectResponse;

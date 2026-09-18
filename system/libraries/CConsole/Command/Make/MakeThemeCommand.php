@@ -2,8 +2,6 @@
 
 /**
  * Description of MakeThemeCommand
- *
- * @author Hery
  */
 class CConsole_Command_Make_MakeThemeCommand extends CConsole_Command {
     /**

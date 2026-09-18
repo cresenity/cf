@@ -2,8 +2,6 @@
 
 /**
  * Description of ServeCommand.
- *
- * @author Hery
  */
 use Carbon\Carbon;
 use Symfony\Component\Process\Process;

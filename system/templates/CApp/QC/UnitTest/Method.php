@@ -1,8 +1,6 @@
 <?php
 /**
  * Description of Method
- *
- * @author Hery
  */
 ?>
 <div class="card mb-3">

@@ -2,8 +2,6 @@
 
 /**
  * Description of Manager.
- *
- * @author Hery
  */
 class CSession_Manager {
     /**

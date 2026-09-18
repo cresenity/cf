@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan
- */
 
 use phpseclib3\Net\SFTP;
 use phpseclib3\Net\SSH2;

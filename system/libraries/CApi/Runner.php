@@ -2,8 +2,6 @@
 
 /**
  * Description of Runner.
- *
- * @author Hery
  */
 class CApi_Runner {
     private static $instance;

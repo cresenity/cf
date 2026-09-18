@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan
- */
 class CEvent_Dispatcher implements CEvent_DispatcherInterface {
     use CTrait_ReflectsClosureTrait;
 

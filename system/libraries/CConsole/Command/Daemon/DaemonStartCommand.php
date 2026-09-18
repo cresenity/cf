@@ -2,8 +2,6 @@
 
 /**
  * Description of DaemonStartCommand.
- *
- * @author Hery
  */
 class CConsole_Command_Daemon_DaemonStartCommand extends CConsole_Command {
     /**

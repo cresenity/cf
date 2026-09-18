@@ -2,8 +2,6 @@
 
 /**
  * Description of MiddlewareBootstrapper.
- *
- * @author Hery
  */
 class CBootstrap_MiddlewareBootstrapper extends CBootstrap_BootstrapperAbstract {
     /**

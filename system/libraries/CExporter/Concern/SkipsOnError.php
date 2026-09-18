@@ -2,8 +2,6 @@
 
 /**
  * Description of SkipsOnError
- *
- * @author Hery
  */
 interface CExporter_Concern_SkipsOnError {
 

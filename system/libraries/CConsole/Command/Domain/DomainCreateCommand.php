@@ -2,8 +2,6 @@
 
 /**
  * Description of DomainCreateCommand
- *
- * @author Hery
  */
 use Symfony\Component\Console\Input\InputArgument;
 

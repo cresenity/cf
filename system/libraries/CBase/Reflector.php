@@ -2,8 +2,6 @@
 
 /**
  * Description of Reflector.
- *
- * @author Hery
  */
 class CBase_Reflector {
     /**

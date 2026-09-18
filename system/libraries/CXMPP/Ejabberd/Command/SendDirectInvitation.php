@@ -3,8 +3,6 @@
 /**
  * Description of SendDirectInvitation
  *
- * @author Hery Kurniawan <hery@itton.co.id>
- * @license Ittron Global Teknologi
  *
  * @since May 31, 2020
  */

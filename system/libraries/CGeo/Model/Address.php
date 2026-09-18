@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author William Durand <william.durand1@gmail.com>
- */
 class CGeo_Model_Address implements CGeo_Interface_LocationInterface {
     /**
      * @var null|Coordinates

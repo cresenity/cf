@@ -2,8 +2,6 @@
 
 /**
  * Description of Reloadable.
- *
- * @author Hery
  */
 trait CTrait_Element_Handler_ReloadHandler {
     /**

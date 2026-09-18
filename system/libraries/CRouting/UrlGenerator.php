@@ -2,8 +2,6 @@
 
 /**
  * Description of UrlGenerator.
- *
- * @author Hery
  */
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 

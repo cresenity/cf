@@ -2,8 +2,6 @@
 
 /**
  * Description of CFConsole
- *
- * @author Hery
  */
 trait CTrait_Controller_Application_Manager_CFConsole {
     protected function getTitle() {

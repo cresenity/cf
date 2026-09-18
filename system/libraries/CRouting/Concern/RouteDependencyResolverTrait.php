@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteDependencyResolverTrait.
- *
- * @author Hery
  */
 trait CRouting_Concern_RouteDependencyResolverTrait {
     /**

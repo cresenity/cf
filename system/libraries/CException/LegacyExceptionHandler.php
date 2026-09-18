@@ -2,8 +2,6 @@
 
 /**
  * Description of LegacyExceptionHandler.
- *
- * @author Hery
  */
 class CException_LegacyExceptionHandler {
     public static $errorLang = [

@@ -5,8 +5,6 @@
  *
  * Method Users
  * Manage Users
- *
- * @author Saddam Hossain <saddamrhossain@gmail.com>
  */
 class CVendor_Namecheap_Command_Users extends CVendor_Namecheap_AbstractCommand {
     protected $command = 'namecheap.users.';

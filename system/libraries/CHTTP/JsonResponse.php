@@ -2,8 +2,6 @@
 
 /**
  * Description of JsonResponse.
- *
- * @author Hery
  */
 
 use Illuminate\Contracts\Support\Jsonable;

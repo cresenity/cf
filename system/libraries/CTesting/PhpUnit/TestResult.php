@@ -2,8 +2,6 @@
 
 /**
  * Description of TestResult
- *
- * @author Hery
  */
 use PHPUnit\Framework\TestCase;
 

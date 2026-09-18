@@ -3,8 +3,6 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 /**
- * @author Hery Kurniawan
- * @license Ittron Global Teknologi <ittron.co.id>
  *
  * @since Apr 12, 2019, 7:58:07 PM
  */

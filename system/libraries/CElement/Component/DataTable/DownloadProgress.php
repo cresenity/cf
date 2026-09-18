@@ -3,7 +3,6 @@
 /**
  * Description of DownloadProgress.
  *
- * @author ekosantoso
  *
  * @deprecated since 1.3 dont use this
  */

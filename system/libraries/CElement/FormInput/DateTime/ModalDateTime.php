@@ -3,7 +3,6 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 /**
- * @author Hery Kurniawan
  *
  * @see https://github.com/nehakadam/DateTimePicker
  */

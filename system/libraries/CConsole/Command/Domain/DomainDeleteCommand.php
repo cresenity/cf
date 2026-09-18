@@ -2,8 +2,6 @@
 
 /**
  * Description of DomainDeleteCommand
- *
- * @author Hery
  */
 class CConsole_Command_Domain_DomainDeleteCommand extends CConsole_Command {
     /**

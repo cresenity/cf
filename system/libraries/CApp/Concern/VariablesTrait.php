@@ -3,7 +3,6 @@
 /**
  * Description of Variables.
  *
- * @author Hery
  *
  * @see CApp
  */

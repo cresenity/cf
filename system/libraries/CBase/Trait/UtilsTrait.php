@@ -2,8 +2,6 @@
 
 /**
  * Description of UtilsTrait.
- *
- * @author Hery
  */
 trait CBase_Trait_UtilsTrait {
     public static function resolveLibraryClassName($name, $folder) {

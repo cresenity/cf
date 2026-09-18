@@ -2,8 +2,6 @@
 
 /**
  * Description of UnitTestRunner.
- *
- * @author Hery
  */
 
 use PHPUnit\TextUI\TestRunner;

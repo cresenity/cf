@@ -6,9 +6,6 @@ use Symfony\Component\Process\Process;
  * Command.
  *
  * This class represents a shell command.
- *
- * @author Michael Härtl <haertl.mike@gmail.com>
- * @license http://www.opensource.org/licenses/MIT
  */
 class CServer_Runner_Command {
     /**

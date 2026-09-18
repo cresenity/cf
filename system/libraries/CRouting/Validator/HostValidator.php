@@ -2,8 +2,6 @@
 
 /**
  * Description of HostValidator.
- *
- * @author Hery
  */
 class CRouting_Validator_HostValidator implements CRouting_ValidatorInterface {
     /**

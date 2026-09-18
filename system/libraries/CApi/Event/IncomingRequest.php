@@ -2,8 +2,6 @@
 
 /**
  * Description of RequestHandled.
- *
- * @author Hery
  */
 class CApi_Event_IncomingRequest {
     /**

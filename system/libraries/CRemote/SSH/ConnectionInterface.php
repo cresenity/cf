@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan
- */
 interface CRemote_SSH_ConnectionInterface {
     /**
      * Define a set of commands as a task.

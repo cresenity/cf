@@ -2,8 +2,6 @@
 
 /**
  * Description of CompilesAuthorizationTrait.
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileAuthorizationTrait {
     /**

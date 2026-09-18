@@ -2,8 +2,6 @@
 
 /**
  * Description of SortedMiddleware
- *
- * @author Hery
  */
 class CMiddleware_SortedMiddleware extends CCollection {
     /**

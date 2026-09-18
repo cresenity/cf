@@ -5,8 +5,6 @@ if (!is_callable('random_bytes')) {
 }
 /**
  * Description of Encrypter.
- *
- * @author Hery
  */
 class CCrypt_Encrypter implements CCrypt_EncrypterInterface {
     /**

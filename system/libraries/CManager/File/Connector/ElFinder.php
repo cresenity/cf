@@ -179,8 +179,6 @@ class CManager_File_Connector_ElFinder extends CManager_File_ConnectorAbstract {
      * @throws elFinderAbortException
      *
      * @return void
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function output(array $data) {
         // unlock session data for multiple access
@@ -297,8 +295,6 @@ class CManager_File_Connector_ElFinder extends CManager_File_ConnectorAbstract {
      * @param mixed $args
      *
      * @return mixed
-     *
-     * @author Naoki Sawada
      */
     protected function inputFilter($args) {
         static $magic_quotes_gpc = null;

@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileTranslationTrait.
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileTranslationTrait {
     /**

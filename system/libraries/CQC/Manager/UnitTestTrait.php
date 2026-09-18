@@ -2,8 +2,6 @@
 
 /**
  * Description of UnitTestTrait.
- *
- * @author Hery
  */
 trait CQC_Manager_UnitTestTrait {
     protected $unitTest = [];

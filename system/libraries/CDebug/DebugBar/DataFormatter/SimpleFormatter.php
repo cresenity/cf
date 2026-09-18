@@ -27,8 +27,6 @@ class CDebug_DebugBar_DataFormatter_SimpleFormatter extends DataFormatter {
      * @param bool  $deep  Only for internal usage
      *
      * @return string The string representation of the given value
-     *
-     *  @author Bernhard Schussek <bschussek@gmail.com>
      */
     private function exportValue($value, $depth = 1, $deep = false) {
         if ($value instanceof \__PHP_Incomplete_Class) {
@@ -96,8 +94,6 @@ class CDebug_DebugBar_DataFormatter_SimpleFormatter extends DataFormatter {
      * @param \__PHP_Incomplete_Class $value
      *
      * @return mixed
-     *
-     * @author Bernhard Schussek <bschussek@gmail.com>
      */
     private function getClassNameFromIncomplete(__PHP_Incomplete_Class $value) {
         $array = new \ArrayObject($value);

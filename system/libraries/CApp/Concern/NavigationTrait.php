@@ -2,8 +2,6 @@
 
 /**
  * Description of Navigation.
- *
- * @author Hery
  */
 trait CApp_Concern_NavigationTrait {
     /**

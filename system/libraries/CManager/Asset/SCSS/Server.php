@@ -2,8 +2,6 @@
 
 /**
  * SCSS server.
- *
- * @author Leaf Corcoran <leafot@gmail.com>
  */
 class CManager_Asset_SCSS_Server {
     /**

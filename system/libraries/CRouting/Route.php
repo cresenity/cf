@@ -2,8 +2,6 @@
 
 /**
  * Description of Route.
- *
- * @author Hery
  */
 use Symfony\Component\Routing\Route as SymfonyRoute;
 

@@ -2,8 +2,6 @@
 
 /**
  * Description of ProcessRunnerResult
- *
- * @author Hery
  */
 class CQC_ProcessRunnerResult {
 

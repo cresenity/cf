@@ -17,7 +17,6 @@ use League\Flysystem\PathTraversalDetected;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 
 /**
- * @author Hery Kurniawans
  *
  * @see CException
  */

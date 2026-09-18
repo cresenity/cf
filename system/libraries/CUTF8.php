@@ -124,7 +124,6 @@ class CUTF8 {
      * @param string $str  string to transliterate
      * @param int    $case -1 lowercase only, +1 uppercase only, 0 both cases
      *
-     * @author  Andreas Gohr <andi@splitbrain.org>
      *
      * @return string
      */
@@ -163,7 +162,6 @@ class CUTF8 {
      * @param string $search needle
      * @param int    $offset offset from which character in haystack to start searching
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return int|bool position of needle|FALSE if the needle is not found
      *
@@ -188,7 +186,6 @@ class CUTF8 {
      * @param string $search needle
      * @param int    $offset offset from which character in haystack to start searching
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return int|bool position of needle|FALSE if the needle is not found
      *
@@ -212,7 +209,6 @@ class CUTF8 {
      * @param int    $offset offset
      * @param int    $length length limit
      *
-     * @author  Chris Smith <chris@jalakai.co.uk>
      *
      * @return string
      *
@@ -238,7 +234,6 @@ class CUTF8 {
      * @param int        $offset      offset
      * @param null|mixed $length
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return string
      */
@@ -254,7 +249,6 @@ class CUTF8 {
      *
      * @param string $str mixed case string
      *
-     * @author  Andreas Gohr <andi@splitbrain.org>
      *
      * @return string
      *
@@ -275,7 +269,6 @@ class CUTF8 {
      *
      * @param string $str mixed case string
      *
-     * @author  Andreas Gohr <andi@splitbrain.org>
      *
      * @return string
      *
@@ -298,7 +291,6 @@ class CUTF8 {
      *
      * @param string $str mixed case string
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return string
      */
@@ -314,7 +306,6 @@ class CUTF8 {
      *
      * @param string $str mixed case string
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return string
      */
@@ -331,7 +322,6 @@ class CUTF8 {
      * @param string $str1 string to compare
      * @param string $str2 string to compare
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return int less than 0 if str1 is less than str2, greater than 0 if str1 is greater than str2, 0 if they are equal
      */
@@ -352,7 +342,6 @@ class CUTF8 {
      * @param string|array $str     subject text
      * @param int          $count   number of matched and replaced needles will be returned via this parameter which is passed by reference
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com
      *
      * @return string|array if the input was a string|if the input was an array
      */
@@ -370,7 +359,6 @@ class CUTF8 {
      * @param string $str    input string
      * @param string $search needle
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return string|false matched substring if found|if the substring was not found
      */
@@ -389,7 +377,6 @@ class CUTF8 {
      * @param int    $offset start position of the string to examine
      * @param int    $length length of the string to examine
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return int length of the initial segment that contains characters in the mask
      */
@@ -408,7 +395,6 @@ class CUTF8 {
      * @param int    $offset start position of the string to examine
      * @param int    $length length of the string to examine
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return int length of the initial segment that contains characters not in the mask
      */
@@ -427,7 +413,6 @@ class CUTF8 {
      * @param string $pad_str          string to use as padding
      * @param string $pad_type         padding type: STR_PAD_RIGHT, STR_PAD_LEFT, or STR_PAD_BOTH
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return string
      */
@@ -444,7 +429,6 @@ class CUTF8 {
      * @param string $str          input string
      * @param int    $split_length maximum length of each chunk
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return array
      */
@@ -459,7 +443,6 @@ class CUTF8 {
      *
      * @param string $str string to be reversed
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return string
      */
@@ -476,7 +459,6 @@ class CUTF8 {
      * @param string $str      input string
      * @param string $charlist string of characters to remove
      *
-     * @author  Andreas Gohr <andi@splitbrain.org>
      *
      * @return string
      */
@@ -493,7 +475,6 @@ class CUTF8 {
      * @param string $str      input string
      * @param string $charlist string of characters to remove
      *
-     * @author  Andreas Gohr <andi@splitbrain.org>
      *
      * @return string
      */
@@ -510,7 +491,6 @@ class CUTF8 {
      * @param string $str      input string
      * @param string $charlist string of characters to remove
      *
-     * @author  Andreas Gohr <andi@splitbrain.org>
      *
      * @return string
      */
@@ -526,7 +506,6 @@ class CUTF8 {
      *
      * @param string $chr UTF-8 encoded character
      *
-     * @author  Harry Fuecks <hfuecks@gmail.com>
      *
      * @return int
      */

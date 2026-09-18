@@ -1,9 +1,6 @@
 <?php
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan
- */
 trait CModel_Trait_GuardsAttributes {
     /**
      * The attributes that are mass assignable.

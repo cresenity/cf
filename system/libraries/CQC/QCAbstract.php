@@ -2,8 +2,6 @@
 
 /**
  * Description of CQC_QCAbstract
- *
- * @author Hery
  */
 abstract class CQC_QCAbstract {
 

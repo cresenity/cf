@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteCollectionInterface
- *
- * @author Hery
  */
 interface CRouting_RouteCollectionInterface {
 

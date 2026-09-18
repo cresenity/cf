@@ -2,8 +2,6 @@
 
 /**
  * Description of log.
- *
- * @author Hery
  */
 return [
     'scout' => [

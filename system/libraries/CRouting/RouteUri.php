@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteUri
- *
- * @author Hery
  */
 class CRouting_RouteUri {
     /**

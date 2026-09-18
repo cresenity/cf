@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileCommentTrait
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileCommentTrait {
     /**

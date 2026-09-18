@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan <hery@itton.co.id>
- */
 class CConsole_Command_App_AppCodeCommand extends CConsole_Command {
     /**
      * The name and signature of the console command.

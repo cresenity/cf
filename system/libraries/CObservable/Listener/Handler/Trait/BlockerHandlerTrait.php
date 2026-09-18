@@ -2,8 +2,6 @@
 
 /**
  * Description of BlockerHandlerTrait
- *
- * @author Hery
  */
 trait CObservable_Listener_Handler_Trait_BlockerHandlerTrait {
     /**

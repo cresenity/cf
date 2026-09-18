@@ -2,8 +2,6 @@
 
 /**
  * Description of PipelineInterface.
- *
- * @author Hery
  */
 interface CBase_PipelineInterface {
     /**

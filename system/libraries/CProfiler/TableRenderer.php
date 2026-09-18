@@ -2,8 +2,6 @@
 
 /**
  * Description of TableRenderer
- *
- * @author Hery
  */
 class CProfiler_TableRenderer {
     protected $columns = [];

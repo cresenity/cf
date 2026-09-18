@@ -5,8 +5,6 @@
  *
  * Method whoisguard
  * Manage whoisguard
- *
- * @author Saddam Hossain <saddamrhossain@gmail.com>
  */
 class CVendor_Namecheap_Command_WhoIsGuard extends CVendor_Namecheap_AbstractCommand {
     protected $command = 'namecheap.whoisguard.';

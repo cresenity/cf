@@ -3,9 +3,7 @@
 defined('SYSPATH') OR die('No direct access allowed.');
 
 /**
- * @author Hery Kurniawan
  * @since May 16, 2019, 9:57:59 PM
- * @license Ittron Global Teknologi <ittron.co.id>
  */
 class CEmoji_Adapter_TwemojiAdapter extends CEmoji_AbstractAdapter {
 

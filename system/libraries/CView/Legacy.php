@@ -2,8 +2,6 @@
 
 /**
  * Description of Legacy.
- *
- * @author Hery
  */
 defined('SYSPATH') or die('No direct access allowed.');
 

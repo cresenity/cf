@@ -2,8 +2,6 @@
 
 /**
  * Description of PopulateDatabaseTrait
- *
- * @author Hery
  */
 trait CProfiler_Trait_PopulateDatabaseTrait {
     /**

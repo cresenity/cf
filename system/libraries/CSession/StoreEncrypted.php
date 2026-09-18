@@ -2,8 +2,6 @@
 
 /**
  * Description of StoreEncrypted.
- *
- * @author Hery
  */
 class CSession_StoreEncrypted extends CSession_Store {
     /**

@@ -2,8 +2,6 @@
 
 /**
  * Description of phpstan.
- *
- * @author Hery
  */
 trait CTrait_Controller_Application_QC_Phpstan {
     protected function getTitle() {

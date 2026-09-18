@@ -2,8 +2,6 @@
 
 /**
  * Description of HandleExceptions.
- *
- * @author Hery
  */
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\ErrorHandler\Error\FatalError;

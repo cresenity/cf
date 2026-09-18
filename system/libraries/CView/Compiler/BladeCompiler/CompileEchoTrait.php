@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileEchoTrait.
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileEchoTrait {
     /**

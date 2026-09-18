@@ -2,8 +2,6 @@
 
 /**
  * Description of DatabaseCheckerTrait
- *
- * @author Hery
  */
 trait CQC_Manager_DatabaseCheckerTrait {
     protected $databaseChecker = [];

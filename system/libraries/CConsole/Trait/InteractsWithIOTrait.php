@@ -2,8 +2,6 @@
 
 /**
  * Description of InteractsWithIOTrait.
- *
- * @author Hery
  */
 
 use Illuminate\Contracts\Support\Arrayable;

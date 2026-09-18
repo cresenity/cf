@@ -2,8 +2,6 @@
 
 /**
  * Description of BladeCompiler.
- *
- * @author Hery
  */
 class CView_Compiler_BladeCompiler extends CView_CompilerAbstract implements CView_CompilerInterface {
     use CView_Compiler_BladeCompiler_CompileAuthorizationTrait,

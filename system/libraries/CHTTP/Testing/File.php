@@ -2,8 +2,6 @@
 
 /**
  * Description of File.
- *
- * @author Hery
  */
 class CHTTP_Testing_File extends CHTTP_UploadedFile {
     /**

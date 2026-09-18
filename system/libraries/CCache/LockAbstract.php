@@ -2,8 +2,6 @@
 
 /**
  * Description of LockAbstract.
- *
- * @author Hery
  */
 abstract class CCache_LockAbstract implements CCache_LockInterface {
     use CTrait_Helper_InteractsWithTime;

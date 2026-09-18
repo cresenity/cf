@@ -2,8 +2,6 @@
 
 /**
  * Description of DummyTestCase
- *
- * @author Hery
  */
 use PHPUnit\Framework\TestCase;
 

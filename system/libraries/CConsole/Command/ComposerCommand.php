@@ -2,8 +2,6 @@
 
 /**
  * Description of ComposerCommand
- *
- * @author Hery
  */
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Process\PhpExecutableFinder;

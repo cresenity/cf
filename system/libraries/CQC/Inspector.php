@@ -2,8 +2,6 @@
 
 /**
  * Description of Inspector
- *
- * @author Hery
  */
 class CQC_Inspector {
 

@@ -3,8 +3,6 @@
 /**
  * Description of Personalization
  *
- * @author Hery Kurniawan
- * @license Ittron Global Teknologi <ittron.co.id>
  *
  * @since Jan 7, 2018, 12:33:18 PM
  */

@@ -2,8 +2,6 @@
 
 /**
  * Description of Session
- *
- * @author Hery
  */
 //@codingStandardsIgnoreStart
 trait CTrait_Compat_Session {

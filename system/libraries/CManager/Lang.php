@@ -2,8 +2,6 @@
 
 /**
  * Description of CManager_Lang
- *
- * @author Hery
  */
 class CManager_Lang implements CManager_LangInterface {
     const LANG_SESSION_NAME = '_CAPP_LANG';

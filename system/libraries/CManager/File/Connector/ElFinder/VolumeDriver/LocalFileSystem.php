@@ -9,8 +9,6 @@ use CManager_File_Connector_ElFinder_Base as elFinder;
 /**
  * Library elFinder driver for local filesystem.
  *
- * @author Dmitry (dio) Levashov
- * @author Troex Nevelin
  * */
 class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFinderVolumeDriver {
     /**
@@ -46,8 +44,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
     /**
      * Constructor
      * Extend options with required fields
-     *
-     * @author Dmitry (dio) Levashov
      */
     public function __construct() {
         $this->options['alias'] = '';              // alias to replace root dir name
@@ -124,8 +120,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return void
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function configure() {
         $root = $this->stat($this->root);
@@ -267,7 +261,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _dirname($path) {
         return dirname($path);
@@ -280,7 +273,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _basename($path) {
         return basename($path);
@@ -294,7 +286,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _joinPath($dir, $name) {
         return rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $name;
@@ -307,7 +298,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Troex Nevelin
      * */
     protected function _normpath($path) {
         if (empty($path)) {
@@ -369,7 +359,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _relpath($path) {
         if ($path === $this->root) {
@@ -391,7 +380,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _abspath($path) {
         if ($path === DIRECTORY_SEPARATOR) {
@@ -413,7 +401,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _path($path) {
         return $this->rootName . ($path == $this->root ? '' : $this->separator . $this->_relpath($path));
@@ -427,7 +414,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _inpath($path, $parent) {
         $cwd = getcwd();
@@ -459,7 +445,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return array|false
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _stat($path) {
         $stat = [];
@@ -596,7 +581,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _subdirs($path) {
         $dirs = false;
@@ -643,7 +627,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _dimensions($path, $mime) {
         clearstatcache();
@@ -659,7 +642,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function readlink($path) {
         if (!($target = readlink($path))) {
@@ -685,8 +667,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function _scandir($path) {
         elFinder::checkAborted();
@@ -797,8 +777,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return false|resource
      *
      * @internal param bool $write open file for writing
-     *
-     * @author   Dmitry (dio) Levashov
      */
     protected function _fopen($path, $mode = 'rb') {
         return fopen($path, $mode);
@@ -811,8 +789,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @param string   $path
      *
      * @return bool
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function _fclose($fp, $path = '') {
         return (is_resource($fp) && fclose($fp));
@@ -828,7 +804,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string|bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _mkdir($path, $name) {
         $path = $this->_joinPath($path, $name);
@@ -849,7 +824,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string|bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _mkfile($path, $name) {
         $path = $this->_joinPath($path, $name);
@@ -871,7 +845,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _symlink($source, $targetDir, $name) {
         return symlink($source, $this->_joinPath($targetDir, $name));
@@ -886,7 +859,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _copy($source, $targetDir, $name) {
         $mtime = filemtime($source);
@@ -908,8 +880,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return bool|string
      *
      * @internal param string $target target dir path
-     *
-     * @author   Dmitry (dio) Levashov
      */
     protected function _move($source, $targetDir, $name) {
         $mtime = filemtime($source);
@@ -927,7 +897,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _unlink($path) {
         return is_file($path) && unlink($path);
@@ -940,7 +909,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _rmdir($path) {
         return rmdir($path);
@@ -957,7 +925,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool|string
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _save($fp, $dir, $name, $stat) {
         $path = $this->_joinPath($dir, $name);
@@ -993,7 +960,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return string|false
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _getContents($path) {
         return file_get_contents($path);
@@ -1007,7 +973,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function _filePutContents($path, $content) {
         return (file_put_contents($path, $content, LOCK_EX) !== false);
@@ -1046,8 +1011,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return bool
      *
      * @throws Exception
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function _findSymlinks($path) {
         return self::localFindSymlinks($path);
@@ -1062,9 +1025,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return array|string|boolean
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov,
-     * @author Alexey Sukhotin
      */
     protected function _extract($path, $arc) {
         if ($this->quarantine) {
@@ -1180,9 +1140,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return string|bool
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov,
-     * @author Alexey Sukhotin
      */
     protected function _archive($dir, $files, $name, $arc) {
         return $this->makeArchive($dir, $files, $name, $arc);
@@ -1196,8 +1153,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @param string $path
      *
      * @return string
-     *
-     * @author Naoki Sawada
      */
     protected function getWorkFile($path) {
         return $path;
@@ -1211,8 +1166,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return boolean
      *
      * @throws elFinderAbortException
-     *
-     * @author Naoki Sawada
      */
     protected function delTree($localpath) {
         return $this->rmdirRecursive($localpath);
@@ -1246,9 +1199,6 @@ class CManager_File_Connector_ElFinder_VolumeDriver_LocalFileSystem extends elFi
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
-     * @author Naoki Sawada
      */
     protected function doSearch($path, $q, $mimes) {
         if (!empty($this->doSearchCurrentQuery['matchMethod']) || $this->encoding || !class_exists('FilesystemIterator', false)) {

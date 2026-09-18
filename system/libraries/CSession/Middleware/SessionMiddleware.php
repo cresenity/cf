@@ -2,8 +2,6 @@
 
 /**
  * Description of StartSessionMiddleware.
- *
- * @author Hery
  */
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;

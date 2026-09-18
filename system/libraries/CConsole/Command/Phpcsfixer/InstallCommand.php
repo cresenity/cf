@@ -2,8 +2,6 @@
 
 /**
  * Description of ComposerCommand.
- *
- * @author Hery
  */
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\PhpExecutableFinder;

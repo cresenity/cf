@@ -5,8 +5,6 @@
  *
  * Method DomainsNs
  * Manage Domains Name server
- *
- * @author Saddam Hossain <saddamrhossain@gmail.com>
  */
 class CVendor_Namecheap_Command_Domains_Ns extends CVendor_Namecheap_AbstractCommand {
     protected $command = 'namecheap.domains.ns.';

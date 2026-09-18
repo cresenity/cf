@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileInjection
- *
- * @author Hery
  */
 
 trait CView_Compiler_BladeCompiler_CompileInjectionTrait {

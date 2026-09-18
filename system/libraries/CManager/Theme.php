@@ -2,8 +2,6 @@
 
 /**
  * Description of CManager_Theme.
- *
- * @author Hery
  */
 class CManager_Theme {
     /**

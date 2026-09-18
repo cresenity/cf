@@ -2,8 +2,6 @@
 
 /**
  * Description of Data
- *
- * @author Hery
  */
 class CManager_Theme_Data {
     protected $modules;

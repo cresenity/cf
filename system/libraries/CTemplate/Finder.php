@@ -2,8 +2,6 @@
 
 /**
  * Description of Finder.
- *
- * @author Hery
  */
 class CTemplate_Finder {
     /**

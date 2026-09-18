@@ -2,8 +2,6 @@
 
 /**
  * Description of UriValidator.
- *
- * @author Hery
  */
 class CRouting_Validator_UriValidator implements CRouting_ValidatorInterface {
     /**

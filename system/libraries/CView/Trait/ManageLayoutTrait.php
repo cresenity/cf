@@ -2,8 +2,6 @@
 
 /**
  * Description of ManageLayoutTrait
- *
- * @author Hery
  */
 trait CView_Trait_ManageLayoutTrait {
     /**

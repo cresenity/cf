@@ -5,8 +5,6 @@
  *
  * This class is an extension of mikehaertl\shellcommand\Command and adds `wk*`
  * specific features like xvfb support and proper argument handling.
- *
- * @author Michael Härtl <haertl.mike@gmail.com>
  */
 class CServer_Runner_WkHtmlToPdf_Command extends CRunner_Command {
     /**

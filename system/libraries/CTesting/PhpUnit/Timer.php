@@ -3,7 +3,6 @@
 /**
  * Description of Timer
  *
- * @author Hery
  *
  * @internal
  */

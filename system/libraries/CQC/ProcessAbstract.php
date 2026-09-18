@@ -2,8 +2,6 @@
 
 /**
  * Description of ProcessAbstract
- *
- * @author Hery
  */
 abstract class CQC_ProcessAbstract {
 

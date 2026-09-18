@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan
- */
 class CPeriod_Exception_InvalidDateException extends InvalidArgumentException {
     /**
      * @param string $parameter

@@ -2,8 +2,6 @@
 
 /**
  * Description of RedisLock.
- *
- * @author Hery
  */
 class CCache_Lock_RedisLock extends CCache_LockAbstract {
     /**

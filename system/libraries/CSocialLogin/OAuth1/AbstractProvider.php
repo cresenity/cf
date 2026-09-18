@@ -3,11 +3,8 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 /**
- * @author Hery Kurniawan
  *
  * @since May 16, 2019, 4:24:44 PM
- *
- * @license Ittron Global Teknologi <ittron.co.id>
  */
 use League\OAuth1\Client\Server\Server;
 use League\OAuth1\Client\Credentials\TokenCredentials;

@@ -5,8 +5,6 @@ defined('SYSPATH') or die('No direct access allowed.');
 /**
  * @see CElement_Component_Form_FieldValidation
  *
- * @author Hery Kurniawan
- * @license Ittron Global Teknologi <ittron.co.id>
  *
  * @since Feb 17, 2018, 2:29:43 AM
  */

@@ -31,11 +31,7 @@
  * PHPMailer - PHP email transport class
  * NOTE: Requires PHP version 5 or later
  * @package PHPMailer
- * @author Andy Prevost
- * @author Marcus Bointon
- * @copyright 2004 - 2009 Andy Prevost
  * @version $Id: class.phpmailer.php 447 2009-05-25 01:36:38Z codeworxtech $
- * @license http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
  */
 
 if (version_compare(PHP_VERSION, '5.0.0', '<') ) exit("Sorry, this version of PHPMailer will only run on PHP version 5 or greater!\n");
@@ -1687,7 +1683,6 @@ class PHPMailer {
   * @param integer $line_max Number of chars allowed on a line before wrapping
   * @param boolean $space_conv Dummy param for compatibility with existing EncodeQP function
   * @return string
-  * @author Marcus Bointon
   */
   public function EncodeQP($string, $line_max = 76, $space_conv = false) {
     if (function_exists('quoted_printable_encode')) { //Use native function if it's available (>= PHP5.3)

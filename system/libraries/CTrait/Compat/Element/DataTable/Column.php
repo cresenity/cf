@@ -5,8 +5,6 @@ defined('SYSPATH') or die('No direct access allowed.');
 /**
  * @see CElement_Component_DataTable_Column
  *
- * @author Hery Kurniawan
- * @license Ittron Global Teknologi <ittron.co.id>
  *
  * @since May 12, 2018, 10:13:58 PM
  */

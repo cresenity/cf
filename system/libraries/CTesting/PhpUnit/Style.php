@@ -2,8 +2,6 @@
 
 /**
  * Description of Style
- *
- * @author Hery
  */
 use PHPUnit\Framework\Exception\AssertionFailedError;
 use PHPUnit\Framework\ExceptionWrapper;

@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteAction
- *
- * @author Hery
  */
 class CRouting_RouteAction {
 

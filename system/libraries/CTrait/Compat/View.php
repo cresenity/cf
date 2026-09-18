@@ -2,8 +2,6 @@
 
 /**
  * Description of View
- *
- * @author Hery
  */
 
 // @codingStandardsIgnoreStart

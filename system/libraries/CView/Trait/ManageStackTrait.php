@@ -2,8 +2,6 @@
 
 /**
  * Description of ManageStack
- *
- * @author Hery
  */
 trait CView_Trait_ManageStackTrait {
     /**

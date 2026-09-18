@@ -2,8 +2,6 @@
 
 /**
  * Description of CreatesRegularExpressionRouteConstraints.
- *
- * @author Hery
  */
 trait CRouting_Concern_CreatesRegularExpressionRouteConstraints {
     /**

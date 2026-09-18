@@ -2,8 +2,6 @@
 
 /**
  * Description of PhpEngine.
- *
- * @author Hery
  */
 class CView_Engine_PhpEngine extends CView_EngineAbstract {
     use CView_Concern_BladeCollectViewExceptionTrait;

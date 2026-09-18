@@ -2,8 +2,6 @@
 
 /**
  * Description of RedirectController
- *
- * @author Hery
  */
 class CController_RedirectController extends CController {
     /**

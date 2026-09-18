@@ -2,8 +2,6 @@
 
 /**
  * Description of WhoopsHandler.
- *
- * @author Hery
  */
 
 use Whoops\Handler\PrettyPageHandler;

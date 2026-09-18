@@ -2,8 +2,6 @@
 
 /**
  * Description of RequestInfoTrait.
- *
- * @author Hery
  */
 use UAParser\Parser;
 use UAParser\Result\Client;

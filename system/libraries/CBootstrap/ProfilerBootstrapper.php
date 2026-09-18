@@ -2,8 +2,6 @@
 
 /**
  * Description of ProfilerBootstrapper.
- *
- * @author Hery
  */
 class CBootstrap_ProfilerBootstrapper extends CBootstrap_BootstrapperAbstract {
     /**

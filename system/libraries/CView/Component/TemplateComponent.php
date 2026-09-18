@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @author Hery
- */
 class CView_Component_TemplateComponent extends CView_ComponentAbstract {
     protected $template;
 

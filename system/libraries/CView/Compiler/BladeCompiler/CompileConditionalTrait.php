@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileConditionalTrait.
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileConditionalTrait {
     /**

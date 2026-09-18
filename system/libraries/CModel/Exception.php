@@ -2,8 +2,6 @@
 
 /**
  * Description of Exception.
- *
- * @author Ecko
  */
 class CModel_Exception extends Exception {
 }

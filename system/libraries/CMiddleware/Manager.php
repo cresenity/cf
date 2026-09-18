@@ -2,8 +2,6 @@
 
 /**
  * Description of Manager.
- *
- * @author Hery
  */
 class CMiddleware_Manager {
     /**

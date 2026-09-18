@@ -2,8 +2,6 @@
 
 /**
  * Description of Console
- *
- * @author Hery
  */
 use Symfony\Component\Process\Process;
 use Symfony\Component\Console\Output\ConsoleOutput;

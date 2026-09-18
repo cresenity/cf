@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileLoopTrait
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileLoopTrait {
     /**

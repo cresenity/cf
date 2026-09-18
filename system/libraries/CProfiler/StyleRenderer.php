@@ -2,8 +2,6 @@
 
 /**
  * Description of StyleRenderer
- *
- * @author Hery
  */
 class CProfiler_StyleRenderer {
     public function render() {

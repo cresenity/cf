@@ -2,8 +2,6 @@
 
 /**
  * Description of HasPrintableTestCaseNameInterface
- *
- * @author Hery
  */
 
 /**

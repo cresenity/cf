@@ -2,8 +2,6 @@
 
 /**
  * Description of FileFactory.
- *
- * @author Hery
  */
 class CHTTP_Testing_FileFactory {
     /**

@@ -2,8 +2,6 @@
 
 /**
  * Class     ResponseV3.
- *
- * @author   ARCANEDEV <arcanedev.maroc@gmail.com>
  */
 class CVendor_Google_Recaptcha_Http_ResponseV3 extends CVendor_Google_Recaptcha_Http_AbstractResponse implements CVendor_Google_Recaptcha_Http_ResponseInterface {
     /**

@@ -2,8 +2,6 @@
 
 /**
  * Description of Tag.
- *
- * @author Ecko
  */
 class CApp_OpenGraph_Tag {
     /**

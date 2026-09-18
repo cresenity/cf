@@ -3,7 +3,6 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 /**
- * @author Hery Kurniawan
  *
  * @since Jul 20, 2019, 11:10:36 PM
  */

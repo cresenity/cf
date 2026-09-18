@@ -2,8 +2,6 @@
 
 /**
  * Description of ImageAjax.
- *
- * @author Hery
  */
 class CElement_FormInput_ImageAjax extends CElement_FormInput_Image {
     /**

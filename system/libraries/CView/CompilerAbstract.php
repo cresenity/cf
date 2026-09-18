@@ -2,8 +2,6 @@
 
 /**
  * Description of CompilerAbstract.
- *
- * @author Hery
  */
 abstract class CView_CompilerAbstract {
     /**

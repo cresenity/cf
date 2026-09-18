@@ -4,8 +4,6 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Class     AbstractNoCaptcha.
- *
- * @author   ARCANEDEV <arcanedev.maroc@gmail.com>
  */
 abstract class CVendor_Google_Recaptcha_AbstractRecaptcha implements CVendor_Google_Recaptcha_RecaptchaInterface {
     const CAPTCHA_NAME = 'g-recaptcha-response';

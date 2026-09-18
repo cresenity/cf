@@ -2,8 +2,6 @@
 
 /**
  * Description of UnitTest.
- *
- * @author Hery
  */
 trait CTrait_Controller_Application_QC_UnitTest {
     protected function getTitle() {

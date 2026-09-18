@@ -2,8 +2,6 @@
 
 /**
  * Description of Redirector.
- *
- * @author Hery
  */
 final class CHTTP_Redirector {
     use CTrait_Macroable;

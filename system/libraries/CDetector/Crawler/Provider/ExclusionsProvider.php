@@ -3,9 +3,7 @@
 defined('SYSPATH') OR die('No direct access allowed.');
 
 /**
- * @author Hery Kurniawan
  * @since Jun 23, 2019, 4:25:24 AM
- * @license Ittron Global Teknologi <ittron.co.id>
  */
 class CDetector_Crawler_Provider_ExclusionsProvider extends CDetector_Crawler_AbstractProvider {
 

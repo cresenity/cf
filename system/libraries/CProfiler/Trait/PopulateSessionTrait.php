@@ -2,8 +2,6 @@
 
 /**
  * Description of BenchmarkTrait
- *
- * @author Hery
  */
 trait CProfiler_Trait_PopulateSessionTrait {
     /**

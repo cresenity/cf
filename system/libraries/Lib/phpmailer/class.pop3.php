@@ -31,10 +31,6 @@
  * PHPMailer - PHP POP Before SMTP Authentication Class
  * NOTE: Designed for use with PHP version 5 and up
  * @package PHPMailer
- * @author Andy Prevost
- * @author Marcus Bointon
- * @copyright 2004 - 2009 Andy Prevost
- * @license http://www.gnu.org/copyleft/lesser.html Distributed under the Lesser General Public License (LGPL)
  * @version $Id: class.pop3.php 444 2009-05-05 11:22:26Z coolbru $
  */
 
@@ -56,7 +52,6 @@
  * required for POP3 connection, authentication and disconnection.
  *
  * @package PHPMailer
- * @author Richard Davey
  */
 
 class POP3 {

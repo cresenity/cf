@@ -2,8 +2,6 @@
 
 /**
  * Description of CookieSessionHandler.
- *
- * @author Hery
  */
 use Symfony\Component\HttpFoundation\Request;
 

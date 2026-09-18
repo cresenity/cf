@@ -2,8 +2,6 @@
 
 /**
  * Description of Finder.
- *
- * @author Hery
  */
 class CView_Finder implements CView_Contract_ViewFinderInterface {
     /**

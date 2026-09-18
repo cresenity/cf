@@ -2,8 +2,6 @@
 
 /**
  * Description of FileSessionHandler.
- *
- * @author Hery
  */
 
 use Symfony\Component\Finder\Finder;

@@ -2,8 +2,6 @@
 
 /**
  * Description of CacheBasedSessionHandler.
- *
- * @author Hery
  */
 class CSession_Handler_CacheBasedSessionHandler implements SessionHandlerInterface {
     /**

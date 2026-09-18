@@ -2,8 +2,6 @@
 
 /**
  * Description of EncrypterInterface.
- *
- * @author Hery
  */
 interface CCrypt_EncrypterInterface {
     /**

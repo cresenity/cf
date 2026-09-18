@@ -2,8 +2,6 @@
 
 /**
  * Description of DomainSwitchCommand
- *
- * @author Hery
  */
 class CConsole_Command_Domain_DomainSwitchCommand extends CConsole_Command {
     /**

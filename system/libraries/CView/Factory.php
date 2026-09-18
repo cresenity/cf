@@ -4,8 +4,6 @@ use Illuminate\Contracts\Support\Arrayable;
 
 /**
  * Description of Factory.
- *
- * @author Hery
  */
 class CView_Factory {
     use CView_Trait_ManageComponentTrait,

@@ -2,8 +2,6 @@
 
 /**
  * Description of HttpException
- *
- * @author Hery
  */
 use Symfony\Component\HttpKernel\Exception\HttpException as SymfonyHttpException;
 

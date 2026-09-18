@@ -186,8 +186,6 @@ abstract class CView_ComponentAbstract {
     /**
      * Get the data that should be supplied to the view.
      *
-     * @author Freek Van der Herten
-     * @author Brent Roose
      *
      * @return array
      */

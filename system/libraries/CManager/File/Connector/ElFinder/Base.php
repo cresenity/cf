@@ -875,7 +875,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     public function loaded() {
         return $this->loaded;
@@ -886,7 +885,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     public function version() {
         return self::$ApiVersion;
@@ -897,7 +895,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return string
      *
-     * @author Naoki Sawada
      * */
     public function revision() {
         return self::$ApiRevision;
@@ -911,7 +908,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return $this
      *
-     * @author Dmitry (dio) Levashov
      * */
     public function bind($cmd, $handler) {
         $allCmds = array_keys($this->commands);
@@ -955,7 +951,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return elFinder
      *
-     * @author Dmitry (dio) Levashov
      * */
     public function unbind($cmd, $handler) {
         if (!empty($this->listeners[$cmd])) {
@@ -976,7 +971,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return bool
      *
-     * @author Dmitry (dio) Levashov
      * */
     public function commandExists($cmd) {
         return $this->loaded && isset($this->commands[$cmd]) && method_exists($this, $cmd);
@@ -988,8 +982,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param string $hash file hash
      *
      * @return CManager_File_Connector_ElFinder_VolumeDriver
-     *
-     * @author Naoki Sawada
      */
     public function getVolume($hash) {
         return $this->volume($hash);
@@ -1279,7 +1271,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return string
      *
-     * @author Dmitry (dio) Levashov
      * */
     public function realpath($hash) {
         if (($volume = $this->volume($hash)) == false) {
@@ -1346,8 +1337,6 @@ class CManager_File_Connector_ElFinder_Base {
      * Return network volumes config.
      *
      * @return array
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function getNetVolumes() {
         if ($data = $this->session->get('netvolume', [])) {
@@ -1362,8 +1351,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param array $volumes volumes config
      *
      * @return void
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function saveNetVolumes($volumes) {
         $this->session->set('netvolume', $volumes);
@@ -1401,8 +1388,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param array  $opts Plugin options (optional)
      *
      * @return object | bool Plugin object instance Or false
-     *
-     * @author Naoki Sawada
      */
     protected function getPluginInstance($name, $opts = []) {
         $key = strtolower($name);
@@ -1433,7 +1418,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     public function error() {
         $errors = [];
@@ -1561,8 +1545,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param array $args command arguments
      *
      * @return array
-     *
-     * @author Naoki Sawada
      */
     protected function editor($args = []) {
         /* @var elFinderEditor $editor */
@@ -1630,7 +1612,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @retval  resource conttents
      * @rettval false  error
      *
-     * @author  Naoki Sawada
      * */
     protected function get_remote_contents(&$url, $timeout = 30, $redirect_max = 5, $ua = 'Mozilla/5.0', $fp = null) {
         if (preg_match('~^(?:ht|f)tps?://[-_.!\~*\'()a-z0-9;/?:\@&=+\$,%#\*\[\]]+~i', $url)) {
@@ -1696,7 +1677,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @retval resource conttents
      * @retval false  error
      *
-     * @author Naoki Sawada
      * */
     protected function curl_get_contents(&$url, $timeout, $redirect_max, $ua, $outfp) {
         $ch = curl_init();
@@ -1735,8 +1715,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @retval false  error
      *
      * @throws CManager_File_Connector_ElFinder_Exception_AbortException
-     *
-     * @author Naoki Sawada
      */
     protected function fsock_get_contents(&$url, $timeout, $redirect_max, $ua, $outfp) {
         $connect_timeout = 3;
@@ -1938,8 +1916,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param string $path Local path
      *
      * @return string file MIME Type
-     *
-     * @author Naoki Sawada
      */
     protected function detectMimeType($path) {
         static $type, $finfo;
@@ -1997,8 +1973,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param string $name   Filename to save
      *
      * @return string file type extension with dot
-     *
-     * @author Naoki Sawada
      */
     protected function detectFileExtension($volume, $path, $name) {
         $mime = $this->detectMimeType($path);
@@ -2015,8 +1989,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param string $volumeTempPath
      *
      * @return string
-     *
-     * @author Naoki Sawada
      */
     private function getTempDir($volumeTempPath = null) {
         $testDirs = [];
@@ -2111,8 +2083,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @return array|null
      *
      * @throws elFinderAbortException
-     *
-     * @author Naoki Sawada
      */
     private function checkChunkedFile($tmpname, $chunk, $cid, $tempDir, $volume = null) {
         /* @var elFinderVolumeDriver $volume */
@@ -2256,8 +2226,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function upload($args) {
         $ngReg = '/[\/\\?*:|"<>]/';
@@ -2583,8 +2551,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function paste($args) {
         $dst = $args['dst'];
@@ -2672,7 +2638,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function get($args) {
         $target = $args['target'];
@@ -2792,8 +2757,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param $args
      *
      * @return array
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function put($args) {
         $target = $args['target'];
@@ -2857,8 +2820,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov,
-     * @author Alexey Sukhotin
      * */
     protected function extract($args) {
         $target = $args['target'];
@@ -2888,9 +2849,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @return array
      *
      * @throws Exception
-     *
-     * @author Dmitry (dio) Levashov,
-     * @author Alexey Sukhotin
      */
     protected function archive($args) {
         $targets = isset($args['targets']) && is_array($args['targets']) ? $args['targets'] : [];
@@ -2915,8 +2873,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry Levashov
      */
     protected function search($args) {
         $q = trim($args['q']);
@@ -2953,8 +2909,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry Levashov
      */
     protected function info($args) {
         $files = [];
@@ -3018,8 +2972,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @throws ImagickException
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function dim($args) {
         $res = [];
@@ -3050,9 +3002,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @throws ImagickException
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
-     * @author Alexey Sukhotin
      */
     protected function resize($args) {
         $target = $args['target'];
@@ -3082,7 +3031,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array
      *
-     * @author Naoki Sawada
      * */
     protected function url($args) {
         $target = $args['target'];
@@ -3104,8 +3052,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param mixed $args
      *
      * @throws elFinderAbortException
-     *
-     * @author Naoki Sawada
      */
     protected function callback($args) {
         $checkReg = '/[^a-zA-Z0-9;._-]/';
@@ -3250,7 +3196,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return elFinderVolumeDriver|bool (false)
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function volume($hash) {
         foreach ($this->volumes as $id => $v) {
@@ -3268,7 +3213,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function toArray($data) {
         return isset($data['hash']) || !is_array($data) ? [$data] : $data;
@@ -3281,7 +3225,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function hashes($files) {
         $ret = [];
@@ -3298,7 +3241,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function filter($files) {
         $exists = [];
@@ -3324,7 +3266,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return string|false
      *
-     * @author Naoki Sawada
      * */
     protected function getNetVolumeUniqueId($netVolumes = null, $prefix = 'nm') {
         if (is_null($netVolumes)) {
@@ -3448,7 +3389,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @return array|false array('stats' => array([stat of maked directory]), 'hashes' => array('[path]' => '[hash]'), 'makes' => array([New directory hashes]), 'error' => array([Error name]))
      *
-     * @author Naoki Sawada
      * */
     protected function ensureDirsRecursively($volume, $target, $dirs, $path = '') {
         $res = ['stats' => [], 'hashes' => [], 'makes' => [], 'error' => []];
@@ -3596,7 +3536,6 @@ class CManager_File_Connector_ElFinder_Base {
      *
      * @param mixed $var target variable
      *
-     * @author Naoki Sawada
      *
      * @return mixed|string
      */
@@ -3615,7 +3554,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param mixed $var     target variable
      * @param bool  $checkIs data type for check (array|string|object|int)
      *
-     * @author Naoki Sawada
      *
      * @return bool|mixed
      */
@@ -3747,8 +3685,6 @@ class CManager_File_Connector_ElFinder_Base {
      * Get script url.
      *
      * @return string full URL
-     *
-     * @author Naoki Sawada
      */
     public static function getConnectorUrl() {
         $https = (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off');
@@ -3768,8 +3704,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @param int   $redirectLimit
      *
      * @return resource|bool
-     *
-     * @author Naoki Sawada
      */
     public static function getStreamByUrl($data, $redirectLimit = 5) {
         if (isset($data['target'])) {
@@ -3878,8 +3812,6 @@ class CManager_File_Connector_ElFinder_Base {
      * @throws \Exception
      *
      * @return mixed
-     *
-     * @author Naoki Sawada
      */
     public static function curlExec($curl, $options = [], $headers = []) {
         $followLocation = (!ini_get('safe_mode') && !ini_get('open_basedir'));

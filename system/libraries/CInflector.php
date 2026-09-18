@@ -31,8 +31,6 @@ defined('SYSPATH') OR die('No direct access allowed.');
  *
  * @link   www.doctrine-project.org
  * @since  1.0
- * @author Konsta Vesterinen <kvesteri@cc.hut.fi>
- * @author Jonathan H. Wage <jonwage@gmail.com>
  */
 class CInflector {
 

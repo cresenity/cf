@@ -3,8 +3,6 @@
 
 /**
  * SCSS compressed formatter.
- *
- * @author Leaf Corcoran <leafot@gmail.com>
  */
 class CManager_Asset_SCSS_Formatter_Compressed extends CManager_Asset_SCSS_Formatter {
     public $open = '{';

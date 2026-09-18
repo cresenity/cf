@@ -5,9 +5,6 @@ use Geocoder\Model\AddressBuilder;
 use Geocoder\Model\AddressCollection;
 use Geocoder\Provider\GoogleMaps\Model\GoogleAddress;
 
-/**
- * @author William Durand <william.durand1@gmail.com>
- */
 final class CGeo_Provider_GoogleMaps extends CGeo_ProviderHttpAbstract implements CGeo_Interface_ProviderInterface {
     /**
      * @var string

@@ -2,8 +2,6 @@
 
 /**
  * Description of Router.
- *
- * @author Hery
  */
 
 use Illuminate\Contracts\Support\Jsonable;

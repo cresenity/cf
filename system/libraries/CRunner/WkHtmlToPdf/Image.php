@@ -7,8 +7,6 @@ use CRunner_WkHtmlToPdf_Command as Command;
  * Pdf
  *
  * This class is a slim wrapper around `wkhtmltoimage`.
- *
- * @author Michael Härtl <haertl.mike@gmail.com>
  */
 class CRunner_WkHtmlToPdf_Image {
     // Regular expression to detect HTML strings

@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteMatched.
- *
- * @author Hery
  */
 class CRouting_Event_RouteMatched {
     /**

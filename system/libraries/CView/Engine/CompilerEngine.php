@@ -2,8 +2,6 @@
 
 /**
  * Description of CompilerEngine.
- *
- * @author Hery
  */
 class CView_Engine_CompilerEngine extends CView_Engine_PhpEngine {
     use CView_Concern_BladeCollectViewExceptionTrait;

@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @author Jonathan Beliën <jbe@geo6.be>
- */
 class CServer_Runner_Gdal_Ogr2ogr_Options {
     public $helpGeneral = false;
 

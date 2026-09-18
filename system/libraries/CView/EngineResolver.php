@@ -2,8 +2,6 @@
 
 /**
  * Description of EngineResolver.
- *
- * @author Hery
  */
 class CView_EngineResolver {
     /**

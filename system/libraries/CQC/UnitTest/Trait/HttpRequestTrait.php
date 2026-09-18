@@ -2,8 +2,6 @@
 
 /**
  * Description of HttpRequestTrait.
- *
- * @author Hery
  */
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;

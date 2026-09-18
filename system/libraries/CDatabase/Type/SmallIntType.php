@@ -4,8 +4,6 @@ defined('SYSPATH') or die('No direct access allowed.');
 
 /**
  * Type that maps a database SMALLINT to a PHP integer.
- *
- * @author robo
  */
 class CDatabase_Type_SmallIntType extends CDatabase_Type implements CDatabase_Type_Interface_PhpIntegerMappingTypeInterface {
     /**

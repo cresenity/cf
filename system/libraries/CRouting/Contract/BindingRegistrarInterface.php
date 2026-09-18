@@ -2,8 +2,6 @@
 
 /**
  * Description of BindingRegistrar.
- *
- * @author Hery
  */
 interface CRouting_Contract_BindingRegistrarInterface {
     /**

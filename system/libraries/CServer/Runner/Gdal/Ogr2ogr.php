@@ -6,7 +6,6 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 /**
  * Implements `ogr2ogr` function.
  *
- * @author Jonathan Beliën <jbe@geo6.be>
  *
  * @link   http://www.gdal.org/ogr2ogr.html
  */

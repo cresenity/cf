@@ -2,8 +2,6 @@
 
 /**
  * Description of FileEngine.
- *
- * @author Hery
  */
 class CView_Engine_FileEngine extends CView_EngineAbstract {
     /**

@@ -2,8 +2,6 @@
 
 /**
  * Description of MethodValidator.
- *
- * @author Hery
  */
 class CRouting_Validator_MethodValidator implements CRouting_ValidatorInterface {
     /**

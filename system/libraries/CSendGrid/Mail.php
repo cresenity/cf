@@ -3,8 +3,6 @@
 /**
  * Description of Mail
  *
- * @author Hery Kurniawan
- * @license Ittron Global Teknologi <ittron.co.id>
  *
  * @since Jan 7, 2018, 12:30:34 PM
  */

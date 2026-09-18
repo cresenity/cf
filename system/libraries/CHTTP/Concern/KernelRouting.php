@@ -2,8 +2,6 @@
 
 /**
  * Description of KernelRouting.
- *
- * @author Hery
  */
 trait CHTTP_Concern_KernelRouting {
     /**

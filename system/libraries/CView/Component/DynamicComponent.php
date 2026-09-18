@@ -2,8 +2,6 @@
 
 /**
  * Description of DynamicComponent.
- *
- * @author Hery
  */
 class CView_Component_DynamicComponent extends CView_ComponentAbstract {
     /**

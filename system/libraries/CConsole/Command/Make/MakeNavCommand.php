@@ -2,8 +2,6 @@
 
 /**
  * Description of MakeNavCommand
- *
- * @author Hery
  */
 class CConsole_Command_Make_MakeNavCommand extends CConsole_Command {
     /**

@@ -2,8 +2,6 @@
 
 /**
  * SCSS nested formatter.
- *
- * @author Leaf Corcoran <leafot@gmail.com>
  */
 class CManager_Asset_SCSS_Formatter_Nested extends CManager_Asset_SCSS_Formatter {
     public $close = ' }';

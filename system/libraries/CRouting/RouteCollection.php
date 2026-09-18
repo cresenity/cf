@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteCollection.
- *
- * @author Hery
  */
 class CRouting_RouteCollection extends CRouting_RouteCollectionAbstract {
     /**

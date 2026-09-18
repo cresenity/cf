@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan
- */
 class CObservable_Javascript_Cresjs {
     /**
      * @var CObservable_Javascript

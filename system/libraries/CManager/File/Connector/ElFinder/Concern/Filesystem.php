@@ -8,7 +8,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function mkdir($args) {
         $target = $args['target'];
@@ -57,7 +56,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function mkfile($args) {
         $target = $args['target'];
@@ -219,8 +217,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      * @return array
      *
      * @throws CManager_File_Connector_ElFinder_Exception_AbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function duplicate($args) {
         $targets = is_array($args['targets']) ? $args['targets'] : [];
@@ -254,8 +250,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      * @return array
      *
      * @throws CManager_File_Connector_ElFinder_Exception_AbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function rm($args) {
         $targets = is_array($args['targets']) ? $args['targets'] : [];
@@ -291,7 +285,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      *
      * @return array
      *
-     * @author Dmitry Naoki Sawada
      * */
     protected function subdirs($args) {
         $result = ['subdirs' => []];
@@ -463,8 +456,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function size($args) {
         $size = 0;
@@ -520,8 +511,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function open($args) {
         $target = $args['target'];
@@ -639,7 +628,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function ls($args) {
         $target = $args['target'];
@@ -658,7 +646,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      *
      * @return array
      *
-     * @author Dmitry (dio) Levashov
      * */
     protected function tree($args) {
         $target = $args['target'];
@@ -678,8 +665,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      * @return array
      *
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function parents($args) {
         $target = $args['target'];
@@ -701,8 +686,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      *
      * @throws ImagickException
      * @throws elFinderAbortException
-     *
-     * @author Dmitry (dio) Levashov
      */
     protected function tmb($args) {
         $result = ['images' => []];
@@ -728,8 +711,6 @@ trait CManager_File_Connector_ElFinder_Concern_Filesystem {
      * @return array
      *
      * @throws Exception
-     *
-     * @author Naoki Sawada
      */
     protected function zipdl($args) {
         $targets = $args['targets'];

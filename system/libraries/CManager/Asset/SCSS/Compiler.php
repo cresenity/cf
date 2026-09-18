@@ -2,8 +2,6 @@
 
 /**
  * SCSS compiler.
- *
- * @author Leaf Corcoran <leafot@gmail.com>
  */
 class CManager_Asset_SCSS_Compiler {
     use CManager_Asset_SCSS_Trait_CompilerOperatorTrait;

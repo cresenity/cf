@@ -7,9 +7,6 @@ use CRunner_WkHtmlToPdf_Command as Command;
  * Pdf
  *
  * This class is a slim wrapper around wkhtmltopdf.
- *
- * @author Michael Härtl <haertl.mike@gmail.com>
- * @license http://www.opensource.org/licenses/MIT
  */
 class CRunner_WkHtmlToPdf_Pdf {
     // Type hints for `addPage()` and `addCover()`

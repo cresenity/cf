@@ -222,8 +222,6 @@ class CDebug_DebugBar_DataCollector_QueryCollector extends PDOCollector implemen
      *
      * @param string $query
      *
-     * @author e-doceo
-     * @copyright 2014
      *
      * @version $Id$
      *

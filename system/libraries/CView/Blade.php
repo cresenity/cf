@@ -2,8 +2,6 @@
 
 /**
  * Description of Blade
- *
- * @author Hery
  */
 class CView_Blade {
     public static function __callStatic($name, $arguments) {

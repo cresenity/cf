@@ -3,8 +3,6 @@
 /**
  * Description of NativeAdapter
  * will assigned to $_SESSION
- *
- * @author Hery
  */
 class CSession_NativeAdapter implements \ArrayAccess {
     #[\ReturnTypeWillChange]

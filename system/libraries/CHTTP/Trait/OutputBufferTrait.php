@@ -2,8 +2,6 @@
 
 /**
  * Description of OutputBufferTrait.
- *
- * @author Hery
  */
 trait CHTTP_Trait_OutputBufferTrait {
     /**

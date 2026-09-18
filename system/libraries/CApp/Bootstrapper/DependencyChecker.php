@@ -2,8 +2,6 @@
 
 /**
  * Description of DependencyChecker
- *
- * @author Hery
  */
 class CApp_Bootstrapper_DependencyChecker extends CBootstrap_BootstrapperAbstract {
     /**

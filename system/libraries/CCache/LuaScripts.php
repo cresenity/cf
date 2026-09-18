@@ -2,8 +2,6 @@
 
 /**
  * Description of LuaScripts
- *
- * @author Hery
  */
 class CCache_LuaScripts {
     /**

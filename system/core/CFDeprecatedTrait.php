@@ -3,7 +3,6 @@
 /**
  * Description of CFDeprecatedTrait.
  *
- * @author Hery
  *
  * @see CF
  */

@@ -2,8 +2,6 @@
 
 /**
  * Description of UnitTestProcess
- *
- * @author Hery
  */
 class CQC_Process_UnitTestProcess extends CQC_ProcessAbstract {
     /**

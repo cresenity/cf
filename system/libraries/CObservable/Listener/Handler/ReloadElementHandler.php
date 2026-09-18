@@ -2,8 +2,6 @@
 
 /**
  * Description of ReloadElementHandler
- *
- * @author Hery
  */
 class CObservable_Listener_Handler_ReloadElementHandler extends CObservable_Listener_Handler {
     use CObservable_Listener_Handler_Trait_TargetHandlerTrait,

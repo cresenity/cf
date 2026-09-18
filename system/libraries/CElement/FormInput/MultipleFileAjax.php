@@ -2,8 +2,6 @@
 
 /**
  * Description of ImageAjax.
- *
- * @author Hery
  */
 class CElement_FormInput_MultipleFileAjax extends CElement_FormInput {
     use CElement_Trait_UseViewTrait;

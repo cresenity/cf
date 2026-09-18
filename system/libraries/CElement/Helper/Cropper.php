@@ -4,8 +4,6 @@ defined('SYSPATH') or die('No direct access allowed.');
 
 /**
  * Description of Cropper.
- *
- * @author Hery
  */
 class CElement_Helper_Cropper extends CElement_Element {
     //use CElement_Trait_Template;

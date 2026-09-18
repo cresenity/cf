@@ -1,8 +1,6 @@
 <?php
 /**
  * Description of Cropper.
- *
- * @author Hery
  */
 ?>
 <div id="modal-cropper-<?php echo $id; ?>" class="modal modal-cropper" >

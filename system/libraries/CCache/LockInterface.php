@@ -2,8 +2,6 @@
 
 /**
  * Description of LockInterface
- *
- * @author Hery
  */
 interface CCache_LockInterface {
 

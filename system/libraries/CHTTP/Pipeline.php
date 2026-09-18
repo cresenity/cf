@@ -2,8 +2,6 @@
 
 /**
  * Description of Pipeline.
- *
- * @author Hery
  */
 
 /**

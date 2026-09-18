@@ -3,10 +3,6 @@
 /**
  * HTTP Client library
  *
- * @author    Matt Bernier <dx@sendgrid.com>
- * @author    Elmer Thomas <dx@sendgrid.com>
- * @copyright 2016 SendGrid
- * @license   https://opensource.org/licenses/MIT The MIT License
  * @version   GIT: <git_id>
  * @link      http://packagist.org/packages/sendgrid/php-http-client
  */

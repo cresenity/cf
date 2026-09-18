@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileStackTrait.
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileStackTrait {
     /**

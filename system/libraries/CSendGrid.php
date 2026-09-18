@@ -3,9 +3,6 @@
 /**
  * This library allows you to quickly and easily send emails through SendGrid using PHP.
  *
- * @author    Elmer Thomas <dx@sendgrid.com>
- * @copyright 2017 SendGrid
- * @license   https://opensource.org/licenses/MIT The MIT License
  *
  * @version   GIT: <git_id>
  *

@@ -4,8 +4,6 @@ use Illuminate\Contracts\Support\Arrayable;
 
 /**
  * Description of View.
- *
- * @author Hery
  */
 class CView_View implements ArrayAccess, CInterface_Htmlable, CView_ViewInterface {
     /**

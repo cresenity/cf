@@ -2,8 +2,6 @@
 
 /**
  * Description of CApi.
- *
- * @author Hery
  */
 class CApi {
     const SESSION_DRIVER_FILE = 'File';

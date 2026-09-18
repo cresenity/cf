@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteParameterBinder
- *
- * @author Hery
  */
 class CRouting_RouteParameterBinder {
     /**

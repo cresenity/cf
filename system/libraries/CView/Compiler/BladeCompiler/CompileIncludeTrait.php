@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileIncludeTrait
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileIncludeTrait {
     /**

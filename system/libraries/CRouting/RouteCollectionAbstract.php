@@ -2,8 +2,6 @@
 
 /**
  * Description of RouteCollectionAbstract
- *
- * @author Hery
  */
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;

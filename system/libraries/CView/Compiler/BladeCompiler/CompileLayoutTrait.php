@@ -2,8 +2,6 @@
 
 /**
  * Description of CompileLayoutTrait
- *
- * @author Hery
  */
 trait CView_Compiler_BladeCompiler_CompileLayoutTrait {
     /**

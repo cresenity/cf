@@ -2,8 +2,6 @@
 
 /**
  * Description of DaemonListCommand
- *
- * @author Hery
  */
 class CConsole_Command_Daemon_DaemonListCommand extends CConsole_Command {
     /**

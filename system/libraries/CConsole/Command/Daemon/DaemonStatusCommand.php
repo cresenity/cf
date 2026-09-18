@@ -2,8 +2,6 @@
 
 /**
  * Description of DaemonStatusCommand
- *
- * @author Hery
  */
 class CConsole_Command_Daemon_DaemonStatusCommand extends CConsole_Command {
     /**

@@ -2,8 +2,6 @@
 
 /**
  * Description of Pipeline.
- *
- * @author Hery
  */
 class CBase_Pipeline implements CBase_PipelineInterface {
     /**

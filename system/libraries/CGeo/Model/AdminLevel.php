@@ -1,7 +1,4 @@
 <?php
-/**
- * @author William Durand <william.durand1@gmail.com>
- */
 final class CGeo_Model_AdminLevel {
     /**
      * @var int

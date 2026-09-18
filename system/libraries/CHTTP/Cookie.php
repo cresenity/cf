@@ -2,8 +2,6 @@
 
 /**
  * Description of Cookie.
- *
- * @author Hery
  */
 use Symfony\Component\HttpFoundation\Cookie;
 

@@ -2,8 +2,6 @@
 
 /**
  * Description of ValidatorInterface
- *
- * @author Hery
  */
 interface CRouting_ValidatorInterface {
     /**

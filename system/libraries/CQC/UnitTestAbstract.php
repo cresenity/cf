@@ -2,8 +2,6 @@
 
 /**
  * Description of UnitTestAbstract
- *
- * @author Hery
  */
 
 use \PHPUnit\Framework\TestCase;

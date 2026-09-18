@@ -6,8 +6,6 @@
  * @category Class
  * @package  Xendit
  *
- * @author   Ellen <ellen@xendit.co>
- * @license  https://opensource.org/licenses/MIT MIT License
  *
  * @link     https://api.xendit.co
  */

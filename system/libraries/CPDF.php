@@ -4,10 +4,8 @@ defined('SYSPATH') or die('No direct access allowed.');
 /**
  * PHP Excel library. Helper class to make spreadsheet creation easier.
  *
- * @author     Flynsarmy
  * @website    http://www.flynsarmy.com/
  *
- * @license    TEH FREEZ
  *
  * @deprecated 2.0
  */

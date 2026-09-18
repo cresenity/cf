@@ -2,8 +2,6 @@
 
 /**
  * Description of ManagesEventTrait
- *
- * @author Hery
  */
 trait CView_Trait_ManageEventTrait {
     /**

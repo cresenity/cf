@@ -2,9 +2,6 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-/**
- * @author Hery Kurniawan
- */
 use Psr\Container\ContainerInterface;
 
 interface CContainer_ContainerInterface extends ContainerInterface {

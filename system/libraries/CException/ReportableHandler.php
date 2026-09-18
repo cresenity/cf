@@ -2,8 +2,6 @@
 
 /**
  * Description of ReportableHandler
- *
- * @author Hery
  */
 class CException_ReportableHandler {
     use CTrait_ReflectsClosureTrait;

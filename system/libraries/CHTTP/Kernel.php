@@ -2,8 +2,6 @@
 
 /**
  * Description of Kernel.
- *
- * @author Hery
  */
 
 use Illuminate\Contracts\Support\Jsonable;

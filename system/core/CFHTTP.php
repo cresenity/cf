@@ -2,8 +2,6 @@
 
 /**
  * Description of CFHTTP.
- *
- * @author Hery
  */
 class CFHTTP {
     public static function execute() {

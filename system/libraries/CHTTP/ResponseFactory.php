@@ -2,8 +2,6 @@
 
 /**
  * Description of ResponseFactory.
- *
- * @author Hery
  */
 
 use Symfony\Component\HttpFoundation\StreamedResponse;

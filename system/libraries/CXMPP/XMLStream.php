@@ -6,10 +6,6 @@
  * @category    Xmpphp
  * @package     XMPPHP
  *
- * @author Nathanael C. Fritz <JID: fritzy@netflint.net>
- * @author Stephan Wentz <JID: stephan@jabber.wentz.it>
- * @author Michael Garvin <JID: gar@netflint.net>
- * @copyright  2008 Nathanael C. Fritz
  *
  * @version Release:1.0
  */

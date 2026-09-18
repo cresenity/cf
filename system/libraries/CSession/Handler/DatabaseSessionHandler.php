@@ -2,8 +2,6 @@
 
 /**
  * Description of DatabaseSessionHandler.
- *
- * @author Hery
  */
 class CSession_Handler_DatabaseSessionHandler implements SessionHandlerInterface {
     use CTrait_Helper_InteractsWithTime;

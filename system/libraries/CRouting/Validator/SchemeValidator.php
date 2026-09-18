@@ -2,8 +2,6 @@
 
 /**
  * Description of SchemeValidator.
- *
- * @author Hery
  */
 class CRouting_Validator_SchemeValidator implements CRouting_ValidatorInterface {
     /**

@@ -2,8 +2,6 @@
 
 /**
  * Description of DaemonStopCommand.
- *
- * @author Hery
  */
 class CConsole_Command_Daemon_DaemonStopCommand extends CConsole_Command {
     /**
