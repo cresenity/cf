@@ -100,7 +100,7 @@ trait CDatabase_Query_Concern_BuilderWhereTrait {
         );
 
         if (!$value instanceof CDatabase_Contract_Query_ExpressionInterface) {
-            $this->addBinding($value, 'where');
+            $this->addBinding($this->flattenValue($value), 'where');
         }
 
         return $this;
@@ -646,11 +646,11 @@ trait CDatabase_Query_Concern_BuilderWhereTrait {
      *
      * @param string $column
      * @param string $operator
-     * @param string $value
+     * @param null|string $value
      *
      * @return \CDatabase_Query_Builder|static
      */
-    public function orWhereDate($column, $operator, $value) {
+    public function orWhereDate($column, $operator, $value = null) {
         list($value, $operator) = $this->prepareValueAndOperator(
             $value,
             $operator,
@@ -695,7 +695,7 @@ trait CDatabase_Query_Concern_BuilderWhereTrait {
      *
      * @return \CDatabase_Query_Builder|static
      */
-    public function orWhereTime($column, $operator, $value) {
+    public function orWhereTime($column, $operator, $value = null) {
         list($value, $operator) = $this->prepareValueAndOperator(
             $value,
             $operator,

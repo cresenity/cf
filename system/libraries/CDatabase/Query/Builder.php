@@ -1305,13 +1305,14 @@ class CDatabase_Query_Builder {
      * @param array    $columns
      * @param string   $pageName
      * @param null|int $page
+     * @param null|int|\Closure $total
      *
      * @return \CPagination_LengthAwarePaginator
      */
-    public function paginate($perPage = 15, $columns = ['*'], $pageName = 'page', $page = null) {
+    public function paginate($perPage = 15, $columns = ['*'], $pageName = 'page', $page = null, $total = null) {
         $page = $page ?: CPagination_Paginator::resolveCurrentPage($pageName);
 
-        $total = $this->getCountForPagination();
+        $total = c::value($total) ?? $this->getCountForPagination();
 
         $results = $total ? $this->forPage($page, $perPage)->get($columns) : c::collect();
 
@@ -1423,10 +1424,10 @@ class CDatabase_Query_Builder {
                 ->get()->all();
         }
 
-        $without = $this->unions ? ['orders', 'limit', 'offset', 'useIndex'] : ['columns', 'orders', 'limit', 'offset', 'useIndex'];
+        $without = $this->unions ? ['unionOrders', 'unionLimit', 'unionOffset', 'useIndex'] : ['columns', 'orders', 'limit', 'offset', 'useIndex'];
 
         return $this->cloneWithout($without)
-            ->cloneWithoutBindings($this->unions ? ['order'] : ['select', 'order'])
+            ->cloneWithoutBindings($this->unions ? ['unionOrder'] : ['select', 'order'])
             ->setAggregate('count', $this->withoutSelectAliases($columns))
             ->get()->all();
     }
@@ -1743,8 +1744,8 @@ class CDatabase_Query_Builder {
      * @return mixed
      */
     public function aggregate($function, $columns = ['*']) {
-        $results = $this->cloneWithout(['columns'])
-            ->cloneWithoutBindings(['select'])
+        $results = $this->cloneWithout($this->unions || $this->havings ? [] : ['columns'])
+            ->cloneWithoutBindings($this->unions || $this->havings ? [] : ['select'])
             ->setAggregate($function, $columns)
             ->get($columns);
 
@@ -1937,7 +1938,7 @@ class CDatabase_Query_Builder {
     public function update(array $values) {
         $this->applyBeforeQueryCallbacks();
         $values = c::collect($values)->map(function ($value) {
-            if (!$value instanceof CDatabase_Query_Builder) {
+            if (!$value instanceof CDatabase_Query_Builder && !$value instanceof CModel_Query && !$value instanceof CModel_Relation) {
                 return ['value' => $value, 'bindings' => $value];
             }
 
@@ -1954,7 +1955,7 @@ class CDatabase_Query_Builder {
 
         return $this->connection->updateWithQuery($sql, $this->cleanBindings(
             $this->grammar->prepareBindingsForUpdate($this->bindings, $values->map(function ($value) {
-                return $value['value'];
+                return $value['bindings'];
             })->all())
         ));
     }
@@ -1989,6 +1990,10 @@ class CDatabase_Query_Builder {
      * @return int
      */
     public function upsert(array $values, $uniqueBy, $update = null) {
+        if ($uniqueBy === [] || $uniqueBy === '') {
+            throw new InvalidArgumentException('The unique columns must not be empty.');
+        }
+
         if (empty($values)) {
             return 0;
         } elseif ($update === []) {

@@ -482,7 +482,7 @@ class CDatabase_Query_Grammar extends CDatabase_Grammar {
         // Here we will calculate what portion of the string we need to remove. If this
         // is a join clause query, we need to remove the "on" portion of the SQL and
         // if it is a normal query we need to take the leading "where" of queries.
-        $offset = $query instanceof CDatabase_Query_JoinClause ? 3 : 6;
+        $offset = $where['query'] instanceof CDatabase_Query_JoinClause ? 3 : 6;
 
         return '(' . substr($this->compileWheres($where['query']), $offset) . ')';
     }
@@ -1125,7 +1125,13 @@ class CDatabase_Query_Grammar extends CDatabase_Grammar {
      * @return string
      */
     public function compileInsertUsing(CDatabase_Query_Builder $query, array $columns, string $sql) {
-        return "insert into {$this->wrapTable($query->from)} ({$this->columnize($columns)}) {$sql}";
+        $table = $this->wrapTable($query->from);
+
+        if (empty($columns) || $columns === ['*']) {
+            return "insert into {$table} {$sql}";
+        }
+
+        return "insert into {$table} ({$this->columnize($columns)}) {$sql}";
     }
 
     /**
@@ -1439,7 +1445,32 @@ class CDatabase_Query_Grammar extends CDatabase_Grammar {
     protected function wrapJsonPath($value, $delimiter = '->') {
         $value = preg_replace("/([\\\\]+)?\\'/", "''", $value);
 
-        return '\'$."' . str_replace($delimiter, '"."', $value) . '"\'';
+        $jsonPath = c::collect(explode($delimiter, $value))->map(function ($segment) {
+            return $this->wrapJsonPathSegment($segment);
+        })->join('.');
+
+        return "'$" . (cstr::startsWith($jsonPath, '[') ? '' : '.') . $jsonPath . "'";
+    }
+
+    /**
+     * Wrap the given JSON path segment, keeping a trailing array index such as `tags[0]` unquoted.
+     *
+     * @param string $segment
+     *
+     * @return string
+     */
+    protected function wrapJsonPathSegment($segment) {
+        if (preg_match('/(\[[^\]]+\])+$/', $segment, $parts)) {
+            $key = cstr::beforeLast($segment, $parts[0]);
+
+            if (!empty($key)) {
+                return '"' . $key . '"' . $parts[0];
+            }
+
+            return $parts[0];
+        }
+
+        return '"' . $segment . '"';
     }
 
     /**
