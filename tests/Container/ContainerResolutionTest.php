@@ -414,9 +414,7 @@ class ContainerResolutionTest extends TestCase {
         $container->get('Cresenity');
     }
 
-    public function testMethodLevelContextualBindingIsNotAppliedByCall() {
-        //hulu mendorong kelas target ke buildStack di call() sehingga binding kontekstual ikut
-        //berlaku untuk parameter method; CF belum, jadi binding global yang dipakai
+    public function testMethodLevelContextualBinding() {
         $container = new CContainer_Container();
         $container->bind(ContainerResolutionTestContract::class, ContainerResolutionTestImplementationTwo::class);
         $container->when(ContainerResolutionTestCallTarget::class)
@@ -425,7 +423,33 @@ class ContainerResolutionTest extends TestCase {
 
         $result = $container->call([new ContainerResolutionTestCallTarget(), 'work']);
 
-        $this->assertInstanceOf(ContainerResolutionTestImplementationTwo::class, $result);
+        $this->assertInstanceOf(ContainerResolutionTestImplementation::class, $result);
+        //closure tidak punya kelas target: binding global yang berlaku
+        $this->assertInstanceOf(ContainerResolutionTestImplementationTwo::class, $container->call(function (ContainerResolutionTestContract $stub) {
+            return $stub;
+        }));
+    }
+
+    public function testCallUsesTheDefaultForAnUnboundClassParameter() {
+        $container = new CContainer_Container();
+
+        $result = $container->call(function (?ContainerResolutionTestContract $stub = null) {
+            return $stub;
+        });
+        $this->assertNull($result, 'interface tanpa binding + nilai default → default, bukan exception');
+
+        $container->bind(ContainerResolutionTestContract::class, ContainerResolutionTestImplementation::class);
+        $this->assertInstanceOf(ContainerResolutionTestImplementation::class, $container->call(function (?ContainerResolutionTestContract $stub = null) {
+            return $stub;
+        }));
+    }
+
+    public function testCallThrowsForAnUnresolvablePrimitive() {
+        $container = new CContainer_Container();
+
+        $this->expectException(CContainer_Exception_BindingResolutionException::class);
+        $this->expectExceptionMessage('Unable to resolve dependency [Parameter #0 [ <required> $name ]] in class ContainerResolutionTestPrimitiveTarget');
+        $container->call([new ContainerResolutionTestPrimitiveTarget(), 'work']);
     }
 
     public function testExtendersAreForgotten() {
@@ -563,6 +587,12 @@ class ContainerResolutionTestInjectVariable implements ContainerResolutionTestCo
 class ContainerResolutionTestCallTarget {
     public function work(ContainerResolutionTestContract $stub) {
         return $stub;
+    }
+}
+
+class ContainerResolutionTestPrimitiveTarget {
+    public function work($name) {
+        return $name;
     }
 }
 

@@ -115,14 +115,11 @@ class ContextualBindingAliasTest extends TestCase {
         $this->assertInstanceOf(ContextualAliasImplementationTwo::class, $resolved->implTwo->impl);
     }
 
-    public function testContextualBindingIsNotYetAppliedToMethodInvocation() {
-        //hulu memakai binding kontekstual kelas target juga untuk parameter method lewat call();
-        //CF belum: tanpa binding global, interface-nya tidak bisa dibangun
+    public function testContextualBindingWorksForMethodInvocation() {
         $container = new CContainer_Container();
         $container->when(ContextualAliasMethodArgument::class)->needs(ContextualAliasContract::class)->give(ContextualAliasImplementation::class);
 
-        $this->expectException(CContainer_Exception_BindingResolutionException::class);
-        $container->call([new ContextualAliasMethodArgument(), 'method']);
+        $this->assertInstanceOf(ContextualAliasImplementation::class, $container->call([new ContextualAliasMethodArgument(), 'method']));
     }
 }
 

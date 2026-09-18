@@ -126,17 +126,17 @@ class ContainerCallTest extends TestCase {
     }
 
     /**
-     * Parameter bernomor tidak dipetakan menurut urutan. Tiap parameter diisi
-     * lebih dulu menurut namanya, lalu tipe, lalu nilai bawaannya; sisa
-     * argumen yang tak bernama baru ditempel di belakang. Jadi `$satu` yang
-     * tanpa nama dan tanpa bawaan justru terlewat, dan bawaan `$dua` maju ke
-     * depan.
+     * Parameter bernomor tidak dipetakan menurut urutan: tiap parameter diisi
+     * menurut nama, tipe, atau nilai bawaannya. `$satu` yang tanpa nama dan
+     * tanpa bawaan karena itu tidak bisa dipenuhi, dan ini ditolak terang-terangan
+     * (dulu argumennya diam-diam bergeser: bawaan `$dua` maju ke depan).
      */
-    public function testUnnamedParametersAreAppendedRatherThanMappedByPosition() {
+    public function testUnnamedParametersCannotFillARequiredParameter() {
         $container = $this->makeContainer();
-        $result = $container->call([new ContainerCallTestClass(), 'untyped'], ['a', 'b']);
 
-        $this->assertSame(['dua', 'a'], $result);
+        $this->expectException(CContainer_Exception_BindingResolutionException::class);
+        $this->expectExceptionMessage('Unable to resolve dependency [Parameter #0 [ <required> $satu ]] in class ContainerCallTestClass');
+        $container->call([new ContainerCallTestClass(), 'untyped'], ['a', 'b']);
     }
 
     public function testCallAClosureWithoutDependencies() {
