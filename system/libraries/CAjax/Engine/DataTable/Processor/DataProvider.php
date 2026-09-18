@@ -197,7 +197,7 @@ class CAjax_Engine_DataTable_Processor_DataProvider extends CAjax_Engine_DataTab
                 if ($this->actionLocation() == 'first' && $this->haveRowAction()) {
                     $i2++;
                 }
-                if ($request['bSortable_' . intval($request['iSortCol_' . $i])] == 'true') {
+                if (carr::get($request, 'bSortable_' . intval($request['iSortCol_' . $i]), 'true') == 'true') {
                     $column = carr::get($columns, intval($request['iSortCol_' . $i]) - $i2);
                     $sortDirection = $request['sSortDir_' . $i];
                     if ($column) {

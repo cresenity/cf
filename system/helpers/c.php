@@ -1775,7 +1775,7 @@ class c {
      *
      * @return CPagination_LengthAwarePaginator
      */
-    public static function paginator($items, $total, $perPage, $currentPage, $options) {
+    public static function paginator($items, $total, $perPage, $currentPage, $options = []) {
         return CContainer::getInstance()->makeWith(CPagination_LengthAwarePaginator::class, compact(
             'items',
             'total',
