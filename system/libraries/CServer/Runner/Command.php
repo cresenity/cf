@@ -393,6 +393,8 @@ class CServer_Runner_Command {
                 return false;
             }
             $this->_executed = true;
+
+            return true;
         }
         if ($this->useExec) {
             $execCommand = $this->captureStdErr ? "$command 2>&1" : $command;

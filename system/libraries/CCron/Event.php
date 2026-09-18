@@ -767,9 +767,9 @@ class CCron_Event {
             return $this->onSuccessWithOutput($callback);
         }
 
-        return $this->then(function (CContainer_ContainerInterface $container) use ($callback) {
+        return $this->then(function () use ($callback) {
             if (0 === $this->exitCode) {
-                $container->call($callback);
+                c::container()->call($callback);
             }
         });
     }
@@ -802,9 +802,9 @@ class CCron_Event {
             return $this->onFailureWithOutput($callback);
         }
 
-        return $this->then(function (CContainer_ContainerInterface $container) use ($callback) {
+        return $this->then(function () use ($callback) {
             if (0 !== $this->exitCode) {
-                $container->call($callback);
+                c::container()->call($callback);
             }
         });
     }
@@ -832,12 +832,12 @@ class CCron_Event {
      * @return \Closure
      */
     protected function withOutputCallback(Closure $callback, $onlyIfOutputExists = false) {
-        return function (CContainer_ContainerInterface $container) use ($callback, $onlyIfOutputExists) {
+        return function () use ($callback, $onlyIfOutputExists) {
             $output = $this->output && is_file($this->output) ? file_get_contents($this->output) : '';
 
             return $onlyIfOutputExists && empty($output)
                             ? null
-                            : $container->call($callback, ['output' => new Stringable($output)]);
+                            : c::container()->call($callback, ['output' => new Stringable($output)]);
         };
     }
 
@@ -888,6 +888,11 @@ class CCron_Event {
      * @return \CCarbon
      */
     public function nextRunDate($currentTime = 'now', $nth = 0, $allowCurrentDate = false) {
+        if ($currentTime === 'now') {
+            // lewat CCarbon supaya setTestNow() ikut berlaku
+            $currentTime = CCarbon::now();
+        }
+
         return CCarbon::instance((new CronExpression($this->getExpression()))
             ->getNextRunDate($currentTime, $nth, $allowCurrentDate, $this->timezone));
     }
