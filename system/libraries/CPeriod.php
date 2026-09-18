@@ -60,10 +60,12 @@ class CPeriod implements IteratorAggregate {
      * @param null|CPeriod_Boundaries $boundaries
      */
     public function __construct($startDate, $endDate, ?CPeriod_Precision $precision = null, ?CPeriod_Boundaries $boundaries = null) {
-        if ($startDate instanceof DateTime) {
+        // any DateTimeInterface (the factory hands over DateTimeImmutable) becomes a CCarbon so the
+        // iterator's copy()/add() and the getters behave the same whichever way the period was built
+        if ($startDate instanceof DateTimeInterface && !($startDate instanceof CCarbon)) {
             $startDate = new CCarbon($startDate->format('Y-m-d H:i:s.u'), $startDate->getTimezone());
         }
-        if ($endDate instanceof DateTime) {
+        if ($endDate instanceof DateTimeInterface && !($endDate instanceof CCarbon)) {
             $endDate = new CCarbon($endDate->format('Y-m-d H:i:s.u'), $endDate->getTimezone());
         }
         if ($startDate > $endDate) {
