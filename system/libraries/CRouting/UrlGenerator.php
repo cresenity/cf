@@ -468,15 +468,7 @@ class CRouting_UrlGenerator {
      * @return string
      */
     public function toRoute($route, $parameters, $absolute) {
-        $parameters = c::collect(carr::wrap($parameters))->map(function ($value, $key) use ($route) {
-            return $value instanceof CRouting_UrlRoutableInterface && $route->bindingFieldFor($key) ? $value->{$route->bindingFieldFor($key)} : $value;
-        })->all();
-
-        return $this->routeUrl()->to(
-            $route,
-            $this->formatParameters($parameters),
-            $absolute
-        );
+        return $this->routeUrl()->to($route, $parameters, $absolute);
     }
 
     /**

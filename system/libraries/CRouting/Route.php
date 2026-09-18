@@ -1096,7 +1096,7 @@ class CRouting_Route {
      *
      * @return array
      */
-    protected function getOptionalParameterNames() {
+    public function getOptionalParameterNames() {
         preg_match_all('/\{(\w+?)\?\}/', $this->uri(), $matches);
 
         return isset($matches[1]) ? array_fill_keys($matches[1], null) : [];
