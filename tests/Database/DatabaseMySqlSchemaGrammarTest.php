@@ -20,10 +20,10 @@ class DatabaseMySqlSchemaGrammarTest extends TestCase {
      *
      * @return \Mockery\MockInterface
      */
-    protected function getConnection($usingNative = true) {
+    protected function getConnection($usingNative = true, $prefix = '') {
         $connection = m::mock(CDatabase_Connection::class);
         $connection->shouldReceive('getConfig')->andReturn(null)->byDefault();
-        $connection->shouldReceive('getTablePrefix')->andReturn('');
+        $connection->shouldReceive('getTablePrefix')->andReturn($prefix);
         $connection->shouldReceive('usingNativeSchemaOperations')->andReturn($usingNative);
 
         return $connection;
@@ -704,5 +704,594 @@ class DatabaseMySqlSchemaGrammarTest extends TestCase {
         $sql = $this->getGrammar()->compileAutoIncrementStartingValues($blueprint, $command);
 
         $this->assertNull($sql);
+    }
+
+    // ---- porting lanjutan suite hulu (2026-09-18)
+
+    // Divergensi yang disengaja/lama dan dikunci di bagian ini: urutan modifier CF adalah
+    // `default ... on update ... not null` (hulu: `not null default ...`), dropTimestamps() memakai
+    // kolom audit created/updated, primary() dengan algoritma tetap menulis nama indeks, dan
+    // compileDropAllTables()/Views() menggabung nama tanpa spasi.
+
+    public function testBasicCreateTableWithPrefix() {
+        $conn = $this->getConnection(true, 'prefix_');
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->create();
+        $blueprint->increments('id');
+        $blueprint->string('email');
+
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('create table `prefix_users` (`id` int unsigned not null auto_increment primary key, `email` varchar(255) not null)', $statements[0]);
+    }
+
+    public function testDropTimestamps() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dropTimestamps();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` drop `created`, drop `updated`', $statements[0]);
+    }
+
+    public function testDropTimestampsTz() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dropTimestampsTz();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` drop `created`, drop `updated`', $statements[0]);
+    }
+
+    public function testAddingPrimaryKeyWithAlgorithm() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->primary('foo', 'bar', 'hash');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add primary key `bar` using hash(`foo`)', $statements[0]);
+    }
+
+    public function testAddingFluentSpatialIndex() {
+        $blueprint = new CDatabase_Schema_Blueprint('geo');
+        $conn = $this->getConnection();
+        $blueprint->geometry('coordinates', 'point')->spatialIndex();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(2, $statements);
+        $this->assertSame('alter table `geo` add spatial index `geo_coordinates_spatialindex`(`coordinates`)', $statements[1]);
+    }
+
+    public function testAddingRawIndex() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->rawIndex('(function(column))', 'raw_index');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add index `raw_index`((function(column)))', $statements[0]);
+    }
+
+    public function testAddingIncrementingID() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->increments('id');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `id` int unsigned not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingSmallIncrementingID() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->smallIncrements('id');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `id` smallint unsigned not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingBigIncrementingID() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->bigIncrements('id');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `id` bigint unsigned not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingColumnInTableFirst() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->string('name')->first();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `name` varchar(255) not null first', $statements[0]);
+    }
+
+    public function testAddingColumnAfterAnotherColumn() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->string('name')->after('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `name` varchar(255) not null after `foo`', $statements[0]);
+    }
+
+    public function testAddingInvisibleColumn() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->string('secret', 64)->nullable(false)->invisible();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `secret` varchar(64) not null invisible', $statements[0]);
+    }
+
+    public function testAddingString() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->string('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` varchar(255) not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->string('foo', 100);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` varchar(100) not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->string('foo', 100)->nullable()->default('bar');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` varchar(100) null default \'bar\'', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->string('foo', 100)->nullable()->default(new CDatabase_Query_Expression('CURRENT TIMESTAMP'));
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` varchar(100) null default CURRENT TIMESTAMP', $statements[0]);
+
+    }
+
+    public function testAddingText() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->text('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` text not null', $statements[0]);
+    }
+
+    public function testAddingBigInteger() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->bigInteger('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` bigint not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->bigInteger('foo', true);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` bigint not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingInteger() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->integer('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` int not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->integer('foo', true);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` int not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingMediumInteger() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->mediumInteger('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` mediumint not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->mediumInteger('foo', true);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` mediumint not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingSmallInteger() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->smallInteger('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` smallint not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->smallInteger('foo', true);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` smallint not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingTinyInteger() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->tinyInteger('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` tinyint not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->tinyInteger('foo', true);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` tinyint not null auto_increment primary key', $statements[0]);
+    }
+
+    public function testAddingDouble() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->double('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` double not null', $statements[0]);
+    }
+
+    public function testAddingDecimal() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->decimal('foo', 5, 2);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` decimal(5, 2) not null', $statements[0]);
+    }
+
+    public function testAddingBoolean() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->boolean('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` tinyint(1) not null', $statements[0]);
+    }
+
+    public function testAddingJson() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->json('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` json not null', $statements[0]);
+    }
+
+    public function testAddingJsonb() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->jsonb('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` json not null', $statements[0]);
+    }
+
+    public function testAddingDate() {
+        $conn = $this->getConnection();
+        $conn->shouldReceive('isMaria')->andReturn(false);
+        $conn->shouldReceive('getServerVersion')->andReturn('8.0.13');
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->date('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` date not null', $statements[0]);
+    }
+
+    public function testAddingDateWithDefaultCurrentOn57() {
+        $conn = $this->getConnection();
+        $conn->shouldReceive('isMaria')->andReturn(false);
+        $conn->shouldReceive('getServerVersion')->andReturn('5.7');
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->date('foo')->useCurrent();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` date not null', $statements[0]);
+    }
+
+    public function testAddingDateTime() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dateTime('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->dateTime('foo', 1);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime(1) not null', $statements[0]);
+    }
+
+    public function testAddingDateTimeWithDefaultCurrent() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dateTime('foo')->useCurrent();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime default CURRENT_TIMESTAMP not null', $statements[0]);
+    }
+
+    public function testAddingDateTimeWithOnUpdateCurrent() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dateTime('foo')->useCurrentOnUpdate();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime on update CURRENT_TIMESTAMP not null', $statements[0]);
+    }
+
+    public function testAddingDateTimeWithDefaultCurrentAndOnUpdateCurrent() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dateTime('foo')->useCurrent()->useCurrentOnUpdate();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP not null', $statements[0]);
+    }
+
+    public function testAddingDateTimeWithDefaultCurrentOnUpdateCurrentAndPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dateTime('foo', 3)->useCurrent()->useCurrentOnUpdate();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime(3) default CURRENT_TIMESTAMP(3) on update CURRENT_TIMESTAMP(3) not null', $statements[0]);
+    }
+
+    public function testAddingDateTimeTz() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->dateTimeTz('foo', 1);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime(1) not null', $statements[0]);
+
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->dateTimeTz('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` datetime not null', $statements[0]);
+    }
+
+    public function testAddingTime() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->time('created_at');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` time not null', $statements[0]);
+    }
+
+    public function testAddingTimeWithPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->time('created_at', 1);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` time(1) not null', $statements[0]);
+    }
+
+    public function testAddingTimeTz() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timeTz('created_at');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` time not null', $statements[0]);
+    }
+
+    public function testAddingTimeTzWithPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timeTz('created_at', 1);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` time(1) not null', $statements[0]);
+    }
+
+    public function testAddingTimestamp() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestamp('created_at');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` timestamp not null', $statements[0]);
+    }
+
+    public function testAddingTimestampWithPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestamp('created_at', 1);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` timestamp(1) not null', $statements[0]);
+    }
+
+    public function testAddingTimestampWithDefault() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestamp('created_at')->default('2015-07-22 11:43:17');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame("alter table `users` add `created_at` timestamp not null default '2015-07-22 11:43:17'", $statements[0]);
+    }
+
+    public function testAddingTimestampWithDefaultCurrentSpecifyingPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestamp('created_at', 1)->useCurrent();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` timestamp(1) default CURRENT_TIMESTAMP(1) not null', $statements[0]);
+    }
+
+    public function testAddingTimestampWithOnUpdateCurrentSpecifyingPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestamp('created_at', 1)->useCurrentOnUpdate();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` timestamp(1) on update CURRENT_TIMESTAMP(1) not null', $statements[0]);
+    }
+
+    public function testAddingTimestampWithDefaultCurrentAndOnUpdateCurrentSpecifyingPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestamp('created_at', 1)->useCurrent()->useCurrentOnUpdate();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` timestamp(1) default CURRENT_TIMESTAMP(1) on update CURRENT_TIMESTAMP(1) not null', $statements[0]);
+    }
+
+    public function testAddingTimestampTz() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestampTz('created_at');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` timestamp not null', $statements[0]);
+    }
+
+    public function testAddingTimestampTzWithPrecision() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestampTz('created_at', 1);
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `created_at` timestamp(1) not null', $statements[0]);
+    }
+
+    public function testAddingTimeStampTzWithDefault() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->timestampTz('created_at')->default('2015-07-22 11:43:17');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+        $this->assertCount(1, $statements);
+        $this->assertSame("alter table `users` add `created_at` timestamp not null default '2015-07-22 11:43:17'", $statements[0]);
+    }
+
+    public function testAddingRememberToken() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->rememberToken();
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `remember_token` varchar(100) null', $statements[0]);
+    }
+
+    public function testAddingBinary() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->binary('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` blob not null', $statements[0]);
+    }
+
+    public function testAddingUuid() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->uuid('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` char(36) not null', $statements[0]);
+    }
+
+    public function testAddingIpAddress() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->ipAddress('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` varchar(45) not null', $statements[0]);
+    }
+
+    public function testAddingMacAddress() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->macAddress('foo');
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame('alter table `users` add `foo` varchar(17) not null', $statements[0]);
+    }
+
+    public function testAddingComment() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $conn = $this->getConnection();
+        $blueprint->string('foo')->comment("Escape ' when using words like it's");
+        $statements = $blueprint->toSql($conn, $this->getGrammar($conn));
+
+        $this->assertCount(1, $statements);
+        $this->assertSame("alter table `users` add `foo` varchar(255) not null comment 'Escape \\' when using words like it\\'s'", $statements[0]);
+    }
+
+    public function testDropAllTables() {
+        $statement = $this->getGrammar()->compileDropAllTables(['alpha', 'beta', 'gamma']);
+
+        $this->assertSame('drop table `alpha`,`beta`,`gamma`', $statement);
+    }
+
+    public function testDropAllViews() {
+        $statement = $this->getGrammar()->compileDropAllViews(['alpha', 'beta', 'gamma']);
+
+        $this->assertSame('drop view `alpha`,`beta`,`gamma`', $statement);
     }
 }
