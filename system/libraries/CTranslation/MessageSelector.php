@@ -61,7 +61,7 @@ class CTranslation_MessageSelector {
      * @return mixed
      */
     private function extractFromString($part, $number) {
-        preg_match('/^[\{\[]([^\[\]\{\}]*)[\}\]](.*)/s', $part, $matches);
+        preg_match('/^[\{\[]([-?\d|*,\.*]*)[\}\]](.*)/s', $part, $matches);
 
         if (count($matches) != 3) {
             return;
@@ -83,6 +83,9 @@ class CTranslation_MessageSelector {
             if ($number >= $from && $number <= $to) {
                 return $value;
             }
+
+            // rentang tidak cocok; jangan jatuh ke perbandingan longgar ('1,*' == 0 benar di PHP 7)
+            return null;
         }
 
         return $condition == $number ? $value : null;
@@ -97,7 +100,7 @@ class CTranslation_MessageSelector {
      */
     private function stripConditions($segments) {
         return c::collect($segments)->map(function ($part) {
-            return preg_replace('/^[\{\[]([^\[\]\{\}]*)[\}\]]/', '', $part);
+            return preg_replace('/^[\{\[][-?\d|*,\.*]*[\}\]]/', '', $part);
         })->all();
     }
 

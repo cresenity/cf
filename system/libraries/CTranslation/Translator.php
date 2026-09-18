@@ -266,18 +266,19 @@ class CTranslation_Translator extends CBase_NamespacedItemResolver implements CT
 
         $replace = $this->sortReplacements($replace);
 
+        $shouldReplace = [];
         foreach ($replace as $key => $value) {
             if (cstr::startsWith($key, ':')) {
                 $key = substr($key, 1);
             }
-            $line = str_replace(
-                [':' . $key, ':' . cstr::upper($key), ':' . cstr::ucfirst($key)],
-                [$value, cstr::upper($value), cstr::ucfirst($value)],
-                $line
-            );
+            $value = (string) $value;
+            $shouldReplace[':' . cstr::ucfirst($key)] = cstr::ucfirst($value);
+            $shouldReplace[':' . cstr::upper($key)] = cstr::upper($value);
+            $shouldReplace[':' . $key] = $value;
         }
 
-        return $line;
+        // satu strtr: nilai pengganti tidak ikut diproses sebagai placeholder berikutnya
+        return strtr($line, $shouldReplace);
     }
 
     /**
