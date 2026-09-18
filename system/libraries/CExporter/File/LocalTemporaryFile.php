@@ -10,9 +10,10 @@ class CExporter_File_LocalTemporaryFile extends CExporter_File_TemporaryFile {
      * @param string $filePath
      */
     public function __construct($filePath) {
-        touch($filePath);
+        //berkas baru dibuat saat pertama ditulis; export yang gagal sebelum itu tidak meninggalkan cangkang kosong di temp/
+        $directory = realpath(dirname($filePath));
 
-        $this->filePath = realpath($filePath);
+        $this->filePath = ($directory !== false ? $directory : dirname($filePath)) . DIRECTORY_SEPARATOR . basename($filePath);
     }
 
     /**
