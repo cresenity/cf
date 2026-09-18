@@ -4,7 +4,7 @@ defined('SYSPATH') or die('No direct access allowed.');
 
 use Symfony\Component\VarDumper\VarDumper;
 
-class CBase_String implements Stringable, ArrayAccess {
+class CBase_String implements Stringable, ArrayAccess, JsonSerializable {
     use CTrait_Macroable;
     use CTrait_Conditionable;
     use CTrait_Tappable;
