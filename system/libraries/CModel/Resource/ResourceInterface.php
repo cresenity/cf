@@ -59,5 +59,5 @@ interface CModel_Resource_ResourceInterface extends CInterface_Responsable, Html
 
     public function getFullUrl($conversionName = '');
 
-    public function getTemporaryUrl(DateTimeInterface $expiration, $conversionName = '', array $options = []);
+    public function getTemporaryUrl(?DateTimeInterface $expiration = null, $conversionName = '', array $options = []);
 }

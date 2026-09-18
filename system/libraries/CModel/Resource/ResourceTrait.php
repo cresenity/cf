@@ -69,8 +69,19 @@ trait CModel_Resource_ResourceTrait {
         return $urlGenerator->getUrl();
     }
 
-    public function getTemporaryUrl(DateTimeInterface $expiration, $conversionName = '', array $options = []) {
+    /**
+     * Temporary url of the file; without an expiration `resource.temporary_url_default_lifetime` minutes apply.
+     *
+     * @param null|DateTimeInterface $expiration
+     * @param string                 $conversionName
+     * @param array                  $options
+     *
+     * @return string
+     */
+    public function getTemporaryUrl(?DateTimeInterface $expiration = null, $conversionName = '', array $options = []) {
+        $expiration = $expiration ?: c::now()->addMinutes(CF::config('resource.temporary_url_default_lifetime', 5));
         $urlGenerator = $this->getUrlGenerator($conversionName);
+
         return $urlGenerator->getTemporaryUrl($expiration, $options);
     }
 
@@ -169,6 +180,43 @@ trait CModel_Resource_ResourceTrait {
         }
 
         return $this->getPath();
+    }
+
+    /**
+     * @param array $conversionNames
+     *
+     * @return string
+     */
+    public function getAvailablePathRelativeToRoot($conversionNames) {
+        return $this->getPathRelativeToRoot($this->findFirstAvailableConversion($conversionNames));
+    }
+
+    /**
+     * @param array                  $conversionNames
+     * @param null|DateTimeInterface $expiration
+     * @param array                  $options
+     *
+     * @return string
+     */
+    public function getAvailableTemporaryUrl($conversionNames, ?DateTimeInterface $expiration = null, array $options = []) {
+        return $this->getTemporaryUrl($expiration, $this->findFirstAvailableConversion($conversionNames), $options);
+    }
+
+    /**
+     * First generated conversion of the given names, '' for the original.
+     *
+     * @param array $conversionNames
+     *
+     * @return string
+     */
+    protected function findFirstAvailableConversion($conversionNames) {
+        foreach ($conversionNames as $conversionName) {
+            if ($this->hasGeneratedConversion($conversionName)) {
+                return $conversionName;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -371,46 +419,90 @@ trait CModel_Resource_ResourceTrait {
     }
 
     /**
-     * Create an HTTP response that downloads the file.
+     * @param int $chunkSize
      *
-     * @param CHTTP_Request $request
-     *
-     * @return CHTTP_Response
+     * @return $this
      */
-    public function toResponse($request) {
-        return $this->buildResponse('attachment');
+    public function setStreamChunkSize(int $chunkSize) {
+        $this->streamChunkSize = $chunkSize;
+
+        return $this;
     }
 
     /**
-     * Create an HTTP response that displays the file in the browser.
+     * Create an HTTP response that downloads the file, or one of its conversions.
      *
      * @param CHTTP_Request $request
+     * @param string        $conversion
      *
      * @return CHTTP_Response
      */
-    public function toInlineResponse($request) {
-        return $this->buildResponse('inline');
+    public function toResponse($request, $conversion = '') {
+        return $this->buildResponse('attachment', $conversion);
+    }
+
+    /**
+     * Create an HTTP response that displays the file, or one of its conversions, in the browser.
+     *
+     * @param CHTTP_Request $request
+     * @param string        $conversion
+     *
+     * @return CHTTP_Response
+     */
+    public function toInlineResponse($request, $conversion = '') {
+        return $this->buildResponse('inline', $conversion);
+    }
+
+    /**
+     * Download the first generated conversion of the given names, or the original.
+     *
+     * @param CHTTP_Request $request
+     * @param array         $conversionNames
+     *
+     * @return CHTTP_Response
+     */
+    public function toAvailableResponse($request, $conversionNames) {
+        return $this->toResponse($request, $this->findFirstAvailableConversion($conversionNames));
+    }
+
+    /**
+     * Display the first generated conversion of the given names, or the original.
+     *
+     * @param CHTTP_Request $request
+     * @param array         $conversionNames
+     *
+     * @return CHTTP_Response
+     */
+    public function toAvailableInlineResponse($request, $conversionNames) {
+        return $this->toInlineResponse($request, $this->findFirstAvailableConversion($conversionNames));
     }
 
     /**
      * Stream the file with the given content disposition.
      *
      * @param string $contentDisposition
+     * @param string $conversion
      *
      * @return CHTTP_Response
      */
-    protected function buildResponse($contentDisposition) {
+    protected function buildResponse($contentDisposition, $conversion = '') {
+        $size = $conversion !== ''
+            ? CStorage::instance()->disk($this->conversions_disk ?: $this->disk)->size($this->getPathRelativeToRoot($conversion))
+            : $this->size;
         $downloadHeaders = [
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Content-Type' => $this->mime_type,
-            'Content-Length' => $this->size,
+            'Content-Length' => $size,
             'Content-Disposition' => $contentDisposition . '; filename="' . $this->file_name . '"',
             'Pragma' => 'public',
         ];
 
-        return c::response()->stream(function () {
-            $stream = $this->stream();
-            fpassthru($stream);
+        return c::response()->stream(function () use ($conversion) {
+            $stream = $this->stream($conversion);
+            while (!feof($stream)) {
+                echo fread($stream, $this->streamChunkSize);
+                flush();
+            }
             if (is_resource($stream)) {
                 fclose($stream);
             }
@@ -482,10 +574,17 @@ trait CModel_Resource_ResourceTrait {
         return new CResources_ResponsiveImage_RegisteredResponsiveImage($this, $conversionName);
     }
 
-    public function stream() {
+    /**
+     * Read stream of the original file, or of one of its conversions.
+     *
+     * @param string $conversion
+     *
+     * @return resource
+     */
+    public function stream($conversion = '') {
         $filesystem = CResources_Factory::createFileSystem();
 
-        return $filesystem->getStream($this);
+        return $conversion === '' ? $filesystem->getStream($this) : $filesystem->getConversionStream($this, $conversion);
     }
 
     public function toHtml() {

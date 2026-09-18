@@ -157,6 +157,18 @@ class CResources_Filesystem {
         return $this->filesystem->disk($resource->disk)->readStream($sourceFile);
     }
 
+    /**
+     * @param CModel_Resource_ResourceInterface $resource
+     * @param string                            $conversion
+     *
+     * @return resource
+     */
+    public function getConversionStream(CModel_Resource_ResourceInterface $resource, $conversion) {
+        $sourceFile = $resource->getPathRelativeToRoot($conversion);
+
+        return $this->filesystem->disk($resource->conversions_disk ?: $resource->disk)->readStream($sourceFile);
+    }
+
     public function copyFromResourceLibrary(CModel_Resource_ResourceInterface $resource, $targetFile) {
         touch($targetFile);
         $stream = $this->getStream($resource);
