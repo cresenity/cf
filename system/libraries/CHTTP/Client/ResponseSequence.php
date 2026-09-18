@@ -45,8 +45,6 @@ class CHTTP_Client_ResponseSequence {
      * @return $this
      */
     public function push($body = '', $status = 200, array $headers = []) {
-        $body = is_array($body) ? json_encode($body) : $body;
-
         return $this->pushResponse(
             CHTTP_Client::response($body, $status, $headers)
         );

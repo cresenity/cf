@@ -561,8 +561,6 @@ final class CHTTP_Client {
             return $this->macroCall($method, $parameters);
         }
 
-        return c::tap($this->newPendingRequest(), function ($request) {
-            $request->stub($this->stubCallbacks);
-        })->{$method}(...$parameters);
+        return $this->createPendingRequest()->{$method}(...$parameters);
     }
 }

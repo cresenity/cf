@@ -250,12 +250,12 @@ class CHTTP_Client_PendingRequest {
     /**
      * Attach a raw body to the request.
      *
-     * @param string $content
-     * @param string $contentType
+     * @param string|\Psr\Http\Message\StreamInterface $content
+     * @param string                                       $contentType
      *
      * @return $this
      */
-    public function withBody($content, $contentType) {
+    public function withBody($content, $contentType = 'application/json') {
         $this->bodyFormat('body');
 
         $this->pendingBody = $content;
@@ -1338,7 +1338,7 @@ class CHTTP_Client_PendingRequest {
      * @return \Closure
      */
     public function runBeforeSendingCallbacks($request, array $options) {
-        return c::tap($request, function ($request) use ($options) {
+        return c::tap($request, function (&$request) use ($options) {
             $this->beforeSendingCallbacks->each(function ($callback) use (&$request, $options) {
                 $callbackResult = call_user_func(
                     $callback,

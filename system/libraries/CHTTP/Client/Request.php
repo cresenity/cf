@@ -55,19 +55,17 @@ class CHTTP_Client_Request implements ArrayAccess {
      * @return bool
      */
     public function hasHeader($key, $value = null) {
-        if (is_null($value)) {
-            return !empty($this->request->getHeaders()[$key]);
+        if (!$this->request->hasHeader($key)) {
+            return false;
         }
 
-        $headers = $this->headers();
-
-        if (!carr::has($headers, $key)) {
-            return false;
+        if (is_null($value)) {
+            return true;
         }
 
         $value = is_array($value) ? $value : [$value];
 
-        return empty(array_diff($value, $headers[$key]));
+        return empty(array_diff($value, $this->request->getHeader($key)));
     }
 
     /**
@@ -99,7 +97,7 @@ class CHTTP_Client_Request implements ArrayAccess {
      * @return array
      */
     public function header($key) {
-        return carr::get($this->headers(), $key, []);
+        return $this->request->getHeader($key);
     }
 
     /**

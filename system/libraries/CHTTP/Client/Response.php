@@ -329,6 +329,19 @@ class CHTTP_Client_Response implements ArrayAccess {
     }
 
     /**
+     * Throw an exception if a server or client error occurred and the given condition evaluates to false.
+     *
+     * @param bool|\Closure $condition
+     *
+     * @throws \CHTTP_Client_Exception_RequestException
+     *
+     * @return $this
+     */
+    public function throwUnless($condition) {
+        return $this->throwIf(!c::value($condition, $this));
+    }
+
+    /**
      * Throw an exception if the response status code matches the given code.
      *
      * @param callable|int $statusCode
