@@ -9,15 +9,31 @@ const buildConfigFromModifiers = (modifiers, expression, evaluate) => {
     return config;
 };
 
+// data('autoNumeric') hilang setelah 'destroy'; set/get sesudah itu melempar $.error
+const isInitialized = (el) => typeof $(el).data('autoNumeric') === 'object';
+
 const valueChangeCallback = (el) => {
     return () => {
-        let value = $(el).autoNumeric('get');
-        if (!el._x_model) {
+        if (!el._x_model || !isInitialized(el)) {
             return;
         }
+        let value = $(el).autoNumeric('get');
 
         el._x_model.set(value);
     };
+};
+
+const setValue = (el, value) => {
+    // effect yang sudah antre masih dijalankan sekali setelah elemen dibersihkan (Vue reactivity 3.1)
+    if (value === undefined || value === null || !isInitialized(el)) {
+        return;
+    }
+    // nilai non-numerik (mis. NaN dari perhitungan) membuat autoNumeric melempar dan menghentikan antrean effect lain
+    if (!$.isNumeric(+value)) {
+        console.warn('x-autonumeric: nilai bukan angka diabaikan', value, el);
+        return;
+    }
+    $(el).autoNumeric('set', value);
 };
 
 export default function (Alpine) {
@@ -56,25 +72,25 @@ export default function (Alpine) {
         if (!el.__autonumeric) {
             $(el).autoNumeric('init', config);
             el.__autonumeric = $(el).data('autoNumeric');
-            $(el).bind('blur focusout change', valueChangeCallback(el));
+            const changeHandler = valueChangeCallback(el);
+            $(el).bind('blur focusout change', changeHandler);
 
-
-            if (el._x_model) {
-                effect(() => {
-                    Alpine.mutateDom(() => $(el).autoNumeric('set', el._x_model.get()));
+            // satu effect saja: cleanup elementBoundEffect hanya melepas effect terakhir yang didaftarkan
+            effect(() => {
+                Alpine.mutateDom(() => {
+                    if (el._x_model) {
+                        setValue(el, el._x_model.get());
+                    }
+                    if (el._x_bindings && el._x_bindings.value) {
+                        setValue(el, el._x_bindings.value);
+                    }
                 });
-            }
-
-            if(el._x_bindings && el._x_bindings.value) {
-                effect(() => {
-                    Alpine.mutateDom(() => {
-                        $(el).autoNumeric('set', el._x_bindings.value);
-                    });
-                });
-            }
+            });
             cleanup(()=>{
-                $(el).unbind('blur focusout change', valueChangeCallback(el));
-                $(el).autoNumeric('destroy');
+                $(el).unbind('blur focusout change', changeHandler);
+                if (isInitialized(el)) {
+                    $(el).autoNumeric('destroy');
+                }
             });
         }
     });
