@@ -272,7 +272,7 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
      *
      * @return array
      */
-    public function compileDropColumn(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, CDatabase $connection) {
+    public function compileDropColumn(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, CDatabase_Connection $connection) {
         $tableDiff = $this->getDoctrineTableDiff(
             $blueprint,
             $schema = $connection->getDoctrineSchemaManager()
@@ -355,7 +355,7 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
      *
      * @return array
      */
-    public function compileRenameIndex(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, CDatabase $connection) {
+    public function compileRenameIndex(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, CDatabase_Connection $connection) {
         $schemaManager = $connection->getDoctrineSchemaManager();
 
         $indexes = $schemaManager->listTableIndexes($this->getTablePrefix() . $blueprint->getTable());
