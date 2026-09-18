@@ -254,7 +254,7 @@ class CHTTP_Client_Request implements ArrayAccess {
      * @return mixed
      */
     #[\ReturnTypeWillChange]
-    public function offsetGet($offset): mixed {
+    public function offsetGet($offset) {
         return $this->data()[$offset];
     }
 

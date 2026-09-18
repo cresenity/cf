@@ -77,7 +77,7 @@ trait CDatabase_MongoDB_Trait_ManagesTransactionsTrait {
      *
      * @param int $attempts
      */
-    public function transaction(Closure $callback, $attempts = 1, array $options = []): mixed {
+    public function transaction(Closure $callback, $attempts = 1, array $options = []) {
         $attemptsLeft = $attempts;
         $callbackResult = null;
         $throwable = null;

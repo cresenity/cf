@@ -47,7 +47,7 @@ class CServer_Process_ProcessPoolResults implements ArrayAccess {
      * @return mixed
      */
     #[\ReturnTypeWillChange]
-    public function offsetGet($offset): mixed {
+    public function offsetGet($offset) {
         return $this->results[$offset];
     }
 

@@ -89,7 +89,7 @@ interface CAuth_OTP_Contract_OTPInterface {
     /**
      * @param non-empty-string $parameter
      */
-    public function getParameter(string $parameter): mixed;
+    public function getParameter(string $parameter);
 
     /**
      * @param non-empty-string $parameter

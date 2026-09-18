@@ -580,7 +580,7 @@ abstract class CPagination_CursorPaginatorAbstract implements CInterface_Htmlabl
      * @return mixed
      */
     #[\ReturnTypeWillChange]
-    public function offsetGet($key): mixed {
+    public function offsetGet($key) {
         return $this->items->get($key);
     }
 

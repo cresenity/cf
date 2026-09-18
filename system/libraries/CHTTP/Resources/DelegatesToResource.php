@@ -71,7 +71,7 @@ trait CHTTP_Resources_DelegatesToResource {
      * @return mixed
      */
     #[\ReturnTypeWillChange]
-    public function offsetGet($offset): mixed {
+    public function offsetGet($offset) {
         return $this->resource[$offset];
     }
 
