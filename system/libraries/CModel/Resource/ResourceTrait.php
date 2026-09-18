@@ -371,18 +371,40 @@ trait CModel_Resource_ResourceTrait {
     }
 
     /**
-     * Create an HTTP response that represents the object.
+     * Create an HTTP response that downloads the file.
      *
      * @param CHTTP_Request $request
      *
      * @return CHTTP_Response
      */
     public function toResponse($request) {
+        return $this->buildResponse('attachment');
+    }
+
+    /**
+     * Create an HTTP response that displays the file in the browser.
+     *
+     * @param CHTTP_Request $request
+     *
+     * @return CHTTP_Response
+     */
+    public function toInlineResponse($request) {
+        return $this->buildResponse('inline');
+    }
+
+    /**
+     * Stream the file with the given content disposition.
+     *
+     * @param string $contentDisposition
+     *
+     * @return CHTTP_Response
+     */
+    protected function buildResponse($contentDisposition) {
         $downloadHeaders = [
             'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
             'Content-Type' => $this->mime_type,
             'Content-Length' => $this->size,
-            'Content-Disposition' => 'attachment; filename="' . $this->file_name . '"',
+            'Content-Disposition' => $contentDisposition . '; filename="' . $this->file_name . '"',
             'Pragma' => 'public',
         ];
 
