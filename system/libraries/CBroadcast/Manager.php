@@ -191,10 +191,14 @@ class CBroadcast_Manager implements CBroadcast_Contract_FactoryInterface {
     protected function createPusherDriver(array $config) {
         $options = $config['options'] ? $config['options'] : [];
 
-        $client = null;
+        $guzzleOptions = [
+            'connect_timeout' => carr::get($options, 'connect_timeout', 5),
+            'timeout' => carr::get($options, 'timeout', 30),
+        ];
         if (array_key_exists('verify', $options)) {
-            $client = new \GuzzleHttp\Client(['verify' => $options['verify']]);
+            $guzzleOptions['verify'] = $options['verify'];
         }
+        $client = new \GuzzleHttp\Client($guzzleOptions);
 
         $pusher = new Pusher(
             $config['key'],
