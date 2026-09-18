@@ -17,6 +17,7 @@ import initValidation from './module/validation';
 import initPlugin from './plugin';
 import {element, initElement} from './element';
 import ucfirst from 'locutus/php/strings/ucfirst';
+import { resolveToastrMethod } from './util/toastr.mjs';
 import Alpine from 'alpinejs';
 import cresReact from './react';
 import CSocket from './csocket/CSocket';
@@ -712,13 +713,20 @@ export default class Cresenity {
         }, options);
 
         if(window.toastr) {
-            return window.toastr[type](message, settings.title, {
-                positionClass: 'toast-'+settings.position,
-                closeButton: true,
-                progressBar: true,
-                preventDuplicates: false,
-                newestOnTop: false
-            });
+            // Tipe tak dikenal dipetakan ke method valid; tanpa ini window.toastr[type] undefined dan meng-crash halaman (TB-14233).
+            let method = resolveToastrMethod(type);
+            if (typeof window.toastr[method] !== 'function') {
+                method = null;
+            }
+            if (method) {
+                return window.toastr[method](message, settings.title, {
+                    positionClass: 'toast-'+settings.position,
+                    closeButton: true,
+                    progressBar: true,
+                    preventDuplicates: false,
+                    newestOnTop: false
+                });
+            }
         }
         return cresToast.toast(message);
     }
