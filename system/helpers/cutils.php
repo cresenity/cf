@@ -166,7 +166,7 @@ class cutils {
             $res = $res . ' ' . self::get_under_1000($temp_under_1000) . ' Miliar';
         }
         $tempval = $val % 1000000000;
-        if (floor($val / 1000000) > 0) {
+        if ($tempval >= 1000000) {
             $temp_under_1000 = floor($tempval / 1000000);
             $res = $res . ' ' . self::get_under_1000($temp_under_1000) . ' Juta';
         }

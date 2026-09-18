@@ -69,7 +69,7 @@ class cfs {
      */
     public static function list_dir($dir) {
         $result = [];
-        $dir = trim($dir, DS) . DS;
+        $dir = rtrim($dir, DS) . DS;
         if (is_dir($dir)) {
             if ($handle = opendir($dir)) {
                 while (($file = readdir($handle)) !== false) {
