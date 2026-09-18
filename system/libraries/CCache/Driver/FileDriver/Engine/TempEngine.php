@@ -50,9 +50,16 @@ class CCache_Driver_FileDriver_Engine_TempEngine extends CCache_Driver_FileDrive
     }
 
     public function deleteDirectory() {
-        $dir = rtrim(DOCROOT, '/') . '/temp/cache/' . trim($this->directory, '/');
         $file = new CFile();
+        $base = rtrim(DOCROOT, '/') . '/temp/';
+        $directory = trim($this->directory, '/');
+        // temp/cache/<appCode>/<directory> (where CTemporary_Directory writes) plus the shared
+        // temp/cache/<directory> entries were written to before temp went per app
+        $deleted = $file->deleteDirectory($base . CTemporary::appFolder('cache') . '/' . $directory);
+        if (is_dir($base . 'cache/' . $directory)) {
+            $deleted = $file->deleteDirectory($base . 'cache/' . $directory) || $deleted;
+        }
 
-        return $file->deleteDirectory($dir);
+        return $deleted;
     }
 }

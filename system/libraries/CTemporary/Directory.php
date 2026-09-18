@@ -8,8 +8,15 @@ defined('SYSPATH') or die('No direct access allowed.');
 class CTemporary_Directory {
     protected $path;
 
+    /**
+     * `temp/<folder>/<appCode>/<rest>`: the app code sits right after the first segment of the given path.
+     *
+     * @param string $path
+     */
     public function __construct($path) {
-        $this->path = 'temp' . DS . trim($path, DS);
+        $segments = explode(DS, trim($path, DS));
+        $folder = CTemporary::appFolder(array_shift($segments));
+        $this->path = 'temp' . DS . rtrim($folder . DS . implode(DS, $segments), DS);
         CFile::makeDirectory($this->getPath(), 0777, true, true);
     }
 

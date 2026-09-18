@@ -38,7 +38,8 @@ class AjaxTemporaryFilePerAppTest extends TestCase {
 
     public function testLegacySharedLocationIsStillReadForOldIds() {
         $id = date('Ymd') . cutils::randmd5();
-        $legacy = CTemporary::getPath('ajax', $id . '.tmp');
+        // lokasi lama bersama disusun manual: CTemporary::getPath() sendiri kini per app
+        $legacy = 'ajax/' . date('Ymd') . '/' . implode('/', str_split(substr($id, 8, 5))) . '/' . $id . '.tmp';
         CTemporary::disk()->put($legacy, json_encode(['type' => 'Legacy', 'data' => ['x' => 1]]));
         $this->created[] = $legacy;
 
@@ -49,7 +50,7 @@ class AjaxTemporaryFilePerAppTest extends TestCase {
         // menyimpang dari yang dibaca pembaca lain
         CAjax::setData($id, ['type' => 'Legacy', 'data' => ['x' => 2]]);
         $this->assertSame(['x' => 2], carr::get(json_decode(CTemporary::disk()->get($legacy), true), 'data'));
-        $this->assertFalse(CTemporary::disk()->exists(CTemporary::getPath(CAjax::temporaryFolder(), $id . '.tmp')));
+        $this->assertFalse(CTemporary::disk()->exists('ajax/' . CF::appCode() . '/' . date('Ymd') . '/' . implode('/', str_split(substr($id, 8, 5))) . '/' . $id . '.tmp'));
     }
 
     public function testAnIdThatExistsNowhereResolvesToTheAppFolder() {

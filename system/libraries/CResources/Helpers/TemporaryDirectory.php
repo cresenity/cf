@@ -4,14 +4,14 @@ class CResources_Helpers_TemporaryDirectory {
     const DEFAULT_FOLDER = 'resource';
 
     /**
-     * Temp folder of this app, `resource/<appCode>`, unless the config names one.
+     * Temp folder handed to CTemporary (which makes it per app), unless the config names one.
      *
      * @return string
      */
     protected static function folder() {
         $folder = CF::config('resource.temporary_directory_path');
         if (strlen($folder) == 0) {
-            $folder = static::DEFAULT_FOLDER . '/' . CF::appCode();
+            $folder = static::DEFAULT_FOLDER;
         }
 
         return $folder;

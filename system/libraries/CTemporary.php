@@ -61,7 +61,7 @@ class CTemporary {
         $path = DOCROOT . 'temp' . DIRECTORY_SEPARATOR;
 
         if ($folder != null) {
-            $path .= $folder . DIRECTORY_SEPARATOR;
+            $path .= static::appFolder($folder) . DIRECTORY_SEPARATOR;
         }
 
         if (!is_dir($path)) {
@@ -98,32 +98,50 @@ class CTemporary {
     }
 
     /**
+     * Local path of a temp file with its directory created; an old shared-location file is still found.
+     *
      * @param string $folder
      * @param string $filename
      *
      * @return string
      */
     public static function makePath($folder, $filename) {
-        $depth = 5;
-        $mainFolder = substr($filename, 0, 8);
-        $path = self::getDirectory();
-        $path = self::makeFolder($path, $folder);
-        $path = self::makeFolder($path, $mainFolder);
-        $basefile = basename($filename);
-        for ($i = 0; $i < $depth; $i++) {
-            $c = '_';
-            if (strlen($basefile) > ($i + 1)) {
-                $c = substr($basefile, $i + 8, 1);
-                if (strlen($c) == 0) {
-                    $c = '_';
-                }
-                $path = self::makefolder($path, $c);
-            }
+        $path = static::getLocalPath($folder, $filename);
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            @mkdir($directory, 0777, true);
         }
 
-        return $path . $filename;
+        return $path;
     }
 
+    /**
+     * Per-app temp folder, `<folder>/<appCode>` (`common` without a running app).
+     *
+     * @param null|string $folder
+     *
+     * @return string
+     */
+    public static function appFolder($folder = null) {
+        $folder = rtrim($folder ?: 'common', DIRECTORY_SEPARATOR . '/');
+        $appCode = (string) CF::appCode();
+        $appCode = strlen($appCode) > 0 ? $appCode : 'common';
+        if (cstr::endsWith($folder, DIRECTORY_SEPARATOR . $appCode) || cstr::endsWith($folder, '/' . $appCode)) {
+            return $folder;
+        }
+
+        return $folder . DIRECTORY_SEPARATOR . $appCode;
+    }
+
+    /**
+     * Relative temp path: new files go under `<folder>/<appCode>/`, a file that only exists in the
+     * old shared `<folder>/` is still resolved there.
+     *
+     * @param null|string $folder
+     * @param null|string $filename
+     *
+     * @return string
+     */
     public static function getPath($folder = null, $filename = null) {
         if ($folder == null) {
             $folder = 'common';
@@ -131,6 +149,28 @@ class CTemporary {
         if ($filename == null) {
             $filename = date('Ymd') . cutils::randmd5();
         }
+        $perApp = static::buildPath(static::appFolder($folder), $filename);
+        $legacy = static::buildPath($folder, $filename);
+        if ($legacy === $perApp) {
+            return $perApp;
+        }
+        $disk = static::disk();
+        if (!$disk->exists($perApp) && $disk->exists($legacy)) {
+            return $legacy;
+        }
+
+        return $perApp;
+    }
+
+    /**
+     * `<folder>/<Ymd>/<c>/<c>/<c>/<c>/<c>/<filename>`, the five characters after the date spreading files.
+     *
+     * @param string $folder
+     * @param string $filename
+     *
+     * @return string
+     */
+    protected static function buildPath($folder, $filename) {
         $depth = 5;
         $mainFolder = substr($filename, 0, 8);
         $path = '';
@@ -152,8 +192,26 @@ class CTemporary {
         return $path . $filename;
     }
 
+    /**
+     * Absolute path under DOCROOT/temp; like getPath(), an old shared-location file is still found.
+     *
+     * @param string      $folder
+     * @param null|string $filename
+     *
+     * @return string
+     */
     public static function getLocalPath($folder, $filename = null) {
-        return rtrim(DOCROOT, '/') . '/temp/' . static::getPath($folder, $filename);
+        $root = rtrim(DOCROOT, '/') . '/temp/';
+        if ($filename == null) {
+            $filename = date('Ymd') . cutils::randmd5();
+        }
+        $perApp = $root . static::buildPath(static::appFolder($folder ?: 'common'), $filename);
+        $legacy = $root . static::buildPath($folder ?: 'common', $filename);
+        if ($legacy !== $perApp && !file_exists($perApp) && file_exists($legacy)) {
+            return $legacy;
+        }
+
+        return $perApp;
     }
 
     /**

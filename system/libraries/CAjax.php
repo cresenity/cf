@@ -46,9 +46,7 @@ class CAjax {
      * @return string
      */
     public static function temporaryFolder() {
-        $appCode = (string) CF::appCode();
-
-        return 'ajax' . DIRECTORY_SEPARATOR . (strlen($appCode) > 0 ? $appCode : 'common');
+        return CTemporary::appFolder('ajax');
     }
 
     /**
@@ -60,18 +58,8 @@ class CAjax {
      * @return string
      */
     public static function temporaryFile($ajaxMethodId) {
-        $filename = $ajaxMethodId . '.tmp';
-        $perApp = CTemporary::getPath(static::temporaryFolder(), $filename);
-        $disk = CTemporary::disk();
-        if ($disk->exists($perApp)) {
-            return $perApp;
-        }
-        $legacy = CTemporary::getPath('ajax', $filename);
-        if ($disk->exists($legacy)) {
-            return $legacy;
-        }
-
-        return $perApp;
+        // CTemporary::getPath() itself goes per app and falls back to the shared location
+        return CTemporary::getPath('ajax', $ajaxMethodId . '.tmp');
     }
 
     /**

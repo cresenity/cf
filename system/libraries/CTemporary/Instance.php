@@ -55,7 +55,7 @@ class CTemporary_Instance {
         $path = DOCROOT . 'temp' . DIRECTORY_SEPARATOR;
 
         if ($folder != null) {
-            $path .= $folder . DIRECTORY_SEPARATOR;
+            $path .= CTemporary::appFolder($folder) . DIRECTORY_SEPARATOR;
         }
 
         if (!is_dir($path)) {

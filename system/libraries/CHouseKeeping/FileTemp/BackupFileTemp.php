@@ -14,12 +14,21 @@ class CHouseKeeping_FileTemp_BackupFileTemp {
 
         $basePath = 'backup';
 
-        $directories = $disk->directories($basePath);
+        // backup/<YmdHis...> (lokasi lama bersama) dan backup/<appCode>/<YmdHis...> (per app) dua-duanya
+        // dipangkas; nama folder yang tidak diawali tanggal dianggap folder app dan diturunkan satu tingkat.
+        $directories = [];
+        foreach ($disk->directories($basePath) as $directory) {
+            if (ctype_digit(cstr::substr(carr::last(explode('/', $directory)), 0, 8))) {
+                $directories[] = $directory;
+            } else {
+                $directories = array_merge($directories, $disk->directories($directory));
+            }
+        }
         foreach ($directories as $directory) {
             //get last path
             $folder = carr::last(explode('/', $directory));
             $ymd = cstr::substr($folder, 0, 8);
-            if (strlen($ymd) == 8) {
+            if (strlen($ymd) == 8 && ctype_digit($ymd)) {
                 //the format maybe is ymd
                 //try to parse it to carbon
                 $carbonDate = CCarbon::parse($ymd);
