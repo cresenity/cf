@@ -126,7 +126,7 @@ class CPrinter_EscPos_Printer {
             self::validateInteger($type, 65, 71, __FUNCTION__);
             $this->connector->write(CPrinter_EscPos::GS . 'k' . chr($type - 65) . $content . CPrinter_EscPos::NUL);
 
-            return;
+            return $this;
         }
         // More advanced function B, used in preference
         $this->connector->write(CPrinter_EscPos::GS . 'k' . chr($type) . chr(strlen($content)) . $content);
@@ -433,7 +433,7 @@ class CPrinter_EscPos_Printer {
         self::validateInteger($size, 1, 16, __FUNCTION__);
         self::validateInteger($model, 1, 3, __FUNCTION__);
         if ($content == '') {
-            return;
+            return $this;
         }
         if (!$this->profile->getSupportsQrCode()) {
             // TODO use software rendering via phpqrcode instead

@@ -64,18 +64,18 @@ class CPrinter_EscPos_PrintBuffer_EscposPrintBuffer implements CPrinter_EscPos_C
             throw new LogicException('Not attached to a printer.');
         }
         // Normalize text - this replaces combining characters with composed glyphs, and also helps us eliminated bad UTF-8 early
-        $text = \Normalizer::normalize($text);
+        if (class_exists('Normalizer')) {
+            $text = \Normalizer::normalize($text);
+        } elseif (!mb_check_encoding($text, 'UTF-8')) {
+            $text = false;
+        }
         if ($text === false) {
             throw new \Exception('Input must be UTF-8');
         }
         // Iterate code points
-        $codePointIterator = \IntlBreakIterator::createCodePointInstance();
-        $codePointIterator->setText($text);
         $encoding = $this->printer->getCharacterTable();
         $currentBlock = [];
-        while ($codePointIterator->next() > 0) {
-            // Write each code point
-            $codePoint = $codePointIterator->getLastCodePoint();
+        foreach ($this->codePoints($text) as $codePoint) {
             // See if we need to change code pages
             $matching = !isset($this->available[$codePoint]) || isset($this->encode[$encoding][$codePoint]);
             if ($matching) {
@@ -92,6 +92,31 @@ class CPrinter_EscPos_PrintBuffer_EscposPrintBuffer implements CPrinter_EscPos_C
         if (count($currentBlock) != 0) {
             $this->writeTextUsingEncoding($currentBlock, $encoding);
         }
+    }
+
+    /**
+     * Code point tiap karakter; tanpa ekstensi intl memakai mb_ord.
+     *
+     * @param string $text
+     *
+     * @return int[]
+     */
+    private function codePoints(string $text) {
+        $codePoints = [];
+        if (class_exists('IntlBreakIterator')) {
+            $codePointIterator = \IntlBreakIterator::createCodePointInstance();
+            $codePointIterator->setText($text);
+            while ($codePointIterator->next() > 0) {
+                $codePoints[] = $codePointIterator->getLastCodePoint();
+            }
+
+            return $codePoints;
+        }
+        foreach (preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) as $char) {
+            $codePoints[] = mb_ord($char, 'UTF-8');
+        }
+
+        return $codePoints;
     }
 
     public function writeTextRaw(string $text) {

@@ -10,6 +10,16 @@ class CPrinter_EscPos_Renderer_HtmlRenderer extends CPrinter_EscPos_RendererAbst
     protected $html;
 
     /**
+     * Jumlah byte parameter perintah ESC yang tidak dirender, supaya tidak bocor sebagai teks.
+     *
+     * @var array
+     */
+    protected static $escParameterLength = [
+        '-' => 1, '2' => 0, '3' => 1, 'M' => 1, 'G' => 1, 't' => 1, '{' => 1, 'r' => 1,
+        'J' => 1, 'K' => 1, 'e' => 1, 'R' => 1, ' ' => 1, 'i' => 0, 'm' => 0, 'p' => 3, '%' => 1,
+    ];
+
+    /**
      * @return string
      */
     public function render() {
@@ -36,8 +46,10 @@ class CPrinter_EscPos_Renderer_HtmlRenderer extends CPrinter_EscPos_RendererAbst
                 $this->handlePrintMode($parser);
             } elseif ($char == 'a') {
                 $this->handleJustification($parser);
+            } elseif ($char == 'd') {
+                $this->handleFeed($parser);
             } else {
-                cdbg::dd('Error on unknown esc char:' . $char);
+                $this->skipParameters($parser, isset(self::$escParameterLength[$char]) ? self::$escParameterLength[$char] : 0);
             }
         });
         $parser->on(CPrinter_EscPos_Parser::EVENT_GROUP_SEPARATOR, function (CPrinter_EscPos_Parser $parser) {
@@ -84,6 +96,31 @@ class CPrinter_EscPos_Renderer_HtmlRenderer extends CPrinter_EscPos_RendererAbst
         // $data = $this->handleBarcode($data);
 
         return $data;
+    }
+
+    /**
+     * ESC d n: cetak dan umpan n baris.
+     *
+     * @param CPrinter_EscPos_Parser $parser
+     *
+     * @return void
+     */
+    protected function handleFeed(CPrinter_EscPos_Parser $parser) {
+        $parser->advance();
+        $lines = ord((string) $parser->getCurrentChar());
+        $this->html .= str_repeat(CPrinter_EscPos::LF, max(1, $lines));
+    }
+
+    /**
+     * @param CPrinter_EscPos_Parser $parser
+     * @param int                    $length
+     *
+     * @return void
+     */
+    protected function skipParameters(CPrinter_EscPos_Parser $parser, $length) {
+        for ($i = 0; $i < $length; $i++) {
+            $parser->advance();
+        }
     }
 
     protected function handleEmphasize(CPrinter_EscPos_Parser $parser) {
