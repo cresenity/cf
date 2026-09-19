@@ -1,6 +1,5 @@
 <?php
 
-use Imagick;
 
 class CImage_Pdf_Enums_LayerMethod {
     const NONE = -1;

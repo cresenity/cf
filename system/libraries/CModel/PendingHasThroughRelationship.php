@@ -1,6 +1,5 @@
 <?php
 
-use BadMethodCallException;
 
 /**
  * @template TIntermediateModel of \CModel

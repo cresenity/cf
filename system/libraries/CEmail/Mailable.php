@@ -679,6 +679,14 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
             ];
         }
 
+        // alamat yang sama hanya sekali; yang terakhir ditambahkan yang menang (nama terbaru)
+        $this->{$property} = c::collect($this->{$property})
+            ->reverse()
+            ->unique('address')
+            ->reverse()
+            ->values()
+            ->all();
+
         return $this;
     }
 

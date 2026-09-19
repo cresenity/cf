@@ -205,7 +205,7 @@ class CEmail_Message {
                 }
 
                 return $address;
-            })->all();
+            })->values()->all();
 
             $this->message->{"{$type}"}(...$addresses);
         } else {

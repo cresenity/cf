@@ -2,7 +2,7 @@
 
 use Illuminate\Contracts\Support\Htmlable;
 
-class CBase_HtmlString implements Htmlable {
+class CBase_HtmlString implements CInterface_Htmlable {
     /**
      * The HTML string.
      *

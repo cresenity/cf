@@ -1,6 +1,5 @@
 <?php
 
-use Mockery;
 
 use Illuminate\Console\OutputStyle;
 

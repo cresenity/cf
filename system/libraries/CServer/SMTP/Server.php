@@ -5,8 +5,6 @@
  * Handles Sockets and Clients.
  */
 
-use Exception;
-use RuntimeException;
 use Psr\Log\NullLogger;
 use Smtpd\Network\Socket;
 use Psr\Log\LoggerAwareTrait;

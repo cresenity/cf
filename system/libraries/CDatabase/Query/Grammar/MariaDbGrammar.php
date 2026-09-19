@@ -1,6 +1,5 @@
 <?php
 
-use RuntimeException;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinLateralClause;
 

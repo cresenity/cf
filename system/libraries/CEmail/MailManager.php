@@ -105,7 +105,7 @@ class CEmail_MailManager implements CEmail_Contract_FactoryInterface {
         // Once we have created the mailer instance we will set a container instance
         // on the mailer. This allows us to resolve mailer classes via containers
         // for maximum testability on said classes instead of passing Closures.
-        $mailer = $this->build(['name' => $name, ...$config]);
+        $mailer = $this->build(array_merge(['name' => $name], $config));
 
         // Next we will set all of the global addresses on this mailer, which allows
         // for easy unification of all "from" addresses as well as easy debugging

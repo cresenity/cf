@@ -4,9 +4,6 @@
 use Illuminate\Http\Resources\Json\JsonResource;
 
 use Illuminate\Support\Str;
-use LogicException;
-use ReflectionClass;
-use Traversable;
 
 trait CHTTP_Resources_CollectsResources
 {

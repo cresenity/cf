@@ -1,7 +1,6 @@
 <?php
 
 use PHPUnit\Framework\Constraint\Constraint;
-use ReflectionClass;
 
 class CTesting_Constraint_SeeInOrder extends Constraint {
     /**

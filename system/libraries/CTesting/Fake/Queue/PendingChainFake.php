@@ -1,6 +1,5 @@
 <?php
 
-use Closure;
 
 class CTesting_Fake_Queue_PendingChainFake extends CQueue_PendingChain {
     /**

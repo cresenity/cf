@@ -1,7 +1,5 @@
 <?php
 
-use Closure;
-use BadMethodCallException;
 use PHPUnit\Framework\Assert as PHPUnit;
 
 class CTesting_Fake_Queue_QueueManagerFake extends CQueue_Manager implements CQueue_QueueInterface {

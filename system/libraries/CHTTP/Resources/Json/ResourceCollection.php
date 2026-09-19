@@ -1,7 +1,5 @@
 <?php
 
-use Countable;
-use IteratorAggregate;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Http\Resources\CollectsResources;

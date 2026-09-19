@@ -1,17 +1,8 @@
 <?php
 
-use PhpParser;
-use function count;
-use function is_string;
-use function strtolower;
-use ReflectionException;
 
-use function array_merge;
 use PhpParser\NodeFinder;
-use function class_basename;
 use PHPStan\Type\ObjectType;
-use function property_exists;
-use function array_key_exists;
 use PHPStan\Reflection\ReflectionProvider;
 
 /** @see https://github.com/psalm/laravel-psalm-plugin/blob/master/src/SchemaAggregator.php */

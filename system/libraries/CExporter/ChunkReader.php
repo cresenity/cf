@@ -1,6 +1,5 @@
 <?php
 
-use Throwable;
 use Maatwebsite\Excel\Jobs\QueueImport;
 
 class CExporter_ChunkReader {

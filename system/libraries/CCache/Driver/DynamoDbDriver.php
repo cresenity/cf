@@ -1,6 +1,5 @@
 <?php
 
-use RuntimeException;
 use Aws\DynamoDb\DynamoDbClient;
 use Aws\DynamoDb\Exception\DynamoDbException;
 

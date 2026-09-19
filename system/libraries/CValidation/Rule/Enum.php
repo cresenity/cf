@@ -1,6 +1,5 @@
 <?php
 
-use TypeError;
 
 class CValidation_Rule_Enum implements CValidation_RuleInterface, CValidation_Contract_ValidatorAwareRuleInterface {
     use CTrait_Conditionable;
