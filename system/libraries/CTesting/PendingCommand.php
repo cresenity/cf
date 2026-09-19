@@ -1,16 +1,12 @@
 <?php
 
-
-use Illuminate\Console\OutputStyle;
-
-use Illuminate\Contracts\Support\Arrayable;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\ArrayInput;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Mockery\Exception\NoMatchingExpectationException;
 
-class PendingCommand {
+class CTesting_PendingCommand {
     /**
      * The test being run.
      *
@@ -169,7 +165,7 @@ class PendingCommand {
      * Specify a table that should be printed when the command runs.
      *
      * @param array                                         $headers
-     * @param \Illuminate\Contracts\Support\Arrayable|array $rows
+     * @param CInterface_Arrayable|array $rows
      * @param string                                        $tableStyle
      * @param array                                         $columnStyles
      *
@@ -178,7 +174,7 @@ class PendingCommand {
     public function expectsTable($headers, $rows, $tableStyle = 'default', array $columnStyles = []) {
         $table = (new Table($output = new BufferedOutput()))
             ->setHeaders((array) $headers)
-            ->setRows($rows instanceof Arrayable ? $rows->toArray() : $rows)
+            ->setRows($rows instanceof CInterface_Arrayable ? $rows->toArray() : $rows)
             ->setStyle($tableStyle);
 
         foreach ($columnStyles as $columnIndex => $columnStyle) {
@@ -339,7 +335,7 @@ class PendingCommand {
      * @return \Mockery\MockInterface
      */
     protected function mockConsoleOutput() {
-        $mock = Mockery::mock(OutputStyle::class . '[askQuestion]', [
+        $mock = Mockery::mock(CConsole_OutputStyle::class . '[askQuestion]', [
             (new ArrayInput($this->parameters)), $this->createABufferedOutputMock(),
         ]);
 
@@ -390,7 +386,9 @@ class PendingCommand {
 
         foreach ($this->test->expectedOutputSubstrings as $i => $text) {
             $mock->shouldReceive('doWrite')
-                ->withArgs(fn ($output) => str_contains($output, $text))
+                ->withArgs(function ($output) use ($text) {
+                    return cstr::contains($output, $text);
+                })
                 ->andReturnUsing(function () use ($i) {
                     unset($this->test->expectedOutputSubstrings[$i]);
                 });
@@ -407,7 +405,9 @@ class PendingCommand {
 
         foreach ($this->test->unexpectedOutputSubstrings as $text => $displayed) {
             $mock->shouldReceive('doWrite')
-                ->withArgs(fn ($output) => str_contains($output, $text))
+                ->withArgs(function ($output) use ($text) {
+                    return cstr::contains($output, $text);
+                })
                 ->andReturnUsing(function () use ($text) {
                     $this->test->unexpectedOutputSubstrings[$text] = true;
                 });

@@ -9,6 +9,7 @@ class CTesting_TestCase extends BaseTestCase {
     use CTesting_Concern_MakesHttpRequests;
     use CTesting_Concern_InteractsWithAuthentication;
     use CTesting_Concern_InteractsWithDatabase;
+    use CTesting_Concern_InteractsWithConsole;
 
     /**
      * The service container instance, used by traits (MakesHttpRequests) that
