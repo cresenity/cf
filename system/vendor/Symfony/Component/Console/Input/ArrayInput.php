@@ -130,7 +130,9 @@ class ArrayInput extends Input
             if ('--' === $key) {
                 return;
             }
-            if (0 === strpos($key, '--')) {
+            if (\is_int($key)) {
+                $this->addArgument($key, $value);
+            } elseif (0 === strpos($key, '--')) {
                 $this->addLongOption(substr($key, 2), $value);
             } elseif ('-' === $key[0]) {
                 $this->addShortOption(substr($key, 1), $value);
