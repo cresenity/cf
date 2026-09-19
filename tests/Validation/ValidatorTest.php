@@ -722,4 +722,101 @@ class ValidatorTest extends TestCase {
         $this->assertInstanceOf(CValidation_Validator::class, $v);
         $this->assertTrue($v->passes());
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | whenPasses / whenFails / setValue / appendRules / getException
+    |--------------------------------------------------------------------------
+    */
+
+    public function testWhenPassesRunsTheCallbackOnlyWhenValid() {
+        $v = $this->makeValidator(['name' => 'John'], ['name' => 'required']);
+        $seen = null;
+        $result = $v->whenPasses(function ($validator) use (&$seen) {
+            $seen = $validator;
+        }, function () {
+            $this->fail('default tidak boleh dipanggil saat lolos');
+        });
+
+        $this->assertSame($v, $seen);
+        // callback tanpa nilai balik -> validator itu sendiri, supaya bisa dirantai
+        $this->assertSame($v, $result);
+    }
+
+    public function testWhenPassesFallsBackToDefaultAndReturnsItsValue() {
+        $v = $this->makeValidator(['name' => ''], ['name' => 'required']);
+        $result = $v->whenPasses(function () {
+            $this->fail('callback tidak boleh dipanggil saat gagal');
+        }, function ($validator) {
+            return 'gagal: ' . $validator->errors()->first('name');
+        });
+
+        $this->assertStringStartsWith('gagal: ', $result);
+    }
+
+    public function testWhenFailsIsTheMirrorImage() {
+        $v = $this->makeValidator(['name' => ''], ['name' => 'required']);
+        $this->assertSame('kena', $v->whenFails(function () {
+            return 'kena';
+        }));
+
+        $v = $this->makeValidator(['name' => 'John'], ['name' => 'required']);
+        $this->assertSame($v, $v->whenFails(function () {
+            $this->fail('callback tidak boleh dipanggil saat lolos');
+        }));
+    }
+
+    public function testSetValueWritesIntoNestedData() {
+        $v = $this->makeValidator(['user' => ['name' => '']], ['user.name' => 'required']);
+        $v->setValue('user.name', 'John');
+
+        $this->assertTrue($v->passes());
+        $this->assertSame('John', $v->getData()['user']['name']);
+    }
+
+    public function testAppendRulesKeepsExistingRulesAndAddsNew() {
+        $v = $this->makeValidator(['name' => 'Jo', 'age' => 'x'], ['name' => 'required']);
+        $this->assertTrue($v->passes());
+
+        $v->appendRules(['name' => 'min:3', 'age' => ['integer']]);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('name'));
+        $this->assertTrue($v->errors()->has('age'));
+        $this->assertSame(['required', 'min:3'], $v->getRules()['name']);
+    }
+
+    public function testGetExceptionReturnsTheConfiguredClass() {
+        $v = $this->makeValidator([], []);
+        $this->assertSame(CValidation_Exception::class, $v->getException());
+
+        $custom = new class($v) extends CValidation_Exception {
+        };
+        $v->setException(get_class($custom));
+        $this->assertSame(get_class($custom), $v->getException());
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | fakeDnsLookups
+    |--------------------------------------------------------------------------
+    */
+
+    public function testFakeDnsLookupsMakesDnsRulesPassOffline() {
+        CValidation_Validator::fakeDnsLookups();
+
+        try {
+            $v = $this->makeValidator(
+                ['email' => 'user@surely-not-a-registered-domain-cf19.test', 'url' => 'https://surely-not-a-registered-domain-cf19.test'],
+                ['email' => 'email:dns', 'url' => 'active_url']
+            );
+            $this->assertTrue($v->passes(), json_encode($v->errors()->all()));
+
+            // nama host yang tidak sah tetap ditolak walau DNS dipalsukan
+            $v = $this->makeValidator(['url' => 'https://not a host'], ['url' => 'active_url']);
+            $this->assertTrue($v->fails());
+        } finally {
+            CValidation_Validator::fakeDnsLookups(false);
+        }
+    }
 }

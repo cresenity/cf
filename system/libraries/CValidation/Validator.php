@@ -280,6 +280,13 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
     protected $exception = CValidation_Exception::class;
 
     /**
+     * Indicates that DNS lookups (`active_url`, `email:dns`) should be faked, for tests.
+     *
+     * @var bool
+     */
+    protected static $fakeDnsLookups = false;
+
+    /**
      * Create a new Validator instance.
      *
      * @param array $data
@@ -427,6 +434,42 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
      */
     public function fails() {
         return !$this->passes();
+    }
+
+    /**
+     * Run the callback if the data passes the validation rules.
+     *
+     * @param callable      $callback
+     * @param null|callable $default
+     *
+     * @return mixed
+     */
+    public function whenPasses(callable $callback, ?callable $default = null) {
+        if ($this->passes()) {
+            return $callback($this) ?? $this;
+        } elseif ($default) {
+            return $default($this) ?? $this;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Run the callback if the data fails the validation rules.
+     *
+     * @param callable      $callback
+     * @param null|callable $default
+     *
+     * @return mixed
+     */
+    public function whenFails(callable $callback, ?callable $default = null) {
+        if ($this->fails()) {
+            return $callback($this) ?? $this;
+        } elseif ($default) {
+            return $default($this) ?? $this;
+        }
+
+        return $this;
     }
 
     /**
@@ -1048,6 +1091,18 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
     }
 
     /**
+     * Set the value of a given attribute, in dot notation.
+     *
+     * @param string $attribute
+     * @param mixed  $value
+     *
+     * @return void
+     */
+    public function setValue($attribute, $value) {
+        carr::set($this->data, $attribute, $value);
+    }
+
+    /**
      * Get the value of a given attribute.
      *
      * @param string $attribute
@@ -1124,6 +1179,21 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
             $this->implicitAttributes,
             $response->implicitAttributes
         );
+    }
+
+    /**
+     * Append rules to the existing rules (without replacing them).
+     *
+     * @param array $rules
+     *
+     * @return $this
+     */
+    public function appendRules(array $rules) {
+        $rules = c::collect($rules)->map(function ($value) {
+            return is_string($value) ? explode('|', $value) : $value;
+        })->all();
+
+        return $this->setRules(array_merge_recursive($this->getRulesWithoutPlaceholders(), $rules));
     }
 
     /**
@@ -1452,6 +1522,26 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
         $this->exception = $exception;
 
         return $this;
+    }
+
+    /**
+     * Fake DNS lookups (`active_url`, `email:dns`) so they resolve without network access.
+     *
+     * @param bool $value
+     *
+     * @return void
+     */
+    public static function fakeDnsLookups($value = true) {
+        static::$fakeDnsLookups = $value;
+    }
+
+    /**
+     * Get the exception to throw upon failed validation.
+     *
+     * @return string
+     */
+    public function getException() {
+        return $this->exception;
     }
 
     /**

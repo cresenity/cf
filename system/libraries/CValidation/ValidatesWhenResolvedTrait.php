@@ -21,6 +21,17 @@ trait CValidation_ValidatesWhenResolvedTrait {
         if (!$instance->passes()) {
             $this->failedValidation($instance);
         }
+
+        $this->passedValidation();
+    }
+
+    /**
+     * Handle a passed validation attempt.
+     *
+     * @return void
+     */
+    protected function passedValidation() {
+        //
     }
 
     /**

@@ -175,4 +175,39 @@ class ValidationRuleObjectTest extends TestCase {
         $this->assertFalse($this->validate($rule, 'ok')->fails());
         $this->assertTrue($this->validate($rule, 'lain')->fails());
     }
+
+    /**
+     * Closure menerima validator sebagai argumen keempat, dan `$fail()` bisa
+     * dirantai `->translate()` seperti pada rule invokable.
+     *
+     * @return void
+     */
+    public function testClosureRuleReceivesTheValidatorAndCanTranslate() {
+        $terlihat = null;
+        $rule = function ($attribute, $value, $fail, $validator) use (&$terlihat) {
+            $terlihat = $validator;
+            $fail('validation.required')->translate();
+        };
+
+        $validator = $this->validate($rule, 1);
+        $this->assertTrue($validator->fails());
+        $this->assertSame($validator, $terlihat);
+        // kunci terjemahan dijadikan pesan sungguhan, bukan kuncinya
+        $this->assertStringNotContainsString('validation.required', $validator->errors()->first('x'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testClosureRuleStillExposesTheLastMessageProperty() {
+        $rule = new CValidation_ClosureValidationRule(function ($attribute, $value, $fail) {
+            $fail('pertama');
+            $fail('kedua');
+        });
+        $rule->setValidator(CValidation::createValidator([], []));
+
+        $this->assertFalse($rule->passes('x', 1));
+        $this->assertSame(['pertama', 'kedua'], $rule->message());
+        $this->assertSame('kedua', $rule->message);
+    }
 }

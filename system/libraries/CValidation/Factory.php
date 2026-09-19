@@ -277,4 +277,17 @@ class CValidation_Factory implements CValidation_FactoryInterface {
     public function setPresenceVerifier(CValidation_PresenceVerifierInterface $presenceVerifier) {
         $this->verifier = $presenceVerifier;
     }
+
+    /**
+     * Fake DNS lookups (`active_url`, `email:dns`) for every validator, for tests.
+     *
+     * @param bool $value
+     *
+     * @return $this
+     */
+    public function fakeDnsLookups($value = true) {
+        CValidation_Validator::fakeDnsLookups($value);
+
+        return $this;
+    }
 }

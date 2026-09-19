@@ -109,4 +109,39 @@ class ValidationExceptionAndNestedRulesTest extends TestCase {
         $this->assertArrayHasKey('c', $v->getRules());
         $this->assertSame(['a' => 1, 'b' => 2], $v->getData());
     }
+
+    /**
+     * `validateResolved()` memanggil `passedValidation()` hanya saat lolos;
+     * saat gagal `failedValidation()` melempar lebih dulu.
+     *
+     * @return void
+     */
+    public function testValidateResolvedCallsPassedValidationOnlyWhenValid() {
+        $subject = new class() implements CValidation_ValidatesWhenResolvedInterface {
+            use CValidation_ValidatesWhenResolvedTrait;
+
+            public $data = ['name' => 'ok'];
+
+            public $passed = 0;
+
+            public function validator() {
+                return CValidation::createValidator($this->data, ['name' => 'required']);
+            }
+
+            protected function passedValidation() {
+                $this->passed++;
+            }
+        };
+
+        $subject->validateResolved();
+        $this->assertSame(1, $subject->passed);
+
+        $subject->data = ['name' => ''];
+        try {
+            $subject->validateResolved();
+            $this->fail('harus melempar CValidation_Exception');
+        } catch (CValidation_Exception $e) {
+            $this->assertSame(1, $subject->passed);
+        }
+    }
 }

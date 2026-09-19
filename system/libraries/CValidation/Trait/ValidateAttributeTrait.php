@@ -129,6 +129,16 @@ trait CValidation_Trait_ValidateAttributeTrait {
      * @return array|false
      */
     protected function getDnsRecords($hostname, $type) {
+        if (static::$fakeDnsLookups) {
+            $hostname = rtrim($hostname, '.');
+
+            if (filter_var($hostname, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false || filter_var($hostname, FILTER_VALIDATE_IP) !== false) {
+                return false;
+            }
+
+            return [['host' => $hostname, 'class' => 'IN', 'ttl' => 60, 'type' => 'A', 'ip' => '127.0.0.1']];
+        }
+
         return dns_get_record($hostname, $type);
     }
 
@@ -818,7 +828,7 @@ trait CValidation_Trait_ValidateAttributeTrait {
                     return new NoRFCWarningsValidation();
                 }
                 if ($validation == 'dns') {
-                    return new DNSCheckValidation();
+                    return new DNSCheckValidation(static::$fakeDnsLookups ? new CValidation_FakeDnsGetRecordWrapper() : null);
                 }
                 if ($validation == 'spoof') {
                     return new SpoofCheckValidation();
@@ -828,9 +838,6 @@ trait CValidation_Trait_ValidateAttributeTrait {
                 }
                 if ($validation == 'filter_unicode') {
                     return CValidation_FilterEmailValidation::unicode();
-                }
-                if ($validation == 'dns') {
-                    return new DNSCheckValidation();
                 }
                 if (is_string($validation) && class_exists($validation)) {
                     return c::container()->make($validation);

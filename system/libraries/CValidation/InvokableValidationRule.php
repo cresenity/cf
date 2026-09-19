@@ -1,6 +1,8 @@
 <?php
 
 class CValidation_InvokableValidationRule implements CValidation_RuleInterface, CValidation_Contract_ValidatorAwareRuleInterface {
+    use CValidation_Trait_CreatesPotentiallyTranslatedStringsTrait;
+
     /**
      * The invokable that validates the attribute.
      *
@@ -137,50 +139,5 @@ class CValidation_InvokableValidationRule implements CValidation_RuleInterface, 
         $this->validator = $validator;
 
         return $this;
-    }
-
-    /**
-     * Create a pending potentially translated string.
-     *
-     * @param string      $attribute
-     * @param null|string $message
-     *
-     * @return \CTranslation_PotentiallyTranslatedString
-     */
-    protected function pendingPotentiallyTranslatedString($attribute, $message) {
-        $destructor = $message === null
-            ? fn ($message) => $this->messages[] = $message
-            : fn ($message) => $this->messages[$attribute] = $message;
-
-        return new class($message ?? $attribute, $this->validator->getTranslator(), $destructor) extends CTranslation_PotentiallyTranslatedString {
-            /**
-             * The callback to call when the object destructs.
-             *
-             * @var \Closure
-             */
-            protected $destructor;
-
-            /**
-             * Create a new pending potentially translated string.
-             *
-             * @param string                            $message
-             * @param \CTranslation_TranslatorInterface $translator
-             * @param \Closure                          $destructor
-             */
-            public function __construct($message, $translator, $destructor) {
-                parent::__construct($message, $translator);
-
-                $this->destructor = $destructor;
-            }
-
-            /**
-             * Handle the object's destruction.
-             *
-             * @return void
-             */
-            public function __destruct() {
-                ($this->destructor)($this->toString());
-            }
-        };
     }
 }
