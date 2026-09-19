@@ -9,6 +9,16 @@ use Symfony\Component\DomCrawler\Crawler;
  */
 class CParser_Dom_HtmlPageCrawler extends Crawler {
     /**
+     * @param null|\DOMNodeList|\DOMNode|\DOMNode[]|string $node
+     * @param null|string                                  $uri
+     * @param null|string                                  $baseHref
+     * @param bool                                         $useHtml5Parser dipakai hanya bila pustaka HTML5 tersedia
+     */
+    public function __construct($node = null, $uri = null, $baseHref = null, $useHtml5Parser = true) {
+        parent::__construct($node, $uri, $baseHref, $useHtml5Parser && class_exists(\Masterminds\HTML5::class));
+    }
+
+    /**
      * The (internal) root element name used when importing html fragments.
      * */
     const FRAGMENT_ROOT_TAGNAME = '_root';
@@ -931,30 +941,6 @@ class CParser_Dom_HtmlPageCrawler extends Crawler {
     }
 
     /**
-     * Filters the list of nodes with a CSS selector.
-     *
-     * @param string $selector
-     *
-     * @return CParser_Dom_HtmlPageCrawler
-     */
-    public function filter($selector) {
-        return parent::filter($selector);
-    }
-
-    /**
-     * Filters the list of nodes with an XPath expression.
-     *
-     * @param string $xpath An XPath expression
-     *
-     * @return CParser_Dom_HtmlPageCrawler A new instance of Crawler with the filtered list of nodes
-     *
-     * @api
-     */
-    public function filterXPath($xpath) {
-        return parent::filterXPath($xpath);
-    }
-
-    /**
      * Adds HTML/XML content to the HtmlPageCrawler object (but not to the DOM of an already attached node).
      *
      * Function overriden from Crawler because HTML fragments are always added as complete documents there
@@ -964,7 +950,7 @@ class CParser_Dom_HtmlPageCrawler extends Crawler {
      *
      * @return null|void
      */
-    public function addContent($content, $type = null) {
+    public function addContent($content, $type = null): void {
         if (empty($type)) {
             $type = 'text/html;charset=UTF-8';
         }
@@ -1001,7 +987,7 @@ class CParser_Dom_HtmlPageCrawler extends Crawler {
      *
      * @api
      */
-    public function add($node) {
+    public function add($node): void {
         if ($node instanceof Crawler) {
             foreach ($node as $childnode) {
                 $this->addNode($childnode);
