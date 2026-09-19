@@ -85,14 +85,37 @@ class CValidation_RuleParser {
         }
 
         if (is_object($rule)) {
+            if ($this->isRuleStringBuilder($rule)) {
+                return explode('|', (string) $rule);
+            }
+
             return carr::wrap($this->prepareRule($rule, $attribute));
         }
 
-        return array_map(
-            [$this, 'prepareRule'],
-            $rule,
-            array_fill((int) array_key_first($rule), count($rule), $attribute)
-        );
+        $rules = [];
+
+        foreach ($rule as $value) {
+            if ($this->isRuleStringBuilder($value)) {
+                $rules = array_merge($rules, explode('|', (string) $value));
+            } else {
+                $rules[] = $this->prepareRule($value, $attribute);
+            }
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Builders that render to a `|`-separated rule string rather than acting as a rule object.
+     *
+     * @param mixed $rule
+     *
+     * @return bool
+     */
+    protected function isRuleStringBuilder($rule) {
+        return $rule instanceof CValidation_Rule_Date
+            || $rule instanceof CValidation_Rule_Numeric
+            || $rule instanceof CValidation_Rule_StringRule;
     }
 
     /**
