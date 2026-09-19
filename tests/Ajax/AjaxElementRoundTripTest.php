@@ -174,6 +174,8 @@ class AjaxElementRoundTripTest extends TestCase {
             'ajax/' . $today . '/a/b/c/d/e/' . $today . 'baru.tmp',
             'ajax/' . CF::appCode() . '/' . $old . '/a/b/c/d/e/' . $old . 'lama-app.tmp',
             'ajax/' . CF::appCode() . '/' . $today . '/a/b/c/d/e/' . $today . 'baru-app.tmp',
+            'ajax/demo_dl_/bukan-tanggal.tmp',
+            'ajax/' . CF::appCode() . '/12345678/bukan-tanggal.tmp',
         ];
         foreach ($files as $file) {
             $disk->put($file, '{}');
@@ -189,5 +191,9 @@ class AjaxElementRoundTripTest extends TestCase {
         $this->assertFalse($disk->exists($files[2]));
         $this->assertTrue($disk->exists($files[1]));
         $this->assertTrue($disk->exists($files[3]));
+        $this->assertTrue($disk->exists($files[4]), 'folder 8 huruf yang bukan tanggal dilewati, bukan bikin housekeeping mati');
+        $this->assertTrue($disk->exists($files[5]), 'delapan digit yang bukan tanggal valid dilewati');
+        $disk->deleteDirectory('ajax/demo_dl_');
+        $disk->deleteDirectory('ajax/' . CF::appCode() . '/12345678');
     }
 }
