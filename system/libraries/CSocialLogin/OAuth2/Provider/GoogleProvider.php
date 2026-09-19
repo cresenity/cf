@@ -54,6 +54,10 @@ class CSocialLogin_OAuth2_Provider_GoogleProvider extends CSocialLogin_OAuth2_Ab
      * @inheritdoc
      */
     protected function getUserByToken($token) {
+        if ($this->isJwtToken($token)) {
+            return $this->getUserFromJwtToken($token);
+        }
+
         $response = $this->getHttpClient()->get('https://www.googleapis.com/oauth2/v3/userinfo', [
             'query' => [
                 'prettyPrint' => 'false',
@@ -65,6 +69,69 @@ class CSocialLogin_OAuth2_Provider_GoogleProvider extends CSocialLogin_OAuth2_Ab
         ]);
 
         return json_decode($response->getBody(), true);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function refreshToken($refreshToken) {
+        $response = $this->getRefreshTokenResponse($refreshToken);
+
+        return new CSocialLogin_OAuth2_Token(
+            carr::get($response, 'access_token'),
+            carr::get($response, 'refresh_token', $refreshToken),
+            carr::get($response, 'expires_in'),
+            explode($this->scopeSeparator, carr::get($response, 'scope', ''))
+        );
+    }
+
+    /**
+     * Determine if the given token is a JWT (ID token).
+     *
+     * @param string $token
+     *
+     * @return bool
+     */
+    protected function isJwtToken($token) {
+        return substr_count((string) $token, '.') === 2 && strlen((string) $token) > 100;
+    }
+
+    /**
+     * Get the user claims from a Google ID token, verifying its signature, issuer and audience.
+     *
+     * @param string $idToken
+     *
+     * @throws \Exception
+     *
+     * @return array
+     */
+    protected function getUserFromJwtToken($idToken) {
+        try {
+            $user = (array) \Firebase\JWT\JWT::decode($idToken, \Firebase\JWT\JWK::parseKeySet($this->getGoogleJwks()));
+
+            if (!in_array(carr::get($user, 'iss'), ['https://accounts.google.com', 'accounts.google.com'], true)) {
+                throw new Exception('Invalid ID token issuer.');
+            }
+
+            if (carr::get($user, 'aud') !== $this->clientId) {
+                throw new Exception('Invalid ID token audience.');
+            }
+
+            return $user;
+        } catch (Exception $e) {
+            throw new Exception('Failed to verify Google JWT token: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * Get Google's JSON Web Key Set for ID token verification.
+     *
+     * @return array
+     */
+    protected function getGoogleJwks() {
+        $response = $this->getHttpClient()->get('https://www.googleapis.com/oauth2/v3/certs');
+
+        return json_decode((string) $response->getBody(), true);
     }
 
     /**

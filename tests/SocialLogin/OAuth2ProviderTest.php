@@ -97,7 +97,7 @@ class OAuth2ProviderTest extends TestCase {
 
     public function testScopesAndExtraParametersAreAppended() {
         $provider = $this->provider('github')->scopes(['user:email', 'repo'])->with(['allow_signup' => 'false']);
-        $this->assertSame(['user:email', 'repo'], array_values($provider->getScopes()), 'scope default github (user:email) + tambahan, unik');
+        $this->assertSame(['user:email', 'repo'], $provider->getScopes(), 'scope default github (user:email) + tambahan, unik, indeks dirapikan');
         parse_str(parse_url($provider->redirect()->getTargetUrl(), PHP_URL_QUERY), $query);
         $this->assertSame('user:email,repo', $query['scope'], 'pemisah scope GitHub = koma');
         $this->assertSame('false', $query['allow_signup']);
@@ -121,10 +121,10 @@ class OAuth2ProviderTest extends TestCase {
 
     public function testUserExchangesTheCodeAndMapsGoogleProfile() {
         $client = $this->mockClient([
-            new Response(200, ['Content-Type' => 'application/json'], json_encode(['access_token' => 'tok-1', 'refresh_token' => 'ref-1', 'expires_in' => 3600])),
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['access_token' => 'tok-1', 'refresh_token' => 'ref-1', 'expires_in' => 3600, 'scope' => 'openid email'])),
             new Response(200, ['Content-Type' => 'application/json'], json_encode(['sub' => '10', 'name' => 'Hery', 'email' => 'hery@uji.test', 'picture' => 'https://img/h.png', 'email_verified' => true])),
         ]);
-        $provider = $this->provider('google', ['code' => 'kode-abc'])->setHttpClient($client);
+        $provider = $this->provider('google', ['code' => 'kode-abc'])->with(['audience' => 'api-x'])->setHttpClient($client);
         $user = $provider->user();
 
         $this->assertCount(2, $this->history);
@@ -132,7 +132,7 @@ class OAuth2ProviderTest extends TestCase {
         $this->assertSame('POST', $tokenRequest->getMethod());
         $this->assertSame('https://www.googleapis.com/oauth2/v4/token', (string) $tokenRequest->getUri());
         parse_str((string) $tokenRequest->getBody(), $fields);
-        $this->assertSame(['grant_type' => 'authorization_code', 'client_id' => 'id-123', 'client_secret' => 'secret-xyz', 'code' => 'kode-abc', 'redirect_uri' => 'https://app.uji.test/callback'], $fields);
+        $this->assertSame(['grant_type' => 'authorization_code', 'client_id' => 'id-123', 'client_secret' => 'secret-xyz', 'code' => 'kode-abc', 'redirect_uri' => 'https://app.uji.test/callback', 'audience' => 'api-x'], $fields, 'parameter with() ikut ke endpoint token');
         $userRequest = $this->history[1]['request'];
         $this->assertSame('Bearer tok-1', $userRequest->getHeaderLine('Authorization'));
         $this->assertStringStartsWith('https://www.googleapis.com/oauth2/v3/userinfo', (string) $userRequest->getUri());
@@ -145,6 +145,7 @@ class OAuth2ProviderTest extends TestCase {
         $this->assertSame('tok-1', $user->token);
         $this->assertSame('ref-1', $user->refreshToken);
         $this->assertSame(3600, $user->expiresIn);
+        $this->assertSame(['openid', 'email'], $user->approvedScopes, 'scope yang disetujui dipecah dengan pemisah provider');
         $this->assertTrue($user->getRaw()['verified_email'], 'alias kompatibilitas diisi dari email_verified');
         $this->assertSame('hery@uji.test', $user['email'], 'ArrayAccess ke atribut');
         $this->assertSame($user, $provider->user(), 'dipanggil dua kali tidak menembak ulang');
@@ -209,6 +210,138 @@ class OAuth2ProviderTest extends TestCase {
         unset($user['a']);
         $this->assertFalse(isset($user['a']));
         $this->assertSame('x', (new CSocialLogin_OAuth2_User())->setToken('x')->token);
+    }
+
+    /**
+     * Pasangan kunci RS256 uji + JWKS publiknya.
+     *
+     * @return array [privateKeyPem, jwks]
+     */
+    protected function rsaKeyPair($kid) {
+        $resource = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        openssl_pkey_export($resource, $privateKey);
+        $details = openssl_pkey_get_details($resource);
+        $b64 = function ($bin) {
+            return rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
+        };
+        $jwks = ['keys' => [['kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'kid' => $kid, 'n' => $b64($details['rsa']['n']), 'e' => $b64($details['rsa']['e'])]]];
+
+        return [$privateKey, $jwks];
+    }
+
+    public function testRefreshTokenPostsTheRefreshGrant() {
+        $client = $this->mockClient([
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['access_token' => 'tok-2', 'expires_in' => 1800, 'scope' => 'openid profile'])),
+        ]);
+        $token = $this->provider('google')->setHttpClient($client)->refreshToken('ref-1');
+
+        parse_str((string) $this->history[0]['request']->getBody(), $fields);
+        $this->assertSame(['grant_type' => 'refresh_token', 'refresh_token' => 'ref-1', 'client_id' => 'id-123', 'client_secret' => 'secret-xyz'], $fields);
+        $this->assertInstanceOf(CSocialLogin_OAuth2_Token::class, $token);
+        $this->assertSame('tok-2', $token->token);
+        $this->assertSame('ref-1', $token->refreshToken, 'Google tidak mengirim refresh_token baru: yang lama dipertahankan');
+        $this->assertSame(1800, $token->expiresIn);
+        $this->assertSame(['openid', 'profile'], $token->approvedScopes);
+
+        $client = $this->mockClient([
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['access_token' => 'tok-3', 'refresh_token' => 'ref-3'])),
+        ]);
+        $token = $this->provider('github')->setHttpClient($client)->refreshToken('ref-1');
+        $this->assertSame('ref-3', $token->refreshToken);
+        $this->assertNull($token->expiresIn);
+        $this->assertSame([''], $token->approvedScopes, 'tanpa scope: explode string kosong, seperti upstream');
+    }
+
+    public function testGoogleIdTokenIsVerifiedAgainstJwks() {
+        list($privateKey, $jwks) = $this->rsaKeyPair('kid-uji');
+        $claims = ['iss' => 'https://accounts.google.com', 'aud' => 'id-123', 'sub' => '77', 'email' => 'jwt@uji.test', 'email_verified' => true, 'name' => 'Pengguna JWT', 'picture' => 'https://img/j.png', 'iat' => time(), 'exp' => time() + 300];
+        $idToken = \Firebase\JWT\JWT::encode($claims, $privateKey, 'RS256', 'kid-uji');
+        $this->assertGreaterThan(100, strlen($idToken));
+
+        $client = $this->mockClient([new Response(200, ['Content-Type' => 'application/json'], json_encode($jwks))]);
+        $user = $this->provider('google')->setHttpClient($client)->userFromToken($idToken);
+
+        $this->assertCount(1, $this->history, 'hanya JWKS yang diambil, tidak ada panggilan userinfo');
+        $this->assertSame('https://www.googleapis.com/oauth2/v3/certs', (string) $this->history[0]['request']->getUri());
+        $this->assertSame('77', $user->getId());
+        $this->assertSame('jwt@uji.test', $user->getEmail());
+        $this->assertSame('Pengguna JWT', $user->getName());
+        $this->assertSame($idToken, $user->token);
+
+        $wrongAudience = \Firebase\JWT\JWT::encode(array_merge($claims, ['aud' => 'lain']), $privateKey, 'RS256', 'kid-uji');
+        $client = $this->mockClient([new Response(200, ['Content-Type' => 'application/json'], json_encode($jwks))]);
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Invalid ID token audience');
+        $this->provider('google')->setHttpClient($client)->userFromToken($wrongAudience);
+    }
+
+    public function testFacebookUsesGraphV23AndCanBePinnedToAnotherVersion() {
+        $provider = $this->provider('facebook');
+        $this->assertStringStartsWith('https://www.facebook.com/v23.0/dialog/oauth?', $provider->redirect()->getTargetUrl());
+
+        $client = $this->mockClient([
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['access_token' => 'fb-tok', 'expires' => 5000])),
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['id' => '5', 'name' => 'FB', 'email' => 'fb@uji.test'])),
+        ]);
+        $user = $this->provider('facebook', ['code' => 'k'])->setHttpClient($client)->user();
+        $this->assertSame('https://graph.facebook.com/v23.0/oauth/access_token', (string) $this->history[0]['request']->getUri());
+        $this->assertStringStartsWith('https://graph.facebook.com/v23.0/me?', (string) $this->history[1]['request']->getUri());
+        parse_str(parse_url((string) $this->history[1]['request']->getUri(), PHP_URL_QUERY), $query);
+        $this->assertSame(hash_hmac('sha256', 'fb-tok', 'secret-xyz'), $query['appsecret_proof']);
+        $this->assertSame(5000, $user->expiresIn, "'expires' dinormalkan ke expires_in");
+        $this->assertSame('https://graph.facebook.com/v23.0/5/picture?type=normal', $user->getAvatar());
+
+        $client = $this->mockClient([
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['access_token' => 'fb-tok'])),
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['id' => '5'])),
+        ]);
+        $this->provider('facebook', ['code' => 'k'])->graphVersion('v3.3')->setHttpClient($client)->user();
+        $this->assertSame('https://graph.facebook.com/v3.3/oauth/access_token', (string) $this->history[0]['request']->getUri());
+    }
+
+    public function testFacebookLimitedLoginOidcTokenSkipsTheGraphCall() {
+        list($privateKey, $jwks) = $this->rsaKeyPair('fb-kid');
+        $claims = ['iss' => 'https://www.facebook.com', 'aud' => 'id-123', 'sub' => '900', 'email' => 'terbatas@uji.test', 'name' => 'Limited', 'given_name' => 'Lim', 'family_name' => 'Ited', 'nonce' => 'n-1', 'iat' => time(), 'exp' => time() + 300];
+        $oidc = \Firebase\JWT\JWT::encode($claims, $privateKey, 'RS256', 'fb-kid');
+
+        $client = $this->mockClient([new Response(200, ['Content-Type' => 'application/json'], json_encode($jwks))]);
+        $user = $this->provider('facebook')->setHttpClient($client)->userFromToken($oidc, 'n-1');
+
+        $this->assertCount(1, $this->history);
+        $this->assertSame('https://limited.facebook.com/.well-known/oauth/openid/jwks/', (string) $this->history[0]['request']->getUri());
+        $this->assertSame('900', $user->getId());
+        $this->assertSame('terbatas@uji.test', $user->getEmail());
+        $this->assertSame('Lim', $user->getRaw()['first_name']);
+        $this->assertSame('Ited', $user->getRaw()['last_name']);
+
+        $client = $this->mockClient([new Response(200, ['Content-Type' => 'application/json'], json_encode($jwks))]);
+        try {
+            $this->provider('facebook')->setHttpClient($client)->userFromToken($oidc, 'nonce-lain');
+            $this->fail('nonce yang tidak cocok harus ditolak');
+        } catch (Exception $e) {
+            $this->assertSame('Token has incorrect nonce.', $e->getMessage());
+        }
+
+        $client = $this->mockClient([new Response(200, ['Content-Type' => 'application/json'], json_encode($jwks))]);
+        $this->expectExceptionMessage('Token has incorrect nonce.');
+        $this->provider('facebook')->setHttpClient($client)->userFromToken($oidc);
+    }
+
+    public function testStateComparisonUsesHashEquals() {
+        $session = $this->arraySession();
+        $session->put('state', 'abc');
+        $request = CHTTP_Request::create('/callback', 'GET', ['state' => ['abc']]);
+        $provider = (new CSocialLogin_DriverManager())->setConfig(['client_id' => 'a', 'client_secret' => 'b', 'redirect' => 'https://cb'])->driver('github')->setRequest($request);
+        try {
+            $provider->user();
+            $this->fail('state berupa array harus ditolak tanpa warning');
+        } catch (CSocialLogin_Exception_InvalidStateException $e) {
+            $this->assertNull($session->get('state'), 'state sesi dihabiskan (pull)');
+        }
+        $session->put('state', 'abc');
+        $request = CHTTP_Request::create('/callback', 'GET', ['state' => 'abd']);
+        $this->expectException(CSocialLogin_Exception_InvalidStateException::class);
+        (new CSocialLogin_DriverManager())->setConfig(['client_id' => 'a', 'client_secret' => 'b', 'redirect' => 'https://cb'])->driver('github')->setRequest($request)->user();
     }
 
     public function testConfigObject() {

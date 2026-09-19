@@ -239,13 +239,26 @@ abstract class CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_Abst
 
         $response = $this->getAccessTokenResponse($this->getCode());
 
-        $this->user = $this->mapUserToObject($this->getUserByToken(
-            $token = carr::get($response, 'access_token')
-        ));
+        $user = $this->getUserByToken(carr::get($response, 'access_token'));
 
-        return $this->user->setToken($token)
+        return $this->userInstance($response, $user);
+    }
+
+    /**
+     * Create a user instance from the given token response and raw user.
+     *
+     * @param array $response
+     * @param array $user
+     *
+     * @return \CSocialLogin_OAuth2_User
+     */
+    protected function userInstance(array $response, array $user) {
+        $this->user = $this->mapUserToObject($user);
+
+        return $this->user->setToken(carr::get($response, 'access_token'))
             ->setRefreshToken(carr::get($response, 'refresh_token'))
-            ->setExpiresIn(carr::get($response, 'expires_in'));
+            ->setExpiresIn(carr::get($response, 'expires_in'))
+            ->setApprovedScopes(explode($this->scopeSeparator, carr::get($response, 'scope', '')));
     }
 
     /**
@@ -272,8 +285,9 @@ abstract class CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_Abst
         }
 
         $state = $this->request->session()->pull('state');
+        $input = $this->request->input('state');
 
-        return empty($state) || $this->request->input('state') !== $state;
+        return empty($state) || !is_scalar($input) || !hash_equals($state, (string) $input);
     }
 
     /**
@@ -285,11 +299,22 @@ abstract class CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_Abst
      */
     public function getAccessTokenResponse($code) {
         $response = $this->getHttpClient()->post($this->getTokenUrl(), [
-            'headers' => ['Accept' => 'application/json'],
+            'headers' => $this->getTokenHeaders($code),
             'form_params' => $this->getTokenFields($code),
         ]);
 
         return json_decode($response->getBody(), true);
+    }
+
+    /**
+     * Get the headers for the token request.
+     *
+     * @param string $code
+     *
+     * @return array
+     */
+    protected function getTokenHeaders($code) {
+        return ['Accept' => 'application/json'];
     }
 
     /**
@@ -312,7 +337,44 @@ abstract class CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_Abst
             $fields['code_verifier'] = $this->request->session()->pull('code_verifier');
         }
 
-        return $fields;
+        return array_merge($fields, $this->parameters);
+    }
+
+    /**
+     * Refresh a user's access token with a refresh token.
+     *
+     * @param string $refreshToken
+     *
+     * @return \CSocialLogin_OAuth2_Token
+     */
+    public function refreshToken($refreshToken) {
+        $response = $this->getRefreshTokenResponse($refreshToken);
+
+        return new CSocialLogin_OAuth2_Token(
+            carr::get($response, 'access_token'),
+            carr::get($response, 'refresh_token'),
+            carr::get($response, 'expires_in'),
+            explode($this->scopeSeparator, carr::get($response, 'scope', ''))
+        );
+    }
+
+    /**
+     * Get the refresh token response for the given refresh token.
+     *
+     * @param string $refreshToken
+     *
+     * @return array
+     */
+    protected function getRefreshTokenResponse($refreshToken) {
+        return json_decode($this->getHttpClient()->post($this->getTokenUrl(), [
+            'headers' => ['Accept' => 'application/json'],
+            'form_params' => [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $refreshToken,
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+            ],
+        ])->getBody(), true);
     }
 
     /**
@@ -332,7 +394,7 @@ abstract class CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_Abst
      * @return $this
      */
     public function scopes($scopes) {
-        $this->scopes = array_unique(array_merge($this->scopes, (array) $scopes));
+        $this->scopes = array_values(array_unique(array_merge($this->scopes, (array) $scopes)));
 
         return $this;
     }
@@ -345,7 +407,7 @@ abstract class CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_Abst
      * @return $this
      */
     public function setScopes($scopes) {
-        $this->scopes = array_unique((array) $scopes);
+        $this->scopes = array_values(array_unique((array) $scopes));
 
         return $this;
     }

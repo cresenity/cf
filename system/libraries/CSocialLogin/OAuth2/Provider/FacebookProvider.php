@@ -21,7 +21,7 @@ class CSocialLogin_OAuth2_Provider_FacebookProvider extends CSocialLogin_OAuth2_
      *
      * @var string
      */
-    protected $version = 'v3.3';
+    protected $version = 'v23.0';
 
     /**
      * The user fields being requested.
@@ -59,6 +59,13 @@ class CSocialLogin_OAuth2_Provider_FacebookProvider extends CSocialLogin_OAuth2_
     protected $lastToken;
 
     /**
+     * The nonce expected when using Facebook Limited Login OIDC tokens.
+     *
+     * @var null|string
+     */
+    protected $expectedNonce;
+
+    /**
      * @inheritdoc
      */
     protected function getAuthUrl($state) {
@@ -91,6 +98,91 @@ class CSocialLogin_OAuth2_Provider_FacebookProvider extends CSocialLogin_OAuth2_
     protected function getUserByToken($token) {
         $this->lastToken = $token;
 
+        $user = $this->getUserByOIDCToken($token);
+
+        return $user !== null ? $user : $this->getUserFromAccessToken($token);
+    }
+
+    /**
+     * Get a user instance from a known access token or Limited Login OIDC token.
+     *
+     * @param string      $token
+     * @param null|string $nonce
+     *
+     * @return \CSocialLogin_OAuth2_User
+     */
+    public function userFromToken($token, $nonce = null) {
+        if ($nonce !== null) {
+            $this->withNonce($nonce);
+        }
+
+        return parent::userFromToken($token);
+    }
+
+    /**
+     * Get the user claims from a Limited Login OIDC token; null when the token is not a JWT.
+     *
+     * @param string $token
+     *
+     * @throws \Exception
+     *
+     * @return null|array
+     */
+    protected function getUserByOIDCToken($token) {
+        $header = json_decode(base64_decode(strtr(explode('.', (string) $token)[0], '-_', '+/')), true);
+        $kid = is_array($header) ? carr::get($header, 'kid') : null;
+
+        if ($kid === null) {
+            return null;
+        }
+
+        $data = (array) \Firebase\JWT\JWT::decode($token, $this->getPublicKeysOfOIDCToken());
+
+        if (carr::get($data, 'aud') !== $this->clientId) {
+            throw new Exception('Token has incorrect audience.');
+        }
+        if (carr::get($data, 'iss') !== 'https://www.facebook.com') {
+            throw new Exception('Token has incorrect issuer.');
+        }
+
+        $expectedNonce = $this->getExpectedNonce();
+
+        if ($expectedNonce === null || !isset($data['nonce']) || !hash_equals($expectedNonce, (string) $data['nonce'])) {
+            throw new Exception('Token has incorrect nonce.');
+        }
+
+        $data['id'] = $data['sub'];
+
+        if (isset($data['given_name'])) {
+            $data['first_name'] = $data['given_name'];
+        }
+
+        if (isset($data['family_name'])) {
+            $data['last_name'] = $data['family_name'];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get the JWKS used to verify Limited Login OIDC tokens, keyed by kid.
+     *
+     * @return array
+     */
+    protected function getPublicKeysOfOIDCToken() {
+        $response = $this->getHttpClient()->get('https://limited.facebook.com/.well-known/oauth/openid/jwks/');
+
+        return \Firebase\JWT\JWK::parseKeySet(json_decode((string) $response->getBody(), true), 'RS256');
+    }
+
+    /**
+     * Get the raw user from the Graph API for the given access token.
+     *
+     * @param string $token
+     *
+     * @return array
+     */
+    protected function getUserFromAccessToken($token) {
         $params = [
             'access_token' => $token,
             'fields' => implode(',', $this->fields),
@@ -186,6 +278,39 @@ class CSocialLogin_OAuth2_Provider_FacebookProvider extends CSocialLogin_OAuth2_
      */
     public function lastToken() {
         return $this->lastToken;
+    }
+
+    /**
+     * Specify the nonce expected when using Facebook Limited Login OIDC tokens.
+     *
+     * @param string $nonce
+     *
+     * @return $this
+     */
+    public function withNonce($nonce) {
+        $this->expectedNonce = $nonce;
+
+        return $this;
+    }
+
+    /**
+     * Get the expected OIDC token nonce.
+     *
+     * @return null|string
+     */
+    protected function getExpectedNonce() {
+        return $this->expectedNonce !== null ? $this->expectedNonce : carr::get($this->parameters, 'nonce');
+    }
+
+    /**
+     * Specify which graph version should be used.
+     *
+     * @param string $version
+     *
+     * @return $this
+     */
+    public function graphVersion($version) {
+        return $this->usingGraphVersion($version);
     }
 
     /**
