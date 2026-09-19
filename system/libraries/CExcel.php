@@ -330,6 +330,6 @@ class CExcel {
     }
 
     public static function columnIndex($column_char) {
-        $colIndex = PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($column_char);
+        return PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($column_char);
     }
 }

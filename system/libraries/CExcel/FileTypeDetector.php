@@ -9,7 +9,7 @@ defined('SYSPATH') or die('No direct access allowed.');
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Maatwebsite\Excel\Exceptions\NoTypeDetectedException;
 
-class FileTypeDetector {
+class CExcel_FileTypeDetector {
     /**
      * @param             $filePath
      * @param null|string $type
