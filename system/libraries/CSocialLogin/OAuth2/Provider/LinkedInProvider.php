@@ -3,8 +3,10 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 /**
+ * LinkedIn v2 profile API (r_liteprofile/r_emailaddress); only apps that already hold those permissions can use it.
  *
  * @since May 16, 2019, 5:08:39 PM
+ * @deprecated 1.9 use CSocialLogin_OAuth2_Provider_LinkedInOpenIdProvider (driver `linkedin-openid`)
  */
 class CSocialLogin_OAuth2_Provider_LinkedInProvider extends CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_OAuth2_ProviderInterface {
     /**

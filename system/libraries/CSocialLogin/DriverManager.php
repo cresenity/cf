@@ -76,6 +76,10 @@ class CSocialLogin_DriverManager {
         return $this->buildProvider(CSocialLogin_OAuth2_Provider_LinkedInProvider::class, $this->config);
     }
 
+    protected function createLinkedinOpenidDriver() {
+        return $this->buildProvider(CSocialLogin_OAuth2_Provider_LinkedInOpenIdProvider::class, $this->config);
+    }
+
     /**
      * Create an instance of the specified driver.
      *

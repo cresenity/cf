@@ -344,6 +344,32 @@ class OAuth2ProviderTest extends TestCase {
         (new CSocialLogin_DriverManager())->setConfig(['client_id' => 'a', 'client_secret' => 'b', 'redirect' => 'https://cb'])->driver('github')->setRequest($request)->user();
     }
 
+    public function testLinkedInOpenIdUsesUserinfo() {
+        $provider = $this->provider('linkedin-openid');
+        $this->assertInstanceOf(CSocialLogin_OAuth2_Provider_LinkedInOpenIdProvider::class, $provider);
+        $url = $provider->redirect()->getTargetUrl();
+        $this->assertStringStartsWith('https://www.linkedin.com/oauth/v2/authorization?', $url);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+        $this->assertSame('openid profile email', $query['scope']);
+
+        $client = $this->mockClient([
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['access_token' => 'li-tok', 'expires_in' => 5184000, 'scope' => 'openid,profile,email'])),
+            new Response(200, ['Content-Type' => 'application/json'], json_encode(['sub' => 'li-1', 'name' => 'Hery L', 'given_name' => 'Hery', 'family_name' => 'L', 'email' => 'li@uji.test', 'email_verified' => true, 'picture' => 'https://img/li.png'])),
+        ]);
+        $user = $this->provider('linkedin-openid', ['code' => 'k'])->setHttpClient($client)->user();
+        $this->assertSame('https://www.linkedin.com/oauth/v2/accessToken', (string) $this->history[0]['request']->getUri());
+        $userRequest = $this->history[1]['request'];
+        $this->assertStringStartsWith('https://api.linkedin.com/v2/userinfo?', (string) $userRequest->getUri());
+        $this->assertSame('Bearer li-tok', $userRequest->getHeaderLine('Authorization'));
+        $this->assertSame('li-1', $user->getId());
+        $this->assertSame('li@uji.test', $user->getEmail());
+        $this->assertSame('Hery L', $user->getName());
+        $this->assertSame('Hery', $user->first_name, 'atribut tambahan dipetakan sebagai properti');
+        $this->assertSame('https://img/li.png', $user->getAvatar());
+        $this->assertSame(['openid,profile,email'], $user->approvedScopes, 'LinkedIn memisahkan scope dengan koma sedangkan provider memakai spasi: dibiarkan apa adanya');
+        $this->assertInstanceOf(CSocialLogin_OAuth2_Provider_LinkedInProvider::class, $this->provider('linkedin'), "driver 'linkedin' lama tetap ada");
+    }
+
     public function testConfigObject() {
         $config = new CSocialLogin_Config('k', 's', 'https://cb', ['tenant' => 'x']);
         $this->assertSame(['client_id' => 'k', 'client_secret' => 's', 'redirect' => 'https://cb', 'tenant' => 'x'], $config->get());

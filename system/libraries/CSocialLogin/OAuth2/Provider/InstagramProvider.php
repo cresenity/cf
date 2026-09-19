@@ -3,8 +3,10 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 /**
+ * Instagram legacy API v1, switched off by Instagram in 2020 (Basic Display followed in Dec 2024).
  *
  * @since Aug 28, 2019, 10:16:36 AM
+ * @deprecated 1.9 no longer functional; a port of the "Instagram API with Instagram Login" (graph.instagram.com) flow is needed instead
  */
 class CSocialLogin_OAuth2_Provider_InstagramProvider extends CSocialLogin_OAuth2_AbstractProvider implements CSocialLogin_OAuth2_ProviderInterface {
     /**
