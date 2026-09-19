@@ -100,7 +100,9 @@ class SocialLoginDriverManagerTest extends TestCase {
         $this->assertSame($provider, $provider->scopes(['x']), 'panggilan fluent diteruskan ke provider asli dan kembali ke fake');
         $this->assertSame(['openid', 'profile', 'email', 'x'], $provider->getScopes());
 
+        $this->assertFalse(CSocialLogin::hasFake('google'));
         CSocialLogin::fake('google', CSocialLogin_OAuth2_User::fake(['id' => '42', 'email' => 'saya@uji.test']));
+        $this->assertTrue(CSocialLogin::hasFake('google'));
         $this->assertSame('42', CSocialLogin::driver('google')->user()->getId());
         CSocialLogin::fake('github', function () {
             return CSocialLogin_OAuth2_User::fake(['email' => 'closure@uji.test']);
@@ -108,6 +110,7 @@ class SocialLoginDriverManagerTest extends TestCase {
         $this->assertSame('closure@uji.test', CSocialLogin::driver('github')->user()->getEmail());
 
         CSocialLogin::forgetFakes();
+        $this->assertFalse(CSocialLogin::hasFake('google'));
         $this->assertInstanceOf(CSocialLogin_OAuth2_Provider_GoogleProvider::class, CSocialLogin::driver('google', $this->config));
     }
 

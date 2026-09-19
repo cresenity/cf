@@ -52,6 +52,17 @@ class CSocialLogin {
     }
 
     /**
+     * Whether fake() registered a stand-in for the driver.
+     *
+     * @param string $driver
+     *
+     * @return bool
+     */
+    public static function hasFake($driver) {
+        return isset(static::$fakes[$driver]);
+    }
+
+    /**
      * Remove every fake registered through fake().
      *
      * @return void
