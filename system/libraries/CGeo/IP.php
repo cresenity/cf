@@ -119,6 +119,7 @@ class CGeo_IP {
         foreach ($remotes_keys as $key) {
             if ($address = getenv($key)) {
                 foreach (explode(',', $address) as $ip) {
+                    $ip = trim($ip);
                     if ($this->isValid($ip)) {
                         return $ip;
                     }
