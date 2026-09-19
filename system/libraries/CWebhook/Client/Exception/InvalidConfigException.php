@@ -39,7 +39,7 @@ class CWebhook_Client_Exception_InvalidConfigException extends Exception {
     }
 
     public static function invalidProcessWebhookJob(string $processWebhookJob): self {
-        $abstractProcessWebhookJob = ProcessWebhookJob::class;
+        $abstractProcessWebhookJob = CWebhook_Client_TaskQueue_AbstractProcessWebhookTask::class;
 
         return new static("`{$processWebhookJob}` is not a valid process webhook job class. A valid class should implement `{$abstractProcessWebhookJob}`.");
     }

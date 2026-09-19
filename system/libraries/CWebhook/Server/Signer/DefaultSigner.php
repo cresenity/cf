@@ -18,6 +18,6 @@ class CWebhook_Server_Signer_DefaultSigner implements CWebhook_Server_Contract_S
      * @return string
      */
     public function signatureHeaderName() {
-        return CF::config('webhook.server.signature_header_name');
+        return CF::config('webhook.server.default.signature_header_name', 'Signature');
     }
 }

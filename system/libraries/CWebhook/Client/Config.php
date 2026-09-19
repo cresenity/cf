@@ -64,7 +64,7 @@ class CWebhook_Client_Config {
 
         $this->storeHeaders = $properties['store_headers'] ?? [];
 
-        if (!is_subclass_of($properties['process_webhook_job'], ProcessWebhookJob::class)) {
+        if (!is_subclass_of($properties['process_webhook_job'], CWebhook_Client_TaskQueue_AbstractProcessWebhookTask::class)) {
             throw CWebhook_Client_Exception_InvalidConfigException::invalidProcessWebhookJob($properties['process_webhook_job']);
         }
 
