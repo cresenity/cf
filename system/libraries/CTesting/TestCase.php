@@ -155,6 +155,10 @@ class CTesting_TestCase extends BaseTestCase {
             CApp_Auth::forgetInstances();
         }
 
+        // CSocialLogin::fake() registers process-wide, so a faked provider must not
+        // survive into the next test.
+        CSocialLogin::forgetFakes();
+
         // The session store is resolved once from the container and reused for
         // every simulated request (like everything else here), so a test that
         // performs a real login (writing the auth id into session, not just

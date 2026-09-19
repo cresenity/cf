@@ -5,9 +5,18 @@ defined('SYSPATH') or die('No direct access allowed.');
 use League\OAuth1\Client\Server\Twitter as TwitterServer;
 
 class CSocialLogin_DriverManager {
-    use CTrait_Manager_DriverManager;
+    use CTrait_Manager_DriverManager {
+        createDriver as protected createDriverFromManager;
+    }
 
     protected $config;
+
+    /**
+     * Custom driver creators registered through extend(), shared by every manager instance.
+     *
+     * @var array<string, \Closure>
+     */
+    protected static $customDriverCreators = [];
 
     /**
      * Get a driver instance.
@@ -137,6 +146,56 @@ class CSocialLogin_DriverManager {
      */
     protected function createAtlassianDriver() {
         return $this->buildProvider(CSocialLogin_OAuth2_Provider_AtlassianProvider::class, $this->config);
+    }
+
+    protected function createTwitterOauth2Driver() {
+        return $this->buildProvider(CSocialLogin_OAuth2_Provider_TwitterProvider::class, $this->config);
+    }
+
+    protected function createXDriver() {
+        return $this->buildProvider(CSocialLogin_OAuth2_Provider_XProvider::class, $this->config);
+    }
+
+    /**
+     * Register a custom driver creator; the closure receives ($config, $request, $manager)
+     * and returns a CSocialLogin_AbstractProviderInterface. Registrations are process-wide,
+     * so one made in an app's bootstrap serves every CSocialLogin::driver() call.
+     *
+     * @param string   $driver
+     * @param \Closure $callback
+     *
+     * @return $this
+     */
+    public function extend($driver, Closure $callback) {
+        static::$customDriverCreators[$driver] = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Drop custom driver creators (all, or one).
+     *
+     * @param null|string $driver
+     *
+     * @return void
+     */
+    public static function forgetCustomCreators($driver = null) {
+        if ($driver === null) {
+            static::$customDriverCreators = [];
+        } else {
+            unset(static::$customDriverCreators[$driver]);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function createDriver($driver) {
+        if (isset(static::$customDriverCreators[$driver])) {
+            return call_user_func(static::$customDriverCreators[$driver], $this->config, CHTTP::request(), $this);
+        }
+
+        return $this->createDriverFromManager($driver);
     }
 
     /**

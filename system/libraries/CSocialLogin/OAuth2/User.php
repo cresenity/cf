@@ -82,4 +82,31 @@ class CSocialLogin_OAuth2_User extends CSocialLogin_AbstractUser {
 
         return $this;
     }
+
+    /**
+     * Build a user with placeholder attributes for tests; any key can be overridden.
+     *
+     * @param array $attributes
+     *
+     * @return static
+     */
+    public static function fake(array $attributes = []) {
+        $attributes = array_merge([
+            'id' => '123456789',
+            'nickname' => 'testuser',
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'avatar' => 'https://example.com/avatar.jpg',
+            'token' => 'fake-token',
+            'refreshToken' => 'fake-refresh-token',
+            'expiresIn' => 3600,
+            'approvedScopes' => [],
+        ], $attributes);
+
+        return (new static())->setRaw($attributes)->map($attributes)
+            ->setToken($attributes['token'])
+            ->setRefreshToken($attributes['refreshToken'])
+            ->setExpiresIn($attributes['expiresIn'])
+            ->setApprovedScopes($attributes['approvedScopes']);
+    }
 }

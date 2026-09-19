@@ -62,6 +62,36 @@ class CSocialLogin_OAuth2_Provider_TwitterProvider extends CSocialLogin_OAuth2_A
     /**
      * @inheritdoc
      */
+    protected function getRefreshTokenResponse($refreshToken) {
+        $response = $this->getHttpClient()->post($this->getTokenUrl(), [
+            'headers' => ['Accept' => 'application/json'],
+            'auth' => [$this->clientId, $this->clientSecret],
+            'form_params' => [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $refreshToken,
+                'client_id' => $this->clientId,
+            ],
+        ]);
+
+        return json_decode($response->getBody(), true);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getCodeFields($state = null) {
+        $fields = parent::getCodeFields($state);
+
+        if ($this->isStateless()) {
+            $fields['state'] = 'state';
+        }
+
+        return $fields;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function getAccessTokenResponse($code) {
         $response = $this->getHttpClient()->post($this->getTokenUrl(), [
             'headers' => ['Accept' => 'application/json'],
