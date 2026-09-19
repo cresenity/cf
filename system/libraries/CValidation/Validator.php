@@ -40,6 +40,10 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
     /**
      * Indicates that unvalidated array keys should be excluded, even if the parent array was validated.
      *
+     * The false default is deprecated: it lets `validated()` return nested keys no rule
+     * ever looked at. Opt in with `excludeUnvalidatedArrayKeys()` (per validator) or
+     * `CValidation_Factory::excludeUnvalidatedArrayKeys()` (for every validator it makes).
+     *
      * @var bool
      */
     public $excludeUnvalidatedArrayKeys = false;
@@ -1086,6 +1090,19 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
         $this->data = $this->parseData($data);
 
         $this->setRules($this->initialRules);
+
+        return $this;
+    }
+
+    /**
+     * Exclude (or include) unvalidated array keys from `validated()`.
+     *
+     * @param bool $exclude
+     *
+     * @return $this
+     */
+    public function excludeUnvalidatedArrayKeys($exclude = true) {
+        $this->excludeUnvalidatedArrayKeys = $exclude;
 
         return $this;
     }

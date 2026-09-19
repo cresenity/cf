@@ -822,4 +822,41 @@ class ValidatorTest extends TestCase {
             CValidation_Validator::fakeDnsLookups(false);
         }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | excludeUnvalidatedArrayKeys
+    |--------------------------------------------------------------------------
+    */
+
+    public function testValidatedKeepsUnvalidatedArrayKeysByDefault() {
+        $v = $this->makeValidator(['a' => ['b' => 1, 'c' => 2]], ['a' => 'array', 'a.b' => 'integer']);
+
+        // default lama (deprecated): kunci yang tidak punya rule ikut lolos
+        $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $v->validated());
+    }
+
+    public function testExcludeUnvalidatedArrayKeysDropsThem() {
+        $v = $this->makeValidator(['a' => ['b' => 1, 'c' => 2]], ['a' => 'array', 'a.b' => 'integer']);
+        $this->assertSame($v, $v->excludeUnvalidatedArrayKeys());
+
+        $this->assertSame(['a' => ['b' => 1]], $v->validated());
+
+        $v->excludeUnvalidatedArrayKeys(false);
+        $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $v->validated());
+    }
+
+    public function testFactoryPassesTheArrayKeysFlagToEveryValidatorItMakes() {
+        $factory = new CValidation_Factory();
+        $data = ['a' => ['b' => 1, 'c' => 2]];
+        $rules = ['a' => 'array', 'a.b' => 'integer'];
+
+        $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $factory->make($data, $rules)->validated());
+
+        $this->assertSame($factory, $factory->excludeUnvalidatedArrayKeys());
+        $this->assertSame(['a' => ['b' => 1]], $factory->make($data, $rules)->validated());
+
+        $factory->includeUnvalidatedArrayKeys();
+        $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $factory->make($data, $rules)->validated());
+    }
 }

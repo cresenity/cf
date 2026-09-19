@@ -341,6 +341,24 @@ class Controller_User extends CController {
 }
 ```
 
+`validated()` only returns attributes that have a rule — with one exception: an
+attribute validated as `array` is returned **whole**, including nested keys no rule
+looked at. So with `['address' => 'array', 'address.city' => 'required']`, a client
+can send `address[is_admin]=1` and it comes back inside `$validated`. That default is
+deprecated; opt in to dropping such keys once, for every validator, in the app's
+`bootstrap.php`:
+
+```php
+<?php
+c::validator()->excludeUnvalidatedArrayKeys();
+```
+
+or per validator with `$validator->excludeUnvalidatedArrayKeys()`. With it on, the
+example above returns only `address.city`. Apps that rely on the whole array coming
+through can keep the current behaviour explicitly with
+`c::validator()->includeUnvalidatedArrayKeys()`; the default is expected to flip in
+the next major version.
+
 ---
 
 ### Flash Data

@@ -25,6 +25,17 @@ class CValidation_Factory implements CValidation_FactoryInterface {
     protected $container;
 
     /**
+     * Indicates that unvalidated array keys should be excluded from `validated()`.
+     *
+     * Defaults to false so existing callers keep every nested key; that default is
+     * deprecated — call `excludeUnvalidatedArrayKeys()` (the upstream behaviour) so
+     * `validated()` cannot pass unvalidated keys into a model fill.
+     *
+     * @var bool
+     */
+    protected $excludeUnvalidatedArrayKeys = false;
+
+    /**
      * All of the custom validator extensions.
      *
      * @var array
@@ -118,6 +129,7 @@ class CValidation_Factory implements CValidation_FactoryInterface {
         if (!is_null($this->container)) {
             $validator->setContainer($this->container);
         }
+        $validator->excludeUnvalidatedArrayKeys = $this->excludeUnvalidatedArrayKeys;
         $this->addExtensions($validator);
 
         return $validator;
@@ -276,6 +288,28 @@ class CValidation_Factory implements CValidation_FactoryInterface {
      */
     public function setPresenceVerifier(CValidation_PresenceVerifierInterface $presenceVerifier) {
         $this->verifier = $presenceVerifier;
+    }
+
+    /**
+     * Keep unvalidated array keys in `validated()` (the current default, deprecated).
+     *
+     * @return $this
+     */
+    public function includeUnvalidatedArrayKeys() {
+        $this->excludeUnvalidatedArrayKeys = false;
+
+        return $this;
+    }
+
+    /**
+     * Exclude unvalidated array keys from `validated()`, even if the parent array was validated.
+     *
+     * @return $this
+     */
+    public function excludeUnvalidatedArrayKeys() {
+        $this->excludeUnvalidatedArrayKeys = true;
+
+        return $this;
     }
 
     /**
