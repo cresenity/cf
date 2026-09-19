@@ -66,7 +66,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         $this->defaultVisibility = $defaultVisibility;
     }
 
-    public function fileExists(string $path): bool
+    public function fileExists($path): bool
     {
         $prefixedPath = $this->prefixer->prefixPath($path);
 
@@ -77,7 +77,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function directoryExists(string $path): bool
+    public function directoryExists($path): bool
     {
         $prefixedPath = $this->prefixer->prefixPath($path);
         $options = [
@@ -107,12 +107,12 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         return false;
     }
 
-    public function write(string $path, string $contents, Config $config): void
+    public function write($path, $contents, Config $config): void
     {
         $this->upload($path, $contents, $config);
     }
 
-    public function writeStream(string $path, $contents, Config $config): void
+    public function writeStream($path, $contents, Config $config): void
     {
         $this->upload($path, $contents, $config);
     }
@@ -139,7 +139,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function read(string $path): string
+    public function read($path): string
     {
         $prefixedPath = $this->prefixer->prefixPath($path);
 
@@ -150,7 +150,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function readStream(string $path)
+    public function readStream($path)
     {
         $prefixedPath = $this->prefixer->prefixPath($path);
 
@@ -170,7 +170,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         return $stream;
     }
 
-    public function delete(string $path): void
+    public function delete($path): void
     {
         try {
             $prefixedPath = $this->prefixer->prefixPath($path);
@@ -182,7 +182,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function deleteDirectory(string $path): void
+    public function deleteDirectory($path): void
     {
         try {
             /** @var StorageAttributes[] $listing */
@@ -200,7 +200,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function createDirectory(string $path, Config $config): void
+    public function createDirectory($path, Config $config): void
     {
         $prefixedPath = $this->prefixer->prefixDirectoryPath($path);
 
@@ -209,7 +209,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function setVisibility(string $path, string $visibility): void
+    public function setVisibility($path, $visibility): void
     {
         try {
             $prefixedPath = $this->prefixer->prefixPath($path);
@@ -220,7 +220,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function visibility(string $path): FileAttributes
+    public function visibility($path): FileAttributes
     {
         try {
             $prefixedPath = $this->prefixer->prefixPath($path);
@@ -233,17 +233,17 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function mimeType(string $path): FileAttributes
+    public function mimeType($path): FileAttributes
     {
         return $this->fileAttributes($path, 'mimeType');
     }
 
-    public function lastModified(string $path): FileAttributes
+    public function lastModified($path): FileAttributes
     {
         return $this->fileAttributes($path, 'lastModified');
     }
 
-    public function fileSize(string $path): FileAttributes
+    public function fileSize($path): FileAttributes
     {
         return $this->fileAttributes($path, 'fileSize');
     }
@@ -283,7 +283,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         return new FileAttributes($path, $fileSize, null, $lastModified, $mimeType, $info);
     }
 
-    public function listContents(string $path, bool $deep): iterable
+    public function listContents($path, $deep): iterable
     {
         $prefixedPath = $this->prefixer->prefixPath($path);
         $prefixes = $options = [];
@@ -317,7 +317,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function move(string $source, string $destination, Config $config): void
+    public function move($source, $destination, Config $config): void
     {
         try {
             $this->copy($source, $destination, $config);
@@ -327,7 +327,7 @@ class GoogleCloudStorageAdapter implements FilesystemAdapter
         }
     }
 
-    public function copy(string $source, string $destination, Config $config): void
+    public function copy($source, $destination, Config $config): void
     {
         try {
             /** @var string $visibility */

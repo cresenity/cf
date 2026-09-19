@@ -61,7 +61,7 @@ class SftpAdapter implements FilesystemAdapter
         $this->mimeTypeDetector = $mimeTypeDetector ?: new FinfoMimeTypeDetector();
     }
 
-    public function fileExists(string $path): bool
+    public function fileExists($path): bool
     {
         $location = $this->prefixer->prefixPath($path);
 
@@ -72,7 +72,7 @@ class SftpAdapter implements FilesystemAdapter
         }
     }
 
-    public function directoryExists(string $path): bool
+    public function directoryExists($path): bool
     {
         $location = $this->prefixer->prefixDirectoryPath($path);
 
@@ -136,7 +136,7 @@ class SftpAdapter implements FilesystemAdapter
         }
     }
 
-    public function write(string $path, string $contents, Config $config): void
+    public function write($path, $contents, Config $config): void
     {
         try {
             $this->upload($path, $contents, $config);
@@ -147,7 +147,7 @@ class SftpAdapter implements FilesystemAdapter
         }
     }
 
-    public function writeStream(string $path, $contents, Config $config): void
+    public function writeStream($path, $contents, Config $config): void
     {
         try {
             $this->upload($path, $contents, $config);
@@ -158,7 +158,7 @@ class SftpAdapter implements FilesystemAdapter
         }
     }
 
-    public function read(string $path): string
+    public function read($path): string
     {
         $location = $this->prefixer->prefixPath($path);
         $connection = $this->connectionProvider->provideConnection();
@@ -171,7 +171,7 @@ class SftpAdapter implements FilesystemAdapter
         return $contents;
     }
 
-    public function readStream(string $path)
+    public function readStream($path)
     {
         $location = $this->prefixer->prefixPath($path);
         $connection = $this->connectionProvider->provideConnection();
@@ -188,26 +188,26 @@ class SftpAdapter implements FilesystemAdapter
         return $readStream;
     }
 
-    public function delete(string $path): void
+    public function delete($path): void
     {
         $location = $this->prefixer->prefixPath($path);
         $connection = $this->connectionProvider->provideConnection();
         $connection->delete($location);
     }
 
-    public function deleteDirectory(string $path): void
+    public function deleteDirectory($path): void
     {
         $location = $this->prefixer->prefixPath($path);
         $connection = $this->connectionProvider->provideConnection();
         $connection->delete(rtrim($location, '/') . '/');
     }
 
-    public function createDirectory(string $path, Config $config): void
+    public function createDirectory($path, Config $config): void
     {
         $this->makeDirectory($path, $config->get(Config::OPTION_DIRECTORY_VISIBILITY, $config->get(Config::OPTION_VISIBILITY)));
     }
 
-    public function setVisibility(string $path, string $visibility): void
+    public function setVisibility($path, $visibility): void
     {
         $location = $this->prefixer->prefixPath($path);
         $connection = $this->connectionProvider->provideConnection();
@@ -237,7 +237,7 @@ class SftpAdapter implements FilesystemAdapter
         return $attributes;
     }
 
-    public function mimeType(string $path): FileAttributes
+    public function mimeType($path): FileAttributes
     {
         try {
             $contents = $this->read($path);
@@ -253,22 +253,22 @@ class SftpAdapter implements FilesystemAdapter
         return new FileAttributes($path, null, null, null, $mimetype);
     }
 
-    public function lastModified(string $path): FileAttributes
+    public function lastModified($path): FileAttributes
     {
         return $this->fetchFileMetadata($path, FileAttributes::ATTRIBUTE_LAST_MODIFIED);
     }
 
-    public function fileSize(string $path): FileAttributes
+    public function fileSize($path): FileAttributes
     {
         return $this->fetchFileMetadata($path, FileAttributes::ATTRIBUTE_FILE_SIZE);
     }
 
-    public function visibility(string $path): FileAttributes
+    public function visibility($path): FileAttributes
     {
         return $this->fetchFileMetadata($path, FileAttributes::ATTRIBUTE_VISIBILITY);
     }
 
-    public function listContents(string $path, bool $deep): iterable
+    public function listContents($path, $deep): iterable
     {
         $connection = $this->connectionProvider->provideConnection();
         $location = $this->prefixer->prefixPath(rtrim($path, '/')) . '/';
@@ -318,7 +318,7 @@ class SftpAdapter implements FilesystemAdapter
         );
     }
 
-    public function move(string $source, string $destination, Config $config): void
+    public function move($source, $destination, Config $config): void
     {
         $sourceLocation = $this->prefixer->prefixPath($source);
         $destinationLocation = $this->prefixer->prefixPath($destination);
@@ -335,7 +335,7 @@ class SftpAdapter implements FilesystemAdapter
         }
     }
 
-    public function copy(string $source, string $destination, Config $config): void
+    public function copy($source, $destination, Config $config): void
     {
         try {
             $readStream = $this->readStream($source);

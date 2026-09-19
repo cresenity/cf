@@ -25,7 +25,7 @@ class MountManager implements FilesystemOperator
         $this->mountFilesystems($filesystems);
     }
 
-    public function fileExists(string $location): bool
+    public function fileExists($location): bool
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -37,7 +37,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function has(string $location): bool
+    public function has($location): bool
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -49,7 +49,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function directoryExists(string $location): bool
+    public function directoryExists($location): bool
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -61,7 +61,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function read(string $location): string
+    public function read($location): string
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -73,7 +73,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function readStream(string $location)
+    public function readStream($location)
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -85,7 +85,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function listContents(string $location, bool $deep = self::LIST_SHALLOW): DirectoryListing
+    public function listContents($location, $deep = self::LIST_SHALLOW): DirectoryListing
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path, $mountIdentifier] = $this->determineFilesystemAndPath($location);
@@ -100,7 +100,7 @@ class MountManager implements FilesystemOperator
                 );
     }
 
-    public function lastModified(string $location): int
+    public function lastModified($location): int
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -112,7 +112,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function fileSize(string $location): int
+    public function fileSize($location): int
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -124,7 +124,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function mimeType(string $location): string
+    public function mimeType($location): string
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -136,7 +136,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function visibility(string $location): string
+    public function visibility($location): string
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -148,7 +148,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function write(string $location, string $contents, array $config = []): void
+    public function write($location, $contents, $config = []): void
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -160,21 +160,21 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function writeStream(string $location, $contents, array $config = []): void
+    public function writeStream($location, $contents, $config = []): void
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
         $filesystem->writeStream($path, $contents, $config);
     }
 
-    public function setVisibility(string $path, string $visibility): void
+    public function setVisibility($path, $visibility): void
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($path);
         $filesystem->setVisibility($path, $visibility);
     }
 
-    public function delete(string $location): void
+    public function delete($location): void
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -186,7 +186,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function deleteDirectory(string $location): void
+    public function deleteDirectory($location): void
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -198,7 +198,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function createDirectory(string $location, array $config = []): void
+    public function createDirectory($location, $config = []): void
     {
         /** @var FilesystemOperator $filesystem */
         [$filesystem, $path] = $this->determineFilesystemAndPath($location);
@@ -210,7 +210,7 @@ class MountManager implements FilesystemOperator
         }
     }
 
-    public function move(string $source, string $destination, array $config = []): void
+    public function move($source, $destination, $config = []): void
     {
         /** @var FilesystemOperator $sourceFilesystem */
         /* @var FilesystemOperator $destinationFilesystem */
@@ -226,7 +226,7 @@ class MountManager implements FilesystemOperator
         ) : $this->moveAcrossFilesystems($source, $destination);
     }
 
-    public function copy(string $source, string $destination, array $config = []): void
+    public function copy($source, $destination, $config = []): void
     {
         /** @var FilesystemOperator $sourceFilesystem */
         /* @var FilesystemOperator $destinationFilesystem */

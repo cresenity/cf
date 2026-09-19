@@ -142,7 +142,7 @@ class FtpAdapter implements FilesystemAdapter
         return $this->isPureFtpdServer = stripos(implode(' ', $response), 'Pure-FTPd') !== false;
     }
 
-    public function fileExists(string $path): bool
+    public function fileExists($path): bool
     {
         try {
             $this->fileSize($path);
@@ -153,7 +153,7 @@ class FtpAdapter implements FilesystemAdapter
         }
     }
 
-    public function write(string $path, string $contents, Config $config): void
+    public function write($path, $contents, Config $config): void
     {
         try {
             $writeStream = fopen('php://temp', 'w+b');
@@ -165,7 +165,7 @@ class FtpAdapter implements FilesystemAdapter
         }
     }
 
-    public function writeStream(string $path, $contents, Config $config): void
+    public function writeStream($path, $contents, Config $config): void
     {
         try {
             $this->ensureParentDirectoryExists($path, $config->get(Config::OPTION_DIRECTORY_VISIBILITY));
@@ -190,7 +190,7 @@ class FtpAdapter implements FilesystemAdapter
         }
     }
 
-    public function read(string $path): string
+    public function read($path): string
     {
         $readStream = $this->readStream($path);
         $contents = stream_get_contents($readStream);
@@ -199,7 +199,7 @@ class FtpAdapter implements FilesystemAdapter
         return $contents;
     }
 
-    public function readStream(string $path)
+    public function readStream($path)
     {
         $location = $this->prefixer()->prefixPath($path);
         $stream = fopen('php://temp', 'w+b');
@@ -216,7 +216,7 @@ class FtpAdapter implements FilesystemAdapter
         return $stream;
     }
 
-    public function delete(string $path): void
+    public function delete($path): void
     {
         $connection = $this->connection();
         $this->deleteFile($path, $connection);
@@ -235,7 +235,7 @@ class FtpAdapter implements FilesystemAdapter
         }
     }
 
-    public function deleteDirectory(string $path): void
+    public function deleteDirectory($path): void
     {
         /** @var StorageAttributes[] $contents */
         $contents = $this->listContents($path, true);
@@ -263,12 +263,12 @@ class FtpAdapter implements FilesystemAdapter
         }
     }
 
-    public function createDirectory(string $path, Config $config): void
+    public function createDirectory($path, Config $config): void
     {
         $this->ensureDirectoryExists($path, $config->get('directory_visibility', $config->get('visibility')));
     }
 
-    public function setVisibility(string $path, string $visibility): void
+    public function setVisibility($path, $visibility): void
     {
         $location = $this->prefixer()->prefixPath($path);
         $mode = $this->visibilityConverter->forFile($visibility);
@@ -306,7 +306,7 @@ class FtpAdapter implements FilesystemAdapter
         return $attributes;
     }
 
-    public function mimeType(string $path): FileAttributes
+    public function mimeType($path): FileAttributes
     {
         try {
             $contents = $this->read($path);
@@ -322,7 +322,7 @@ class FtpAdapter implements FilesystemAdapter
         return new FileAttributes($path, null, null, null, $mimetype);
     }
 
-    public function lastModified(string $path): FileAttributes
+    public function lastModified($path): FileAttributes
     {
         $location = $this->prefixer()->prefixPath($path);
         $connection = $this->connection();
@@ -335,12 +335,12 @@ class FtpAdapter implements FilesystemAdapter
         return new FileAttributes($path, null, null, $lastModified);
     }
 
-    public function visibility(string $path): FileAttributes
+    public function visibility($path): FileAttributes
     {
         return $this->fetchMetadata($path, FileAttributes::ATTRIBUTE_VISIBILITY);
     }
 
-    public function fileSize(string $path): FileAttributes
+    public function fileSize($path): FileAttributes
     {
         $location = $this->prefixer()->prefixPath($path);
         $connection = $this->connection();
@@ -353,7 +353,7 @@ class FtpAdapter implements FilesystemAdapter
         return new FileAttributes($path, $fileSize);
     }
 
-    public function listContents(string $path, bool $deep): iterable
+    public function listContents($path, $deep): iterable
     {
         $path = ltrim($path, '/');
         $path = $path === '' ? $path : trim($path, '/') . '/';
@@ -543,7 +543,7 @@ class FtpAdapter implements FilesystemAdapter
         return ftp_rawlist($connection, $options . ' ' . $path, stripos($options, 'R') !== false) ?: [];
     }
 
-    public function move(string $source, string $destination, Config $config): void
+    public function move($source, $destination, Config $config): void
     {
         try {
             $this->ensureParentDirectoryExists($destination, $config->get(Config::OPTION_DIRECTORY_VISIBILITY));
@@ -560,7 +560,7 @@ class FtpAdapter implements FilesystemAdapter
         }
     }
 
-    public function copy(string $source, string $destination, Config $config): void
+    public function copy($source, $destination, Config $config): void
     {
         try {
             $readStream = $this->readStream($source);
@@ -631,7 +631,7 @@ class FtpAdapter implements FilesystemAdapter
         return $this->connection instanceof \FTP\Connection || is_resource($this->connection);
     }
 
-    public function directoryExists(string $path): bool
+    public function directoryExists($path): bool
     {
         $connection = $this->connection();
 
