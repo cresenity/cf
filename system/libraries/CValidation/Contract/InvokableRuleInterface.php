@@ -9,9 +9,9 @@ interface CValidation_Contract_InvokableRuleInterface {
      *
      * @param string $attribute
      * @param mixed  $value
-     * @param  \Closure(string): \Illuminate\Translation\PotentiallyTranslatedString  $fail
+     * @param  \Closure(string): \CTranslation_PotentiallyTranslatedString $fail
      *
      * @return void
      */
-    public function __invoke(string $attribute, mixed $value, Closure $fail);
+    public function __invoke(string $attribute, $value, Closure $fail);
 }

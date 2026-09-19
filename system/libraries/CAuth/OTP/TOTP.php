@@ -134,8 +134,8 @@ final class CAuth_OTP_TOTP extends CAuth_OTP_OTPAbstract implements CAuth_OTP_Co
      * @return array<non-empty-string, callable>
      */
     protected function getParameterMap(): array {
-        return [
-            ...parent::getParameterMap(),
+        // array_merge, bukan spread: unpack array berkunci string baru ada di PHP 8.1
+        return array_merge(parent::getParameterMap(), [
             'period' => function ($value) {
                 if ((int) $value > 0) {
                     return (int) $value;
@@ -152,7 +152,7 @@ final class CAuth_OTP_TOTP extends CAuth_OTP_OTPAbstract implements CAuth_OTP_Co
                     'Epoch must be greater than or equal to 0.'
                 );
             },
-        ];
+        ]);
     }
 
     /**

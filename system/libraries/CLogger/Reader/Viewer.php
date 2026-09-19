@@ -9,9 +9,15 @@ use Illuminate\Auth\Access\AuthorizationException;
 class CLogger_Reader_Viewer {
     protected ?Collection $_cachedFiles = null;
 
-    protected mixed $authCallback;
+    /**
+     * @var null|callable
+     */
+    protected $authCallback;
 
-    protected mixed $hostsResolver;
+    /**
+     * @var null|callable
+     */
+    protected $hostsResolver;
 
     protected static $instance;
 

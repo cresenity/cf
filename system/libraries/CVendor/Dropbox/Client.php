@@ -339,7 +339,7 @@ class CVendor_Dropbox_Client {
      *
      * @param string|resource $contents
      */
-    protected function shouldUploadChunked(mixed $contents): bool {
+    protected function shouldUploadChunked($contents): bool {
         $size = is_string($contents) ? strlen($contents) : fstat($contents)['size'];
 
         if ($this->isPipe($contents)) {
@@ -354,7 +354,7 @@ class CVendor_Dropbox_Client {
      *
      * @param string|resource $contents
      */
-    protected function isPipe(mixed $contents): bool {
+    protected function isPipe($contents): bool {
         return is_resource($contents) && (fstat($contents)['mode'] & 010000) != 0;
     }
 
@@ -369,7 +369,7 @@ class CVendor_Dropbox_Client {
      *
      * @return array<mixed>
      */
-    public function upload(string $path, mixed $contents, string $mode = 'add', bool $autorename = false): array {
+    public function upload(string $path, $contents, string $mode = 'add', bool $autorename = false): array {
         if ($this->shouldUploadChunked($contents)) {
             return $this->uploadChunked($path, $contents, $mode);
         }
@@ -400,7 +400,7 @@ class CVendor_Dropbox_Client {
      *
      * @return array<mixed>
      */
-    public function uploadChunked(string $path, mixed $contents, string $mode = 'add', ?int $chunkSize = null): array {
+    public function uploadChunked(string $path, $contents, string $mode = 'add', ?int $chunkSize = null): array {
         if ($chunkSize === null || $chunkSize > $this->maxChunkSize) {
             $chunkSize = $this->maxChunkSize;
         }
@@ -460,7 +460,7 @@ class CVendor_Dropbox_Client {
      *
      * @param string|resource|StreamInterface $contents
      */
-    public function uploadSessionStart(mixed $contents, bool $close = false): CVendor_Dropbox_UploadSessionCursor {
+    public function uploadSessionStart($contents, bool $close = false): CVendor_Dropbox_UploadSessionCursor {
         $arguments = compact('close');
 
         $response = json_decode(
@@ -501,7 +501,7 @@ class CVendor_Dropbox_Client {
      *
      * @return array<mixed>
      */
-    public function uploadSessionFinish(mixed $contents, CVendor_Dropbox_UploadSessionCursor $cursor, string $path, string $mode = 'add', bool $autorename = false, bool $mute = false): array {
+    public function uploadSessionFinish($contents, CVendor_Dropbox_UploadSessionCursor $cursor, string $path, string $mode = 'add', bool $autorename = false, bool $mute = false): array {
         $arguments = compact('cursor');
         $arguments['commit'] = compact('path', 'mode', 'autorename', 'mute');
 
@@ -635,7 +635,7 @@ class CVendor_Dropbox_Client {
     /**
      * @param string|resource $contents
      */
-    protected function getStream(mixed $contents): StreamInterface {
+    protected function getStream($contents): StreamInterface {
         if ($this->isPipe($contents)) {
             /* @var resource $contents */
             return new PumpStream(function ($length) use ($contents) {

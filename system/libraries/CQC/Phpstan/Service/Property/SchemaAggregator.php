@@ -478,7 +478,7 @@ final class CQC_Phpstan_Service_Property_SchemaAggregator {
         CQC_Phpstan_Service_Property_SchemaTable $table,
         string $columnName,
         bool $nullable,
-        mixed $secondArg,
+        $secondArg,
         $argName,
         string $tableName,
         $secondArgArray,

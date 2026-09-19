@@ -10,5 +10,5 @@ interface CValidation_Contract_ValidationRuleInterface {
      *
      * @return void
      */
-    public function validate(string $attribute, mixed $value, Closure $fail): void;
+    public function validate(string $attribute, $value, Closure $fail): void;
 }

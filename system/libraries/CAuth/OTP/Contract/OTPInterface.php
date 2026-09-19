@@ -103,8 +103,9 @@ interface CAuth_OTP_Contract_OTPInterface {
 
     /**
      * @param non-empty-string $parameter
+     * @param mixed            $value
      */
-    public function setParameter(string $parameter, mixed $value): void;
+    public function setParameter(string $parameter, $value): void;
 
     /**
      * Get the provisioning URI.

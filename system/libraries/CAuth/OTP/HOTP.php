@@ -75,7 +75,8 @@ final class CAuth_OTP_HOTP extends CAuth_OTP_OTPAbstract implements CAuth_OTP_Co
      * @return array<string, callable>
      */
     protected function getParameterMap(): array {
-        return [...parent::getParameterMap(), ...[
+        // array_merge, bukan spread: unpack array berkunci string baru ada di PHP 8.1
+        return array_merge(parent::getParameterMap(), [
             'counter' => function ($value) {
                 $value = (int) $value;
                 if ($value >= 0) {
@@ -84,7 +85,7 @@ final class CAuth_OTP_HOTP extends CAuth_OTP_OTPAbstract implements CAuth_OTP_Co
 
                 throw new InvalidArgumentException('Counter must be at least 0.');
             },
-        ]];
+        ]);
     }
 
     private function updateCounter(int $counter): void {

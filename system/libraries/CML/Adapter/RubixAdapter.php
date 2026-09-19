@@ -40,7 +40,7 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
     public static function train(
         $modelFilename,
         array $data,
-        mixed $data_index_w_label = null,
+        $data_index_w_label = null,
         ?Estimator $estimator_algorithm = null,
         ?array $transformers = null,
         float $trainPartSize = 1
@@ -103,7 +103,7 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
     public static function trainWithoutTest(
         $modelFilename,
         array $data,
-        mixed $data_index_w_label = null,
+        $data_index_w_label = null,
         ?Estimator $estimator_algorithm = null,
         ?array $transformers = null
     ) {

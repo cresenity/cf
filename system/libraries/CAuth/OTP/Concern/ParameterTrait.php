@@ -101,7 +101,7 @@ trait CAuth_OTP_Concern_ParameterTrait {
         throw new InvalidArgumentException(sprintf('Parameter "%s" does not exist', $parameter));
     }
 
-    public function setParameter(string $parameter, mixed $value): void {
+    public function setParameter(string $parameter, $value): void {
         $map = $this->getParameterMap();
 
         if (array_key_exists($parameter, $map) === true) {

@@ -136,4 +136,43 @@ class ValidationRuleObjectTest extends TestCase {
 
         $this->assertSame('x', $terlihat);
     }
+
+    /**
+     * Kontrak `ValidationRule`/`InvokableRule` harus bisa diimplementasikan
+     * tanpa type pada `$value` - di PHP 7.4 `mixed` dibaca sebagai nama kelas,
+     * jadi implementor apa pun gagal TypeError saat dipanggil.
+     *
+     * @return void
+     */
+    public function testValidationRuleContractImplementorRunsWithoutTypedValue() {
+        $rule = new class() implements CValidation_Contract_ValidationRuleInterface {
+            public function validate(string $attribute, $value, Closure $fail): void {
+                if ($value !== 'ok') {
+                    $fail('bukan ok');
+                }
+            }
+        };
+
+        $this->assertFalse($this->validate($rule, 'ok')->fails());
+
+        $validator = $this->validate($rule, 'lain');
+        $this->assertTrue($validator->fails());
+        $this->assertSame(['bukan ok'], $validator->errors()->all());
+    }
+
+    /**
+     * @return void
+     */
+    public function testInvokableRuleContractImplementorRunsWithoutTypedValue() {
+        $rule = new class() implements CValidation_Contract_InvokableRuleInterface {
+            public function __invoke(string $attribute, $value, Closure $fail) {
+                if ($value !== 'ok') {
+                    $fail('bukan ok');
+                }
+            }
+        };
+
+        $this->assertFalse($this->validate($rule, 'ok')->fails());
+        $this->assertTrue($this->validate($rule, 'lain')->fails());
+    }
 }
