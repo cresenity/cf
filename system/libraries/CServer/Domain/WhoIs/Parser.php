@@ -166,7 +166,7 @@ class CServer_Domain_WhoIs_Parser {
         $needToBeLowerCasedValueFathers = ['registrant', 'admin', 'tech', 'billing'];
         foreach ($needToBeLowerCasedValueFathers as $needToBeLowerCasedValueFather) {
             if (!empty($parseResult[$needToBeLowerCasedValueFather])) {
-                $needToBeLowerCasedValue = $parseResult[$needToBeLowerCasedValueFather]['email'];
+                $needToBeLowerCasedValue = carr::get($parseResult[$needToBeLowerCasedValueFather], 'email');
                 if (!empty($needToBeLowerCasedValue)) {
                     $parseResult[$needToBeLowerCasedValueFather]['email'] = strtolower($parseResult[$needToBeLowerCasedValueFather]['email']);
                 }
