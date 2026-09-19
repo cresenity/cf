@@ -48,11 +48,11 @@ class CRunner_FFMpeg_Exporter_HLSPlaylistGenerator implements CRunner_FFMpeg_Exp
      * to each playlist.
      *
      * @param array                                         $segmentPlaylists
-     * @param \ProtoneMedia\LaravelFFMpeg\Drivers\PHPFFMpeg $driver
+     * @param CRunner_FFMpeg_Driver_PHPFFMpeg $driver
      *
      * @return string
      */
-    public function get(array $segmentPlaylists, PHPFFMpeg $driver): string {
+    public function get(array $segmentPlaylists, CRunner_FFMpeg_Driver_PHPFFMpeg $driver): string {
         return Collection::make($segmentPlaylists)->map(function (Media $segmentPlaylist, $key) use ($driver) {
             $streamInfoLine = $this->getStreamInfoLine($segmentPlaylist, $key);
 

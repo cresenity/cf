@@ -272,7 +272,7 @@ class CRunner_FFMpeg_Exporter_HLSExporter extends CRunner_FFMpeg_Exporter_MediaE
      *
      * @return mixed
      */
-    public function getCommand(?string $path = null) {
+    public function getCommand($path = null) {
         $this->prepareSaving($path);
 
         return parent::getCommand(null);
@@ -286,7 +286,7 @@ class CRunner_FFMpeg_Exporter_HLSExporter extends CRunner_FFMpeg_Exporter_MediaE
      *
      * @return \ProtoneMedia\LaravelFFMpeg\MediaOpener
      */
-    public function save(?string $mainPlaylistPath = null): MediaOpener {
+    public function save($mainPlaylistPath = null) {
         return $this->prepareSaving($mainPlaylistPath)->pipe(function ($segmentPlaylists) use ($mainPlaylistPath) {
             $result = parent::save();
 
