@@ -118,7 +118,7 @@ class CEmail_Builder_Component_BodyComponent_Button extends CEmail_Builder_Compo
         $boxWidthResult = $this->getBoxWidths();
         $borders = carr::get($boxWidthResult, 'borders');
 
-        $innerPaddings = $this->getShorthandAttrValue('inner-padding', 'left') + $this->getShorthandAttrValue('inner-padding', 'right');
+        $innerPaddings = intval($this->getShorthandAttrValue('inner-padding', 'left')) + intval($this->getShorthandAttrValue('inner-padding', 'right'));
 
         return ($parsedWidth - $innerPaddings - $borders) . 'px';
     }

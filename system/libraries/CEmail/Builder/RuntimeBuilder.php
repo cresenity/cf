@@ -24,7 +24,7 @@ class CEmail_Builder_RuntimeBuilder {
     }
 
     public function __call($method, $args) {
-        if (method_exists($this->node, $method)) {
+        if (method_exists($this->node, $method) || cstr::startsWith($method, 'set')) {
             return call_user_func_array([$this->node, $method], $args);
         }
 

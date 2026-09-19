@@ -65,7 +65,7 @@ class CEmail_Builder {
     }
 
     public function toHtml($xml, $options = []) {
-        $parser = new CEmail_Builder_Parser($xml, $options = []);
+        $parser = new CEmail_Builder_Parser($xml, $options);
         return $parser->parse();
     }
 

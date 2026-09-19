@@ -23,7 +23,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
         $nonRawSiblings = $this->getProp('nonRawSiblings', 0);
         $children = $this->getChildren();
 
-        $paddingSize = $this->getShorthandAttrValue('padding', 'left') + $this->getShorthandAttrValue('padding', 'right');
+        $paddingSize = intval($this->getShorthandAttrValue('padding', 'left')) + intval($this->getShorthandAttrValue('padding', 'right'));
         $containerWidth = $this->getAttribute('width');
         if (strlen($containerWidth) == 0) {
             if ($nonRawSiblings > 0) {
@@ -150,7 +150,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
                 return ($containerWidth / $nonRawSiblings) . 'px';
             }
 
-            $widthParserResult = Helper::widthParser($this->getParsedWidth(true), ['parseFloatToInt' => false]);
+            $widthParserResult = Helper::widthParser($width, ['parseFloatToInt' => false]);
             $unit = carr::get($widthParserResult, 'unit');
             $parsedWidth = carr::get($widthParserResult, 'parsedWidth');
             if ($unit === '%') {
@@ -163,7 +163,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
 
             return $parsedWidth . $unit;
         };
-        $classesName = $this->getColumnClass() . ' mj-outlook-group-fix';
+        $classesName = $this->getColumnClass() . ' c-outlook-group-fix';
         if ($this->getAttribute('css-class')) {
             $classesName .= $this->getAttribute('css-class');
         }
@@ -197,7 +197,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
         return '
       <div' . $this->htmlAttributes(['class' => $classesName, 'style' => 'div']) . '>
         <!--[if mso | IE]>
-        <table  role="presentation" border="0" cellpadding="0" cellspacing="0">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
           <tr>
         <![endif]-->
         ' . $this->renderChildren(['attributes' => ['mobileWidth' => 'mobileWidth'], 'renderer' => $renderer]) . '

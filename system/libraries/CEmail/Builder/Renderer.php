@@ -17,24 +17,24 @@ class CEmail_Builder_Renderer {
     public function render() {
         $lang = $this->get('lang');
         $langAttribute = '';
-        if (strlen($lang) > 0) {
+        if (strlen((string) $lang) > 0) {
             $langAttribute = 'lang="' . $lang . '" ';
         }
 
         $backgroundColor = $this->get('backgroundColor');
 
         $backgroundColorAttribute = '';
-        if (strlen($backgroundColor) > 0) {
+        if (strlen((string) $backgroundColor) > 0) {
             $backgroundColorAttribute = ' style="background-color:' . $backgroundColor . ';"';
         }
         $title = $this->get('title', '');
         $breakpoint = $this->get('breakpoint', '480px');
         $componentHeadStyleHtml = carr::reduce($this->get('componentHeadStyle', []), function ($result, $compHeadStyle) use ($breakpoint) {
-            return $result . "\n" . $compHeadStyle($breakpoint);
+            return $result . "\n" . $this->resolveHeadStyle($compHeadStyle, $breakpoint);
         }, '');
 
         $headStyleHtml = carr::reduce($this->get('headStyle', []), function ($result, $headStyle) use ($breakpoint) {
-            return $result . "\n" . $headStyle($breakpoint);
+            return $result . "\n" . $this->resolveHeadStyle($headStyle, $breakpoint);
         }, '');
 
         $styleHtml = implode('', $this->get('style', []));
@@ -76,7 +76,7 @@ class CEmail_Builder_Renderer {
         <![endif]-->
         <!--[if lte mso 11]>
         <style type="text/css">
-          .mj-outlook-group-fix { width:100% !important; }
+          .mj-outlook-group-fix, .c-outlook-group-fix { width:100% !important; }
         </style>
         <![endif]-->
         ' . $this->buildFontTags() . '
@@ -94,6 +94,27 @@ class CEmail_Builder_Renderer {
       </body>
     </html>
   ';
+    }
+
+    /**
+     * Head style boleh berupa closure($breakpoint), string CSS, atau array string.
+     *
+     * @param mixed  $headStyle
+     * @param string $breakpoint
+     *
+     * @return string
+     */
+    protected function resolveHeadStyle($headStyle, $breakpoint) {
+        if ($headStyle instanceof Closure) {
+            return (string) $headStyle($breakpoint);
+        }
+        if (is_array($headStyle)) {
+            return implode("\n", array_map(function ($item) use ($breakpoint) {
+                return $this->resolveHeadStyle($item, $breakpoint);
+            }, $headStyle));
+        }
+
+        return (string) $headStyle;
     }
 
     public function buildPreview() {
@@ -162,7 +183,7 @@ class CEmail_Builder_Renderer {
             $owaQueries = carr::map($baseMediaQueries, function ($mq) {
                 return '[owa] ' . $mq;
             });
-            $owaStyle = '<style type="text/css">\n' . implode("\n", $owaQueries) . '\n</style>';
+            $owaStyle = '<style type="text/css">' . "\n" . implode("\n", $owaQueries) . "\n" . '</style>';
         }
         $baseMediaQueriesStyle = implode("\n", $baseMediaQueries);
 

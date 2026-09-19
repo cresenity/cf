@@ -77,7 +77,7 @@ class CEmail_Builder_Component_BodyComponent_Divider extends CEmail_Builder_Comp
         $attr['width'] = $this->getOutlookWidth();
         return '
       <!--[if mso | IE]>
-        <table ' . $this->htmlAttributes($attr) . '>
+        <table' . $this->htmlAttributes($attr) . '>
           <tr>
             <td style="height:0;line-height:0;">
               &nbsp;
@@ -90,7 +90,7 @@ class CEmail_Builder_Component_BodyComponent_Divider extends CEmail_Builder_Comp
 
     public function render() {
         return '
-      <p ' . $this->htmlAttributes(['style' => 'p']) . '>
+      <p' . $this->htmlAttributes(['style' => 'p']) . '>
       </p>
       ' . $this->renderAfter() . '
     ';

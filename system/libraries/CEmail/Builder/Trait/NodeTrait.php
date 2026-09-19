@@ -6,11 +6,20 @@ trait CEmail_Builder_Trait_NodeTrait {
      *
      * @return \CEmail_Builder_Node
      */
-    protected function addNode($tagName) {
+    public function addNode($tagName) {
         $node = new CEmail_Builder_Node(['tagName' => $tagName]);
         $this->children[] = $node;
 
         return $node;
+    }
+
+    /**
+     * Default atribut untuk semua komponen (c-all), anak dari c-attributes.
+     *
+     * @return \CEmail_Builder_Node
+     */
+    public function addAll() {
+        return $this->addNode('c-all');
     }
 
     /**

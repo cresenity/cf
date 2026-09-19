@@ -19,12 +19,20 @@ class CEmail_Builder_Context {
         $globalData->set('headStyle.' . $identifier, $headStyle);
     }
 
-    public function addComponentHeadStyle($headStyle) {
+    public function addComponentHeadStyle($identifier, $headStyle = null) {
+        if ($headStyle === null) {
+            $headStyle = $identifier;
+            $identifier = null;
+        }
         $globalData = CEmail::builder()->globalData();
-        $globalData->push('componentsHeadStyle', $headStyle);
+        if ($identifier === null) {
+            $globalData->push('componentHeadStyle', [$headStyle]);
+        } else {
+            $globalData->set('componentHeadStyle.' . $identifier, $headStyle);
+        }
     }
 
-    public function getBackgroundColor($color) {
+    public function getBackgroundColor($color = null) {
         $globalData = CEmail::builder()->globalData();
 
         return $globalData->get('backgroundColor');

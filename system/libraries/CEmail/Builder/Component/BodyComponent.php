@@ -23,10 +23,10 @@ class CEmail_Builder_Component_BodyComponent extends CEmail_Builder_Component {
     }
 
     public function getShorthandBorderValue($direction) {
-        $borderDirection = $direction && $this->getAttribute('border-' . $direction);
+        $borderDirection = $direction ? $this->getAttribute('border-' . $direction) : null;
         $border = $this->getAttribute('border');
 
-        return Helper::borderParser($borderDirection || $border || '0', 10);
+        return Helper::borderParser($borderDirection ?: $border ?: '0');
     }
 
     public function htmlAttributes($attributes) {
@@ -40,7 +40,12 @@ class CEmail_Builder_Component_BodyComponent extends CEmail_Builder_Component {
             }
 
             if ($value != null && strlen($value) > 0) {
-                return $output . ' ' . $name . '="' . $value . '"';
+                if (($name === 'width' || $name === 'height') && preg_match('/^\d+(\.\d+)?px$/', $value)) {
+                    // atribut HTML width/height tanpa satuan; satuan tetap ada di style
+                    $value = substr($value, 0, -2);
+                }
+
+                return $output . ' ' . $name . '="' . htmlspecialchars($value, ENT_COMPAT | ENT_HTML401, 'UTF-8', false) . '"';
             }
 
             return $output;
@@ -126,7 +131,11 @@ class CEmail_Builder_Component_BodyComponent extends CEmail_Builder_Component {
         foreach ($childrens as $children) {
             $component = $children;
             if ($children instanceof CEmail_Builder_Node) {
-                $globalAttributes = CEmail::builder()->globalData()->get('defaultAttributes.' . $children->getTagName(), []);
+                $globalData = CEmail::builder()->globalData();
+                $globalAttributes = array_merge(
+                    $globalData->get('defaultAttributes.c-all', []),
+                    $globalData->get('defaultAttributes.' . $children->getTagName(), [])
+                );
                 $options = [];
                 $options['children'] = $children->getChildren();
                 $options['attributes'] = array_merge($attributes, $globalAttributes, $children->getAttributes());

@@ -86,10 +86,11 @@ class CEmail_Builder_Component_BodyComponent_Column extends CEmail_Builder_Compo
                 return $width;
             case 'px':
             default:
-                if (strlen($containerWidth) == 0) {
+                if (strlen((string) $containerWidth) == 0 || intval($containerWidth) == 0) {
                     return $parsedWidth . 'px';
                 }
-                return $parsedWidth / $containerWidth . '%';
+
+                return ($parsedWidth / intval($containerWidth)) * 100 . '%';
         }
     }
 
@@ -208,10 +209,10 @@ class CEmail_Builder_Component_BodyComponent_Column extends CEmail_Builder_Compo
                 $style['background'] = $component->getAttribute('container-background-color');
                 $style['font-size'] = '0px';
                 $style['padding'] = $component->getAttribute('padding');
-                $style['padding-bottom'] = $this->getAttribute('padding-bottom');
-                $style['padding-left'] = $this->getAttribute('padding-left');
-                $style['padding-right'] = $this->getAttribute('padding-right');
-                $style['padding-top'] = $this->getAttribute('padding-top');
+                $style['padding-bottom'] = $component->getAttribute('padding-bottom');
+                $style['padding-left'] = $component->getAttribute('padding-left');
+                $style['padding-right'] = $component->getAttribute('padding-right');
+                $style['padding-top'] = $component->getAttribute('padding-top');
                 $style['word-break'] = 'break-word';
                 $tdAttr = [];
                 $tdAttr['align'] = $component->getAttribute('align');

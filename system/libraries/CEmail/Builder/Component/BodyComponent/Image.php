@@ -102,7 +102,7 @@ class CEmail_Builder_Component_BodyComponent_Image extends CEmail_Builder_Compon
         $img = '
       <img' . $this->htmlAttributes($imgAttr) . '/>
     ';
-        if (strlen($this->getAttribute('href') > 0)) {
+        if (strlen((string) $this->getAttribute('href')) > 0) {
             $aAttr = [];
             $aAttr['href'] = $this->getAttribute('href');
             $aAttr['target'] = $this->getAttribute('target');
@@ -131,7 +131,7 @@ class CEmail_Builder_Component_BodyComponent_Image extends CEmail_Builder_Compon
       <table' . $this->htmlAttributes($tableAttr) . '>
         <tbody>
           <tr>
-            <td' . $this->htmlAttributes(['style' => 'td', 'class' => $this->getAttribute('fluid-on-mobile') ? 'c-full-width-mobile' : null]) . ' >
+            <td' . $this->htmlAttributes(['style' => 'td', 'class' => $this->getAttribute('fluid-on-mobile') ? 'c-full-width-mobile' : null]) . '>
               ' . $this->renderImage() . '
             </td>
           </tr>

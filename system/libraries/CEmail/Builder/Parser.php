@@ -113,6 +113,9 @@ class CEmail_Builder_Parser {
         }
         $node = $this->node;
         $cBody = carr::find($this->node->children, ['tagName' => 'c-body']);
+        if ($cBody == null) {
+            throw new CEmail_Builder_Exception('Email builder membutuhkan satu c-body (panggil addBody() lebih dulu)');
+        }
 
         $name = $cBody->getComponentName();
 

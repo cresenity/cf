@@ -84,7 +84,11 @@ class CEmail_Builder_Component {
         $this->content = carr::get($options, 'content', '');
         $this->name = carr::get($options, 'name');
 
-        $globalAttributes = CEmail::builder()->globalData()->get('defaultAttributes');
+        $globalData = CEmail::builder()->globalData();
+        $globalAttributes = array_merge(
+            $globalData->get('defaultAttributes.c-all', []),
+            $globalData->get('defaultAttributes.' . static::$tagName, [])
+        );
 
         //$attributes = array_merge($this->defaultAttributes, carr::get($options, 'globalAttributes', []), carr::get($options, 'attributes', []));
         $attributes = array_merge($this->defaultAttributes, $globalAttributes, carr::get($options, 'attributes', []));
