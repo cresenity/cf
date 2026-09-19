@@ -374,7 +374,7 @@ class CJavascript_PhpJs_JsPrinter extends CJavascript_PhpJs_JsPrinterAbstract {
      *
      * @return void
      */
-    protected function pInfixOp($type, Node $leftNode, $operator, Node $rightNode) {
+    protected function pInfixOp($type, Node $leftNode, $operator, Node $rightNode): string {
         list($precedence, $associativity) = $this->precedenceMap[$type];
 
         $pList = [];
@@ -418,6 +418,8 @@ class CJavascript_PhpJs_JsPrinter extends CJavascript_PhpJs_JsPrinterAbstract {
                 }
             }
         }
+
+        return '';
     }
 
     public function pExprList(Expr\List_ $node, $force = false) {

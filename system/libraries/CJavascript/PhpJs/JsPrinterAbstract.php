@@ -98,8 +98,10 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @return void
      */
-    protected function p(Node $node) {
+    protected function p(Node $node, $parentFormatPreserved = false): string {
         $this->{'p' . $this->sanitizeType($node->getType())}($node);
+
+        return '';
     }
 
     /**
@@ -121,9 +123,9 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @see PhpParser\Printer\PrinterAbstract::pStmts
      *
-     * @return string|void
+     * @return string
      */
-    protected function pStmts(array $nodes, $indent = true) {
+    protected function pStmts(array $nodes, $indent = true): string {
         foreach ($nodes as $node) {
             $comments = $node->getAttribute('comments', []);
             if ($comments && !($node instanceof Stmt\ClassMethod || $node instanceof Stmt\ClassConst)) {
@@ -140,6 +142,8 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
 
             $this->writer->println($node instanceof Node\Expr ? ';' : '');
         }
+
+        return '';
     }
 
     abstract protected function printUseByRefDef();
@@ -151,7 +155,7 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @return void|string
      */
-    protected function pComments(array $comments) {
+    protected function pComments(array $comments): string {
         foreach ($comments as $comment) {
             $comment = $comment->getReformattedText();
             $comment = preg_replace('/(@(param|var) )([\w\|\\\\]+)( \$\w*)?/', '$1{$3}$4', $comment);
@@ -159,6 +163,8 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
             $comment = str_replace(['@var', '{\\', '\\'], ['@type', '{N.', '.'], $comment);
             $this->writer->println($comment);
         }
+
+        return '';
     }
 
     /**
@@ -171,7 +177,7 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @return void
      */
-    protected function pInfixOp($type, Node $leftNode, $operator, Node $rightNode) {
+    protected function pInfixOp($type, Node $leftNode, $operator, Node $rightNode): string {
         list($precedence, $associativity) = $this->precedenceMap[$type];
 
         $this->pPrec($leftNode, $precedence, $associativity, -1);
@@ -181,6 +187,8 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
             $this->writer->print($operator);
         }
         $this->pPrec($rightNode, $precedence, $associativity, 1);
+
+        return '';
     }
 
     /**
@@ -192,10 +200,12 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @return void
      */
-    protected function pPrefixOp($type, $operatorString, Node $node) {
+    protected function pPrefixOp($type, $operatorString, Node $node): string {
         list($precedence, $associativity) = $this->precedenceMap[$type];
         $this->writer->print($operatorString);
         $this->pPrec($node, $precedence, $associativity, 1);
+
+        return '';
     }
 
     /**
@@ -207,10 +217,12 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @return void
      */
-    protected function pPostfixOp($type, Node $node, $operatorString) {
+    protected function pPostfixOp($type, Node $node, $operatorString): string {
         list($precedence, $associativity) = $this->precedenceMap[$type];
         $this->pPrec($node, $precedence, $associativity, -1);
         $this->writer->print($operatorString);
+
+        return '';
     }
 
     /**
@@ -223,7 +235,7 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @return void
      */
-    protected function pPrec(Node $node, $parentPrecedence, $parentAssociativity, $childPosition) {
+    protected function pPrec(Node $node, $parentPrecedence, $parentAssociativity, $childPosition): string {
         $type = $node->getType();
         if (isset($this->precedenceMap[$type])) {
             $childPrecedence = $this->precedenceMap[$type][0];
@@ -234,11 +246,13 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
                 $this->{'p' . $type}($node);
                 $this->writer->print(')');
 
-                return;
+                return '';
             }
         }
 
         $this->{'p' . $this->sanitizeType($type)}($node);
+
+        return '';
     }
 
     /**
@@ -247,7 +261,7 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
      *
      * @return void
      */
-    protected function pImplode(array $nodes, $glue = '') {
+    protected function pImplode(array $nodes, $glue = ''): string {
         $l = count($nodes);
         for ($i = 0; $i < $l; $i++) {
             $node = $nodes[$i];
@@ -256,6 +270,8 @@ abstract class CJavascript_PhpJs_JsPrinterAbstract extends PrettyPrinterAbstract
                 $this->writer->print($glue);
             }
         }
+
+        return '';
     }
 
     public function pScalarLNumber(Scalar\LNumber $node) {
