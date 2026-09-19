@@ -381,7 +381,7 @@ class CDocument_Pdf_Element_Rectangle extends CDocument_Pdf_ElementAbstract {
      * @param int $rotation the new rotation value
      */
     public function setRotation(int $rotation) {
-        $mod = $this->rotation % 360;
+        $mod = $rotation % 360;
         if (($mod == 90) || ($mod == 180) || ($mod == 270)) {
             $this->rotation = $mod;
         } else {
