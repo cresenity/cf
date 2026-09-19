@@ -137,6 +137,119 @@ class CValidation_Rule {
     }
 
     /**
+     * Apply the given rules unless the condition holds (the mirror image of `when()`).
+     *
+     * @param bool|callable        $condition
+     * @param array|string|Closure $rules
+     * @param array|string|Closure $defaultRules
+     *
+     * @return \CValidation_ConditionalRules
+     */
+    public static function unless($condition, $rules, $defaultRules = []) {
+        return new CValidation_ConditionalRules($condition, $defaultRules, $rules);
+    }
+
+    /**
+     * Get a required_unless constraint builder instance.
+     *
+     * @param bool|callable $callback
+     *
+     * @return \CValidation_Rule_RequiredUnless
+     */
+    public static function requiredUnless($callback) {
+        return new CValidation_Rule_RequiredUnless($callback);
+    }
+
+    /**
+     * Get an exclude_unless constraint builder instance.
+     *
+     * @param bool|callable $callback
+     *
+     * @return \CValidation_Rule_ExcludeUnless
+     */
+    public static function excludeUnless($callback) {
+        return new CValidation_Rule_ExcludeUnless($callback);
+    }
+
+    /**
+     * Get a prohibited_unless constraint builder instance.
+     *
+     * @param bool|callable $callback
+     *
+     * @return \CValidation_Rule_ProhibitedUnless
+     */
+    public static function prohibitedUnless($callback) {
+        return new CValidation_Rule_ProhibitedUnless($callback);
+    }
+
+    /**
+     * Get a contains constraint builder instance.
+     *
+     * @param array|string|\CCollection $values
+     *
+     * @return \CValidation_Rule_Contains
+     */
+    public static function contains($values) {
+        return new CValidation_Rule_Contains(is_array($values) || $values instanceof CCollection ? $values : func_get_args());
+    }
+
+    /**
+     * Get a doesnt_contain constraint builder instance.
+     *
+     * @param array|string|\CCollection $values
+     *
+     * @return \CValidation_Rule_DoesntContain
+     */
+    public static function doesntContain($values) {
+        return new CValidation_Rule_DoesntContain(is_array($values) || $values instanceof CCollection ? $values : func_get_args());
+    }
+
+    /**
+     * Get an array_keys constraint builder instance.
+     *
+     * @param array|string|\CCollection $keys
+     *
+     * @return \CValidation_Rule_ArrayKeys
+     */
+    public static function arrayKeys($keys) {
+        return new CValidation_Rule_ArrayKeys(is_array($keys) || $keys instanceof CCollection ? $keys : func_get_args());
+    }
+
+    /**
+     * Get an array rule builder instance.
+     *
+     * @param null|array $keys
+     *
+     * @return \CValidation_Rule_ArrayRule
+     */
+    public static function array($keys = null) {
+        return new CValidation_Rule_ArrayRule(...func_get_args());
+    }
+
+    /**
+     * Get a can constraint builder instance.
+     *
+     * @param string $ability
+     * @param mixed  ...$arguments
+     *
+     * @return \CValidation_Rule_Can
+     */
+    public static function can($ability, ...$arguments) {
+        return new CValidation_Rule_Can($ability, $arguments);
+    }
+
+    /**
+     * Get an enum constraint builder instance.
+     *
+     * @param class-string $type
+     *
+     * @return \CValidation_Rule_Enum
+     */
+    public static function enum($type) {
+        return new CValidation_Rule_Enum($type);
+    }
+
+    /**
      * Get a dimensions constraint builder instance.
      *
      * @param array $constraints

@@ -698,11 +698,61 @@ trait CValidation_Trait_ValidateAttributeTrait {
 
         if ($this->failsBasicDimensionChecks($parameters, $width, $height)
             || $this->failsRatioCheck($parameters, $width, $height)
+            || $this->failsMinRatioCheck($parameters, $width, $height)
+            || $this->failsMaxRatioCheck($parameters, $width, $height)
         ) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Determine if the given parameters fail a dimension minimum ratio check.
+     *
+     * @param array $parameters
+     * @param int   $width
+     * @param int   $height
+     *
+     * @return bool
+     */
+    protected function failsMinRatioCheck($parameters, $width, $height) {
+        if (!isset($parameters['min_ratio'])) {
+            return false;
+        }
+
+        list($minNumerator, $minDenominator) = array_replace(
+            [1, 1],
+            array_filter(sscanf($parameters['min_ratio'], '%f/%d'))
+        );
+
+        $precision = 1 / (max(($width + $height) / 2, $height) + 1);
+
+        return ($minNumerator / $minDenominator) - ($width / $height) > $precision;
+    }
+
+    /**
+     * Determine if the given parameters fail a dimension maximum ratio check.
+     *
+     * @param array $parameters
+     * @param int   $width
+     * @param int   $height
+     *
+     * @return bool
+     */
+    protected function failsMaxRatioCheck($parameters, $width, $height) {
+        if (!isset($parameters['max_ratio'])) {
+            return false;
+        }
+
+        list($maxNumerator, $maxDenominator) = array_replace(
+            [1, 1],
+            array_filter(sscanf($parameters['max_ratio'], '%f/%d'))
+        );
+
+        $precision = 1 / (max(($width + $height) / 2, $height) + 1);
+
+        return ($width / $height) - ($maxNumerator / $maxDenominator) > $precision;
     }
 
     /**
@@ -2490,6 +2540,319 @@ trait CValidation_Trait_ValidateAttributeTrait {
 
             return $result;
         });
+    }
+
+    /**
+     * Validate that an attribute is a valid hexadecimal color.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     *
+     * @return bool
+     */
+    public function validateHexColor($attribute, $value) {
+        return is_string($value) && preg_match('/^#(?:(?:[0-9a-f]{3}){1,2}|(?:[0-9a-f]{4}){1,2})$/i', $value) === 1;
+    }
+
+    /**
+     * Validate that an attribute is a list (sequential, zero-based keys).
+     *
+     * @param string $attribute
+     * @param mixed $value
+     *
+     * @return bool
+     */
+    public function validateList($attribute, $value) {
+        if (!is_array($value)) {
+            return false;
+        }
+
+        return count($value) === 0 || array_keys($value) === range(0, count($value) - 1);
+    }
+
+    /**
+     * Validate that an attribute is a valid base64 string.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     *
+     * @return bool
+     */
+    public function validateBase64($attribute, $value) {
+        if (!is_string($value) || $value === '') {
+            return false;
+        }
+
+        $decoded = base64_decode($value, true);
+
+        return $decoded !== false && base64_encode($decoded) === $value;
+    }
+
+    /**
+     * Validate that an array contains every one of the given values.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateContains($attribute, $value, $parameters) {
+        if (!is_array($value)) {
+            return false;
+        }
+
+        foreach ($parameters as $parameter) {
+            if (!in_array($parameter, $value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an array contains none of the given values.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateDoesntContain($attribute, $value, $parameters) {
+        if (!is_array($value)) {
+            return false;
+        }
+
+        foreach ($parameters as $parameter) {
+            if (in_array($parameter, $value, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an array has at least one of the given keys.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateInArrayKeys($attribute, $value, $parameters) {
+        if (!is_array($value) || count($parameters) === 0) {
+            return false;
+        }
+
+        foreach ($parameters as $parameter) {
+            if (carr::exists($value, $parameter)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Validate that an array only has the given keys.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateArrayKeys($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'array_keys');
+
+        if (!is_array($value)) {
+            return false;
+        }
+
+        return count(array_diff_key($value, array_fill_keys($parameters, ''))) === 0;
+    }
+
+    /**
+     * Validate the extension of a file upload attribute is in a set of defined extensions.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateExtensions($attribute, $value, $parameters) {
+        if (!$this->isValidFileInstance($value)) {
+            return false;
+        }
+
+        if ($this->shouldBlockPhpUpload($value, $parameters)) {
+            return false;
+        }
+
+        return in_array(strtolower($value->getClientOriginalExtension()), $parameters);
+    }
+
+    /**
+     * Validate that an attribute (string or file content) is in the given encoding.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateEncoding($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'encoding');
+
+        if (!in_array(mb_strtolower($parameters[0]), array_map('mb_strtolower', mb_list_encodings()))) {
+            throw new InvalidArgumentException("Validation rule encoding parameter [{$parameters[0]}] is not a valid encoding.");
+        }
+
+        $content = $value instanceof File ? file_get_contents($value->getRealPath()) : $value;
+
+        return is_string($content) && mb_check_encoding($content, $parameters[0]);
+    }
+
+    /**
+     * Validate that an attribute exists when another attribute has a given value.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validatePresentIf($attribute, $value, $parameters) {
+        $this->requireParameterCount(2, $parameters, 'present_if');
+
+        list($values, $other) = $this->parseDependentRuleParameters($parameters);
+
+        if (in_array($other, $values, is_bool($other) || is_null($other))) {
+            return $this->validatePresent($attribute, $value);
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an attribute exists unless another attribute has a given value.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validatePresentUnless($attribute, $value, $parameters) {
+        $this->requireParameterCount(2, $parameters, 'present_unless');
+
+        list($values, $other) = $this->parseDependentRuleParameters($parameters);
+
+        if (!in_array($other, $values, is_bool($other) || is_null($other))) {
+            return $this->validatePresent($attribute, $value);
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an attribute exists when any other attribute exists.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validatePresentWith($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'present_with');
+
+        if (carr::hasAny($this->data, $parameters)) {
+            return $this->validatePresent($attribute, $value);
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an attribute exists when all other attributes exist.
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validatePresentWithAll($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'present_with_all');
+
+        if (carr::has($this->data, $parameters)) {
+            return $this->validatePresent($attribute, $value);
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an attribute exists when another attribute was "declined".
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateRequiredIfDeclined($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'required_if_declined');
+
+        if ($this->validateDeclined($parameters[0], $this->getValue($parameters[0]))) {
+            return $this->validateRequired($attribute, $value);
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an attribute does not exist when another attribute was "accepted".
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateProhibitedIfAccepted($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'prohibited_if_accepted');
+
+        if ($this->validateAccepted($parameters[0], $this->getValue($parameters[0]))) {
+            return $this->validateProhibited($attribute, $value);
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate that an attribute does not exist when another attribute was "declined".
+     *
+     * @param string $attribute
+     * @param mixed $value
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function validateProhibitedIfDeclined($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'prohibited_if_declined');
+
+        if ($this->validateDeclined($parameters[0], $this->getValue($parameters[0]))) {
+            return $this->validateProhibited($attribute, $value);
+        }
+
+        return true;
     }
 
     /**

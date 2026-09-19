@@ -958,4 +958,128 @@ class ValidationRulesTest extends TestCase {
         $this->assertFailsRule($data, ['items.*.qty' => 'missing_with:items.*.type']);
         $this->assertFailsRule($data, ['items.*.qty' => 'missing_with_all:items.*.type']);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rule baru (paper §3)
+    |--------------------------------------------------------------------------
+    */
+
+    public function testHexColor() {
+        foreach (['#fff', '#FFF', '#ffff', '#a1b2c3', '#a1b2c3d4'] as $ok) {
+            $this->assertPasses(['x' => $ok], ['x' => 'hex_color'], $ok);
+        }
+        foreach (['fff', '#ggg', '#12345', 123, '#ff'] as $bad) {
+            $this->assertFailsRule(['x' => $bad], ['x' => 'hex_color'], json_encode($bad));
+        }
+    }
+
+    public function testList() {
+        $this->assertPasses(['x' => []], ['x' => 'list']);
+        $this->assertPasses(['x' => ['a', 'b']], ['x' => 'list']);
+        $this->assertFailsRule(['x' => [1 => 'a', 2 => 'b']], ['x' => 'list']);
+        $this->assertFailsRule(['x' => ['k' => 'a']], ['x' => 'list']);
+        $this->assertFailsRule(['x' => 'abc'], ['x' => 'list']);
+    }
+
+    public function testBase64() {
+        $this->assertPasses(['x' => base64_encode('halo')], ['x' => 'base64']);
+        $this->assertFailsRule(['x' => 'bukan base64!'], ['x' => 'base64']);
+        // string kosong = tidak ada isian, rule non-implicit dilewati seperti rule lain
+        $this->assertPasses(['x' => ''], ['x' => 'base64']);
+        $this->assertFailsRule(['x' => ''], ['x' => 'required|base64']);
+        $this->assertFailsRule(['x' => 'aGFsbw'], ['x' => 'base64'], 'tanpa padding ditolak');
+    }
+
+    public function testContainsAndDoesntContain() {
+        $this->assertPasses(['x' => ['a', 'b', 'c']], ['x' => 'contains:a,c']);
+        $this->assertFailsRule(['x' => ['a', 'b']], ['x' => 'contains:a,c']);
+        $this->assertFailsRule(['x' => 'abc'], ['x' => 'contains:a']);
+
+        $this->assertPasses(['x' => ['a', 'b']], ['x' => 'doesnt_contain:c,d']);
+        $this->assertFailsRule(['x' => ['a', 'b']], ['x' => 'doesnt_contain:b']);
+        $this->assertStringNotContainsString(':values', $this->validator(['x' => ['a', 'b']], ['x' => 'doesnt_contain:b'])->errors()->first('x'));
+
+        $this->assertSame('contains:"a","b"', (string) CValidation_Rule::contains(['a', 'b']));
+        $this->assertSame('doesnt_contain:"a"', (string) CValidation_Rule::doesntContain('a'));
+        $this->assertPasses(['x' => ['a', 'b']], ['x' => [CValidation_Rule::contains('a', 'b')]]);
+    }
+
+    public function testInArrayKeysAndArrayKeys() {
+        $this->assertPasses(['x' => ['a' => 1, 'b' => 2]], ['x' => 'in_array_keys:a,z']);
+        $this->assertFailsRule(['x' => ['a' => 1]], ['x' => 'in_array_keys:y,z']);
+        $this->assertFailsRule(['x' => 'abc'], ['x' => 'in_array_keys:a']);
+
+        $this->assertPasses(['x' => ['a' => 1, 'b' => 2]], ['x' => 'array_keys:a,b,c']);
+        $this->assertFailsRule(['x' => ['a' => 1, 'd' => 2]], ['x' => 'array_keys:a,b']);
+        $this->assertSame('array_keys:"a","b"', (string) CValidation_Rule::arrayKeys(['a', 'b']));
+        $this->assertPasses(['x' => ['a' => 1]], ['x' => [CValidation_Rule::arrayKeys('a', 'b')]]);
+    }
+
+    public function testPresentIfAndUnlessAreImplicitAndReplaceWildcards() {
+        // implicit: atribut yang tidak ada pun dievaluasi
+        $this->assertFailsRule(['y' => '1'], ['x' => 'present_if:y,1']);
+        $this->assertPasses(['y' => '2'], ['x' => 'present_if:y,1']);
+        $this->assertPasses(['x' => null, 'y' => '1'], ['x' => 'present_if:y,1'], 'ada walau null = present');
+
+        $this->assertFailsRule(['y' => '2'], ['x' => 'present_unless:y,1']);
+        $this->assertPasses(['y' => '1'], ['x' => 'present_unless:y,1']);
+
+        $this->assertFailsRule(['y' => 'a'], ['x' => 'present_with:y,z']);
+        $this->assertPasses([], ['x' => 'present_with:y,z']);
+        $this->assertFailsRule(['y' => 'a', 'z' => 'b'], ['x' => 'present_with_all:y,z']);
+        $this->assertPasses(['y' => 'a'], ['x' => 'present_with_all:y,z']);
+
+        $data = ['items' => [['type' => 'x'], ['type' => 'y', 'qty' => 1]]];
+        $this->assertFailsRule($data, ['items.*.qty' => 'present_if:items.*.type,x']);
+        $this->assertPasses($data, ['items.*.qty' => 'present_if:items.*.type,y']);
+
+        $message = $this->validator(['y' => '1'], ['x' => 'present_if:y,1'])->errors()->first('x');
+        $this->assertStringNotContainsString(':other', $message);
+        $this->assertStringNotContainsString(':value', $message);
+    }
+
+    public function testAcceptedDeclinedCounterparts() {
+        $this->assertFailsRule(['terms' => 'no'], ['x' => 'required_if_declined:terms']);
+        $this->assertPasses(['terms' => 'yes'], ['x' => 'required_if_declined:terms']);
+        $this->assertPasses(['terms' => 'no', 'x' => 'ada'], ['x' => 'required_if_declined:terms']);
+
+        $this->assertFailsRule(['terms' => 'yes', 'x' => 'ada'], ['x' => 'prohibited_if_accepted:terms']);
+        $this->assertPasses(['terms' => 'no', 'x' => 'ada'], ['x' => 'prohibited_if_accepted:terms']);
+
+        $this->assertFailsRule(['terms' => 'no', 'x' => 'ada'], ['x' => 'prohibited_if_declined:terms']);
+        $this->assertPasses(['terms' => 'yes', 'x' => 'ada'], ['x' => 'prohibited_if_declined:terms']);
+
+        foreach (['required_if_declined:terms' => ['terms' => 'no'], 'prohibited_if_accepted:terms' => ['terms' => 'yes', 'x' => 'a'], 'prohibited_if_declined:terms' => ['terms' => 'no', 'x' => 'a']] as $rule => $data) {
+            $message = $this->validator($data, ['x' => $rule])->errors()->first('x');
+            $this->assertStringStartsNotWith('validation.', $message, $rule);
+            $this->assertStringNotContainsString(':other', $message, $rule);
+        }
+    }
+
+    public function testUnlessCounterpartsOfTheConditionalRuleObjects() {
+        $this->assertSame('required', (string) CValidation_Rule::requiredUnless(false));
+        $this->assertSame('', (string) CValidation_Rule::requiredUnless(function () { return true; }));
+        $this->assertSame('exclude', (string) CValidation_Rule::excludeUnless(false));
+        $this->assertSame('prohibited', (string) CValidation_Rule::prohibitedUnless(false));
+
+        $this->assertFailsRule([], ['x' => [CValidation_Rule::requiredUnless(false)]]);
+        $this->assertPasses([], ['x' => [CValidation_Rule::requiredUnless(true)]]);
+    }
+
+    public function testRuleUnlessIsTheMirrorOfWhen() {
+        $this->assertFailsRule(['x' => ''], ['x' => [CValidation_Rule::unless(false, 'required')]]);
+        $this->assertPasses(['x' => ''], ['x' => [CValidation_Rule::unless(true, 'required')]]);
+        $this->assertFailsRule(['x' => ''], ['x' => [CValidation_Rule::unless(true, 'nullable', 'required')]]);
+    }
+
+    public function testRuleArrayCanAndEnumStatics() {
+        $this->assertSame('array', (string) CValidation_Rule::array());
+        $this->assertSame('array:a,b', (string) CValidation_Rule::array(['a', 'b']));
+        $this->assertSame('array:a,b', (string) CValidation_Rule::array('a', 'b'));
+        $this->assertInstanceOf(CValidation_Rule_Can::class, CValidation_Rule::can('update', 'post'));
+        if (PHP_VERSION_ID >= 80100) {
+            $this->assertInstanceOf(CValidation_Rule_Enum::class, CValidation_Rule::enum('SomeEnum'));
+        }
+    }
 }

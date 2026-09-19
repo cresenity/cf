@@ -19,6 +19,20 @@ class CValidation_Rule_File implements CValidation_RuleInterface, CValidation_Co
     protected $allowedMimetypes = [];
 
     /**
+     * The extensions the file must have (checked against the client name, after the PHP-upload block).
+     *
+     * @var array
+     */
+    protected $allowedExtensions = [];
+
+    /**
+     * The encoding the file content must be in.
+     *
+     * @var null|string
+     */
+    protected $encoding = null;
+
+    /**
      * The minimum size in kilobytes that the file can be.
      *
      * @var null|int
@@ -114,6 +128,32 @@ class CValidation_Rule_File implements CValidation_RuleInterface, CValidation_Co
         return c::tap(new static(), function ($file) use ($mimetypes) {
             return $file->allowedMimetypes = (array) $mimetypes;
         });
+    }
+
+    /**
+     * Limit the uploaded file to the given extensions.
+     *
+     * @param string|array<int, string> $extensions
+     *
+     * @return $this
+     */
+    public function extensions($extensions) {
+        $this->allowedExtensions = (array) $extensions;
+
+        return $this;
+    }
+
+    /**
+     * Require the file content to be in the given encoding.
+     *
+     * @param string $encoding
+     *
+     * @return $this
+     */
+    public function encoding($encoding) {
+        $this->encoding = $encoding;
+
+        return $this;
     }
 
     /**
@@ -219,6 +259,10 @@ class CValidation_Rule_File implements CValidation_RuleInterface, CValidation_Co
 
         $rules = array_merge($rules, $this->buildMimetypes());
 
+        if (count($this->allowedExtensions) > 0) {
+            $rules[] = 'extensions:' . implode(',', array_map('strtolower', $this->allowedExtensions));
+        }
+
         if (is_null($this->minimumFileSize) && is_null($this->maximumFileSize)) {
             $rules[] = null;
         } elseif (is_null($this->maximumFileSize)) {
@@ -229,6 +273,10 @@ class CValidation_Rule_File implements CValidation_RuleInterface, CValidation_Co
             $rules[] = "between:{$this->minimumFileSize},{$this->maximumFileSize}";
         } else {
             $rules[] = "size:{$this->minimumFileSize}";
+        }
+
+        if ($this->encoding) {
+            $rules[] = 'encoding:' . $this->encoding;
         }
 
         return array_merge(array_filter($rules), $this->customRules);

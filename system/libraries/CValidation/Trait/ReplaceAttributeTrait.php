@@ -727,4 +727,172 @@ trait CValidation_Trait_ReplaceAttributeTrait {
     protected function replaceDoesntEndWith($message, $attribute, $rule, $parameters) {
         return $this->replaceIn($message, $attribute, $rule, $parameters);
     }
+
+    /**
+     * Replace all place-holders for the extensions rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceExtensions($message, $attribute, $rule, $parameters) {
+        return $this->replaceIn($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the doesnt_contain rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceDoesntContain($message, $attribute, $rule, $parameters) {
+        return $this->replaceIn($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the in_array_keys rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceInArrayKeys($message, $attribute, $rule, $parameters) {
+        return $this->replaceIn($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the array_keys rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceArrayKeys($message, $attribute, $rule, $parameters) {
+        return $this->replaceIn($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the present_if rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replacePresentIf($message, $attribute, $rule, $parameters) {
+        return $this->replaceAcceptedIf($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the prohibited_if_accepted rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceProhibitedIfAccepted($message, $attribute, $rule, $parameters) {
+        return $this->replaceRequiredIfAccepted($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the prohibited_if_declined rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceProhibitedIfDeclined($message, $attribute, $rule, $parameters) {
+        return $this->replaceRequiredIfAccepted($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the required_if_declined rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceRequiredIfDeclined($message, $attribute, $rule, $parameters) {
+        return $this->replaceRequiredIfAccepted($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the present_unless rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replacePresentUnless($message, $attribute, $rule, $parameters) {
+        return $this->replaceMissingUnless($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the present_with rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replacePresentWith($message, $attribute, $rule, $parameters) {
+        return $this->replaceMissingWith($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the present_with_all rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replacePresentWithAll($message, $attribute, $rule, $parameters) {
+        return $this->replaceMissingWith($message, $attribute, $rule, $parameters);
+    }
+
+    /**
+     * Replace all place-holders for the encoding rule.
+     *
+     * @param string $message
+     * @param string $attribute
+     * @param string $rule
+     * @param array  $parameters
+     *
+     * @return string
+     */
+    protected function replaceEncoding($message, $attribute, $rule, $parameters) {
+        return str_replace(':encoding', $parameters[0], $message);
+    }
 }

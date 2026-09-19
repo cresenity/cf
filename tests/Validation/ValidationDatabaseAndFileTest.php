@@ -112,4 +112,56 @@ class ValidationDatabaseAndFileTest extends UjiModel_IntegrationTestCase {
         $this->assertTrue($this->v(['f' => $image], ['f' => [CValidation_Rule::imageFile()->dimensions(CValidation_Rule::dimensions()->maxWidth(60))]])->passes());
         $this->assertTrue($this->v(['f' => $image], ['f' => [CValidation_Rule::imageFile()->dimensions(CValidation_Rule::dimensions()->maxWidth(40))]])->fails());
     }
+
+    public function testExtensionsChecksTheClientExtensionAfterTheMimeGuess() {
+        $image = CHTTP_UploadedFile::fake()->image('foto.png', 20, 10);
+
+        $this->assertTrue($this->v(['f' => $image], ['f' => 'extensions:png,jpg'])->passes());
+        $this->assertTrue($this->v(['f' => $image], ['f' => 'extensions:PNG'])->fails(), 'parameter dicocokkan apa adanya (huruf kecil)');
+        $this->assertTrue($this->v(['f' => $image], ['f' => 'extensions:jpg'])->fails());
+        // ekstensi PHP tetap diblok walau disebut
+        $php = CHTTP_UploadedFile::fake()->create('shell.phtml', 1, 'text/plain');
+        $this->assertTrue($this->v(['f' => $php], ['f' => 'extensions:phtml'])->fails());
+        $this->assertTrue($this->v(['f' => 'bukan berkas'], ['f' => 'extensions:png'])->fails());
+
+        $message = $this->v(['f' => $image], ['f' => 'extensions:jpg,gif'])->errors()->first('f');
+        $this->assertStringNotContainsString(':values', $message);
+        $this->assertStringContainsString('jpg', $message);
+    }
+
+    public function testEncodingChecksStringsAndFileContent() {
+        $this->assertTrue($this->v(['s' => 'halo'], ['s' => 'encoding:UTF-8'])->passes());
+        $this->assertTrue($this->v(['s' => "\xff\xfe"], ['s' => 'encoding:UTF-8'])->fails());
+        $this->assertTrue($this->v(['s' => 'halo'], ['s' => 'encoding:ascii'])->passes(), 'nama encoding tidak peka huruf');
+
+        $file = CHTTP_UploadedFile::fake()->createWithContent('a.txt', "\xff\xfe");
+        $this->assertTrue($this->v(['f' => $file], ['f' => 'encoding:UTF-8'])->fails());
+        $this->assertStringNotContainsString(':encoding', $this->v(['f' => $file], ['f' => 'encoding:UTF-8'])->errors()->first('f'));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->v(['s' => 'x'], ['s' => 'encoding:bukan-encoding'])->passes();
+    }
+
+    public function testDimensionsRatioRange() {
+        $image = CHTTP_UploadedFile::fake()->image('foto.png', 200, 100); // rasio 2
+
+        $this->assertTrue($this->v(['f' => $image], ['f' => 'dimensions:min_ratio=3/2'])->passes());
+        $this->assertTrue($this->v(['f' => $image], ['f' => 'dimensions:min_ratio=3/1'])->fails());
+        $this->assertTrue($this->v(['f' => $image], ['f' => 'dimensions:max_ratio=2.5'])->passes());
+        $this->assertTrue($this->v(['f' => $image], ['f' => 'dimensions:max_ratio=1'])->fails());
+        $this->assertTrue($this->v(['f' => $image], ['f' => [CValidation_Rule::dimensions()->ratioBetween('3/2', 3)]])->passes());
+        $this->assertTrue($this->v(['f' => $image], ['f' => [CValidation_Rule::dimensions()->minRatio(3)->maxRatio(4)]])->fails());
+    }
+
+    public function testFileBuilderExtensionsAndEncoding() {
+        $image = CHTTP_UploadedFile::fake()->image('foto.PNG', 20, 10);
+
+        $this->assertTrue($this->v(['f' => $image], ['f' => [CValidation_Rule::file()->extensions(['PNG', 'jpg'])]])->passes(), 'builder menurunkan huruf');
+        $this->assertTrue($this->v(['f' => $image], ['f' => [CValidation_Rule::file()->extensions('gif')]])->fails());
+
+        $text = CHTTP_UploadedFile::fake()->createWithContent('a.txt', 'hal');
+        $this->assertTrue($this->v(['f' => $text], ['f' => [CValidation_Rule::file()->encoding('UTF-8')]])->passes());
+        // 3 byte bukan UTF-16 yang sah (harus genap)
+        $this->assertTrue($this->v(['f' => $text], ['f' => [CValidation_Rule::file()->encoding('UTF-16')]])->fails());
+    }
 }

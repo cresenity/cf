@@ -182,6 +182,8 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
         'Mimetypes',
         'Min',
         'Size',
+        'Encoding',
+        'Extensions',
     ];
 
     /**
@@ -209,6 +211,11 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
         'RequiredWithAll',
         'RequiredWithout',
         'RequiredWithoutAll',
+        'PresentIf',
+        'PresentUnless',
+        'PresentWith',
+        'PresentWithAll',
+        'RequiredIfDeclined',
     ];
 
     /**
@@ -250,6 +257,13 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
         'MissingUnless',
         'MissingWith',
         'MissingWithAll',
+        'RequiredIfDeclined',
+        'PresentIf',
+        'PresentUnless',
+        'PresentWith',
+        'PresentWithAll',
+        'ProhibitedIfAccepted',
+        'ProhibitedIfDeclined',
     ];
 
     /**

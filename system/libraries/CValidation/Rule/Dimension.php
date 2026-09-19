@@ -104,6 +104,47 @@ class CValidation_Rule_Dimension {
     }
 
     /**
+     * Set the "min_ratio" constraint (width / height, e.g. `3/2` or `1.5`).
+     *
+     * @param float|string $value
+     *
+     * @return $this
+     */
+    public function minRatio($value) {
+        $this->constraints['min_ratio'] = $value;
+
+        return $this;
+    }
+
+    /**
+     * Set the "max_ratio" constraint (width / height).
+     *
+     * @param float|string $value
+     *
+     * @return $this
+     */
+    public function maxRatio($value) {
+        $this->constraints['max_ratio'] = $value;
+
+        return $this;
+    }
+
+    /**
+     * Set both the "min_ratio" and "max_ratio" constraints.
+     *
+     * @param float|string $min
+     * @param float|string $max
+     *
+     * @return $this
+     */
+    public function ratioBetween($min, $max) {
+        $this->constraints['min_ratio'] = $min;
+        $this->constraints['max_ratio'] = $max;
+
+        return $this;
+    }
+
+    /**
      * Set the "ratio" constraint.
      *
      * @param float $value
