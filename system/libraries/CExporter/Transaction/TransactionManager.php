@@ -19,7 +19,7 @@ class CExporter_Transaction_TransactionManager extends CBase_ManagerAbstract {
      * @return string
      */
     public function getDefaultDriver() {
-        return CF::config('excel.transactions.handler', 'db');
+        return CF::config('exporter.transactions.handler', CF::config('excel.transactions.handler', 'db')) ?: 'null';
     }
 
     /**
