@@ -192,4 +192,13 @@ class BladeCompilerTest extends TestCase {
 
         $this->assertStringContainsString("\$__env->make('partials.alert', ['type' => 'error']", $result);
     }
+
+    public function testAliasIncludeCompilesToCarrExcept() {
+        $compiler = $this->compiler();
+        $compiler->aliasInclude('partials.card', 'card');
+        $result = $compiler->compileString("@card(['title' => \$t])");
+
+        $this->assertStringContainsString("\$__env->make('partials.card', ['title' => \$t], \\carr::except(get_defined_vars(), ['__data', '__path']))->render()", $result);
+        $this->assertStringNotContainsString('Illuminate', $result, 'hasil kompilasi tidak boleh merujuk kelas yang tidak ada');
+    }
 }

@@ -65,6 +65,53 @@ class UjiConsole_InteractiveCommand extends CConsole_Command {
 /**
  * Command phpcf yang murni (tanpa jaringan/DB) lewat harness $this->cf(), generator, dan cron:*.
  */
+/**
+ * Command yang minta isolasi; mencatat berapa kali handle() berjalan.
+ */
+class UjiConsole_IsolatedCommand extends CConsole_Command implements \Illuminate\Contracts\Console\Isolatable {
+    protected $signature = 'uji:terisolasi';
+
+    /** @var int */
+    public static $runs = 0;
+
+    public function handle() {
+        static::$runs++;
+
+        return 0;
+    }
+}
+
+/**
+ * Mutex perintah palsu: bisa dipaksa "sudah ada" dan mencatat pelepasannya.
+ */
+class UjiConsole_CommandMutex implements CConsole_CommandMutexInterface {
+    /** @var bool */
+    public $locked = false;
+
+    /** @var int */
+    public $forgotten = 0;
+
+    public function create($command) {
+        if ($this->locked) {
+            return false;
+        }
+        $this->locked = true;
+
+        return true;
+    }
+
+    public function exists($command) {
+        return $this->locked;
+    }
+
+    public function forget($command) {
+        $this->locked = false;
+        $this->forgotten++;
+
+        return true;
+    }
+}
+
 class ConsoleCommandsTest extends CTesting_TestCase {
     /** @var string */
     protected $tmp;
@@ -90,6 +137,7 @@ class ConsoleCommandsTest extends CTesting_TestCase {
 
     protected function tearDown(): void {
         CFile::deleteDirectory($this->tmp);
+        c::container()->forgetInstance(CConsole_CommandMutexInterface::class);
         parent::tearDown();
     }
 
@@ -145,6 +193,30 @@ class ConsoleCommandsTest extends CTesting_TestCase {
 
         $kernel->call('cron:list', ['--timezone' => 'UTC']);
         $this->assertStringContainsString('+00:00', $kernel->output());
+    }
+
+    public function testIsolatableCommandSkipsWhenAnotherInstanceHoldsTheMutex() {
+        $mutex = new UjiConsole_CommandMutex();
+        c::container()->instance(CConsole_CommandMutexInterface::class, $mutex);
+        UjiConsole_IsolatedCommand::$runs = 0;
+
+        $kernel = $this->kernelWith(new UjiConsole_IsolatedCommand());
+        $this->assertSame(0, $kernel->call('uji:terisolasi', ['--isolated' => true]));
+        $this->assertSame(1, UjiConsole_IsolatedCommand::$runs);
+        $this->assertFalse($mutex->locked, 'mutex dilepas setelah handle selesai');
+        $this->assertSame(1, $mutex->forgotten);
+
+        $mutex->locked = true;
+        $this->assertSame(0, $kernel->call('uji:terisolasi', ['--isolated' => true]), 'kode keluar default isolasi = SUCCESS');
+        $this->assertSame(1, UjiConsole_IsolatedCommand::$runs, 'handle tidak dijalankan saat instance lain masih berjalan');
+        $this->assertStringContainsString('already running', $kernel->output());
+        $this->assertTrue($mutex->locked, 'mutex milik instance lain tidak dilepas');
+
+        $this->assertSame(7, $kernel->call('uji:terisolasi', ['--isolated' => 7]), '--isolated=N memakai N sebagai kode keluar saat terkunci');
+        $this->assertSame(1, UjiConsole_IsolatedCommand::$runs);
+
+        $this->assertSame(0, $kernel->call('uji:terisolasi'));
+        $this->assertSame(2, UjiConsole_IsolatedCommand::$runs, 'tanpa --isolated mutex diabaikan');
     }
 
     public function testCronFinishRunsAfterCallbacksWithTheExitCodeAndReleasesTheMutex() {
