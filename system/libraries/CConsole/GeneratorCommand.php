@@ -166,7 +166,7 @@ abstract class CConsole_GeneratorCommand extends CConsole_Command {
 
         $rootNamespace = $this->rootNamespace();
 
-        if (cstr::startsWith($name, $rootNamespace)) {
+        if ($rootNamespace === '' || cstr::startsWith($name, $rootNamespace)) {
             return $name;
         }
 
@@ -230,7 +230,7 @@ abstract class CConsole_GeneratorCommand extends CConsole_Command {
     protected function getPath($name) {
         $name = cstr::replaceFirst($this->rootNamespace(), '', $name);
 
-        return $this->laravel['path'] . '/' . str_replace('\\', '/', $name) . '.php';
+        return CF::appDir() . DS . 'default' . DS . 'libraries' . DS . str_replace('\\', '/', $name) . '.php';
     }
 
     /**
@@ -348,7 +348,7 @@ abstract class CConsole_GeneratorCommand extends CConsole_Command {
      * @return string
      */
     protected function rootNamespace() {
-        return $this->laravel->getNamespace();
+        return '';
     }
 
     /**

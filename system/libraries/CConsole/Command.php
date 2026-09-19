@@ -86,6 +86,10 @@ class CConsole_Command extends SymfonyCommand {
 
         $this->setHidden($this->hidden);
 
+        if (isset($this->aliases)) {
+            $this->setAliases((array) $this->aliases);
+        }
+
         if (!isset($this->signature)) {
             $this->specifyParameters();
         }

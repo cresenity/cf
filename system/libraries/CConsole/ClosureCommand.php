@@ -44,7 +44,7 @@ class CConsole_ClosureCommand extends CConsole_Command {
             }
         }
 
-        return (int) $this->laravel->call(
+        return (int) c::container()->call(
             $this->callback->bindTo($this, $this),
             $parameters
         );
