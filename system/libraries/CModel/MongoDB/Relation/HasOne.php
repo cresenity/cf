@@ -52,23 +52,6 @@ class CModel_MongoDB_Relation_HasOne extends CModel_Relation_HasOne {
     }
 
     /**
-     * Add the constraints for a relationship query.
-     *
-     * @param CModel_Query $query
-     * @param CModel_Query $parent
-     * @param array|mixed  $columns
-     *
-     * @return Builder
-     */
-    public function getRelationQuery(CModel_Query $query, CModel_Query $parent, $columns = ['*']) {
-        $query->select($columns);
-
-        $key = $this->wrap($this->getQualifiedParentKeyName());
-
-        return $query->where($this->getForeignKeyName(), 'exists', true);
-    }
-
-    /**
      * Get the name of the "where in" method for eager loading.
      *
      * @param CModel $model

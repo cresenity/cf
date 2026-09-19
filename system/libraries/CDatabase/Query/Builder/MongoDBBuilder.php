@@ -629,7 +629,7 @@ class CDatabase_Query_Builder_MongoDBBuilder extends CDatabase_Query_Builder {
     /**
      * @inheritdoc
      */
-    public function chunkById($count, callable $callback, $column = '_id', $alias = null) {
+    public function chunkById($count, $callback, $column = '_id', $alias = null) {
         return parent::chunkById($count, $callback, $column, $alias);
     }
 
