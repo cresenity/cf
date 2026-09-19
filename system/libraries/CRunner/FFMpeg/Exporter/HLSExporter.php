@@ -1,7 +1,7 @@
 <?php
 
 class CRunner_FFMpeg_Exporter_HLSExporter extends CRunner_FFMpeg_Exporter_MediaExporter {
-    use EncryptsHLSSegments;
+    use CRunner_FFMpeg_Exporter_Trait_EncryptsHLSSegmentsTrait;
 
     const HLS_KEY_INFO_FILENAME = 'hls_encryption.keyinfo';
 

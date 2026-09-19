@@ -1,6 +1,6 @@
 <?php
 
-class CApp_Visitor_LogVisitMiddleware {
+class CApp_Visitor_Middleware_LogVisitMiddleware {
     /**
      * Handle an incoming request.
      *

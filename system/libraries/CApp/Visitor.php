@@ -328,13 +328,13 @@ class CApp_Visitor {
      */
     protected function validateDriver() {
         if (empty($this->driver)) {
-            throw new CApp_DriverNotFoundException('Driver not selected or default driver does not exist.');
+            throw new CApp_Exception_DriverNotFoundException('Driver not selected or default driver does not exist.');
         }
 
         $driverClass = $this->config['drivers'][$this->driver];
 
         if (empty($driverClass) || !class_exists($driverClass)) {
-            throw new CApp_DriverNotFoundException('Driver not found in config file. Try updating the package.');
+            throw new CApp_Exception_DriverNotFoundException('Driver not found in config file. Try updating the package.');
         }
 
         $reflect = new \ReflectionClass($driverClass);

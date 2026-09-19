@@ -1,10 +1,6 @@
 <?php
 
-namespace Illuminate\Database;
-
-use Closure;
-
-interface ConnectionInterface {
+interface CDatabase_Contract_ConnectionInterface {
     /**
      * Begin a fluent query against a database table.
      *

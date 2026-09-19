@@ -208,7 +208,7 @@ abstract class CModel_MongoDB_Model extends CModel {
     /**
      * @inheritdoc
      */
-    public function originalIsEquivalent($key, $current) {
+    public function originalIsEquivalent($key, $current = null) {
         if (!array_key_exists($key, $this->original)) {
             return false;
         }

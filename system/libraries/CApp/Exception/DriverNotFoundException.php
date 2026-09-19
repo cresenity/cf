@@ -1,3 +1,3 @@
 <?php
-class CApp_DriverNotFoundException extends \Exception {
+class CApp_Exception_DriverNotFoundException extends \Exception {
 }

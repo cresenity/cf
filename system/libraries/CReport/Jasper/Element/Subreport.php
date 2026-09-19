@@ -1,6 +1,6 @@
 <?php
 
-class CReport_Jasper_Element_StaticText extends CReport_Jasper_Element {
+class CReport_Jasper_Element_Subreport extends CReport_Jasper_Element {
     public $returnValues;
 
     public function generate(CReport_Jasper_Report $report) {

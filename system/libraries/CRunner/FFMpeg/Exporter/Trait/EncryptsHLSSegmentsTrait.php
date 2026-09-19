@@ -1,6 +1,6 @@
 <?php
 
-trait EncryptsHLSSegments {
+trait CRunner_FFMpeg_Exporter_Trait_EncryptsHLSSegmentsTrait {
     /**
      * The encryption key.
      *

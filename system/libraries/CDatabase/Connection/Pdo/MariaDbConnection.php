@@ -22,10 +22,10 @@ class CDatabase_Connection_Pdo_MariaDbConnection extends CDatabase_Connection_Pd
     /**
      * Get the default query grammar instance.
      *
-     * @return \CDatabase_Query_Grammar_MariaDBbGrammar
+     * @return \CDatabase_Query_Grammar_MariaDbGrammar
      */
     protected function getDefaultQueryGrammar() {
-        ($grammar = new CDatabase_Query_Grammar_MariaDBbGrammar())->setConnection($this);
+        ($grammar = new CDatabase_Query_Grammar_MariaDbGrammar())->setConnection($this);
 
         return $this->withTablePrefix($grammar);
     }

@@ -1,6 +1,6 @@
 <?php
 
-class CElement_Component_Action_Link extends CElement_Element_A implements CElement_Contract_ActionableInterface {
+class CElement_Action_Link extends CElement_Element_A implements CElement_Contract_ActionableInterface {
     /**
      * @param string|null $id
      *

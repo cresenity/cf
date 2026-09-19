@@ -1,6 +1,6 @@
 <?php
 
-class CDatabase_Connection_OdbcConnection extends CDatabase_Connection {
+class CDatabase_Connection_Pdo_OdbcConnection extends CDatabase_Connection {
     protected function getDefaultQueryGrammar() {
         return isset($this->config['grammar']['query'])
             ? new $this->config['grammar']['query']()

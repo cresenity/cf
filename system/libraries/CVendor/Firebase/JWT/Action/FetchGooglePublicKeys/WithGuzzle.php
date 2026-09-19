@@ -53,7 +53,7 @@ final class CVendor_Firebase_JWT_Action_FetchGooglePublicKeys_WithGuzzle impleme
             ? $now->setTimestamp($now->getTimestamp() + $ttl)
             : $now->add($action->getFallbackCacheDuration()->value());
 
-        return ExpiringKeys::withValuesAndExpirationTime($keys, $expiresAt);
+        return CVendor_Firebase_JWT_Keys_ExpiringKeys::withValuesAndExpirationTime($keys, $expiresAt);
     }
 
     /**

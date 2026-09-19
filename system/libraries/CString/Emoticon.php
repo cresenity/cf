@@ -1,6 +1,6 @@
 <?php
 
-class CString_EmoticonList {
+class CString_Emoticon {
     public static $icons = [
 
         /*

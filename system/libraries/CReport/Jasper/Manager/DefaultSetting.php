@@ -1,6 +1,6 @@
 <?php
 
-class CReport_Jasper_Report_DefaultSetting {
+class CReport_Jasper_Manager_DefaultSetting {
     protected $defaultLineSpacing;
 
     public function __construct() {

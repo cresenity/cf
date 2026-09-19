@@ -2,7 +2,7 @@
 
 use Google\Analytics\Data\V1beta\Filter\StringFilter\MatchType;
 
-class CAnalytics_Google_AnalyticGA4_StringFilter {
+class CAnalytics_Google_AnalyticGA4_Filter_StringFilter {
     /**
      * Exact match of the string value.
      *

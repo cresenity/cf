@@ -872,4 +872,90 @@ class ValidationRulesTest extends TestCase {
         $this->assertFailsRule(['x' => '5.5'], ['x' => 'numeric:strict']);
         $this->assertPasses(['x' => 5.5], ['x' => 'numeric:strict']);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pesan: kunci i18n ada dan placeholder terganti
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * @return array
+     */
+    public function rulesWithMessagesProvider() {
+        return [
+            'ascii' => ['ascii', ['x' => 'ä']],
+            'decimal' => ['decimal:2', ['x' => '1.234']],
+            'lowercase' => ['lowercase', ['x' => 'ABC']],
+            'uppercase' => ['uppercase', ['x' => 'abc']],
+            'max_digits' => ['max_digits:2', ['x' => '123']],
+            'min_digits' => ['min_digits:3', ['x' => '12']],
+            'missing' => ['missing', ['x' => 'a']],
+            'missing_if' => ['missing_if:y,1', ['x' => 'a', 'y' => '1']],
+            'missing_unless' => ['missing_unless:y,1', ['x' => 'a', 'y' => '2']],
+            'missing_with' => ['missing_with:y', ['x' => 'a', 'y' => '1']],
+            'missing_with_all' => ['missing_with_all:y,z', ['x' => 'a', 'y' => '1', 'z' => '1']],
+            'required_if_accepted' => ['required_if_accepted:y', ['y' => 'yes']],
+            'doesnt_start_with' => ['doesnt_start_with:foo', ['x' => 'foobar']],
+            'doesnt_end_with' => ['doesnt_end_with:bar', ['x' => 'foobar']],
+            'ulid' => ['ulid', ['x' => 'abc']],
+            'starts_with' => ['starts_with:foo,bar', ['x' => 'baz']],
+            'ends_with' => ['ends_with:foo', ['x' => 'bar']],
+            'multiple_of' => ['multiple_of:3', ['x' => '4']],
+            'date_equals' => ['date_equals:2026-01-01', ['x' => '2026-01-02']],
+            'prohibits' => ['prohibits:y', ['x' => 'a', 'y' => 'b']],
+            'accepted_if' => ['accepted_if:y,1', ['x' => 'no', 'y' => '1']],
+            'declined_if' => ['declined_if:y,1', ['x' => 'yes', 'y' => '1']],
+            'prohibited_if' => ['prohibited_if:y,1', ['x' => 'a', 'y' => '1']],
+            'prohibited_unless' => ['prohibited_unless:y,1', ['x' => 'a', 'y' => '2']],
+            'required_array_keys' => ['required_array_keys:a,b', ['x' => ['a' => 1]]],
+        ];
+    }
+
+    /**
+     * Rule yang ada tetapi lapisan pesannya tertinggal: sebelum ini `decimal:2`
+     * mengeluarkan "validation.decimal" mentah dan `starts_with` menyisakan ":values".
+     *
+     * @dataProvider rulesWithMessagesProvider
+     *
+     * @param string $rule
+     * @param array  $data
+     *
+     * @return void
+     */
+    public function testFailureMessageIsTranslatedWithPlaceholdersReplaced($rule, array $data) {
+        $v = $this->validator($data, ['x' => $rule]);
+
+        $this->assertTrue($v->fails(), $rule . ' harus gagal');
+        $message = $v->errors()->first('x');
+        $this->assertStringStartsNotWith('validation.', $message, $rule . ': kunci i18n hilang');
+        foreach ([':values', ':value', ':other', ':date', ':min', ':max', ':decimal'] as $placeholder) {
+            $this->assertStringNotContainsString($placeholder, $message, $rule . ': placeholder ' . $placeholder . ' tidak diganti');
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testDecimalMessageShowsTheRange() {
+        $message = $this->validator(['x' => '1.2'], ['x' => 'decimal:2,4'])->errors()->first('x');
+        $this->assertStringContainsString('2-4', $message);
+    }
+
+    /**
+     * Rule dependen mengganti `*` pada parameternya dengan indeks atribut yang
+     * sedang divalidasi; tanpa itu `missing_if:items.*.type,x` tidak pernah jalan.
+     *
+     * @return void
+     */
+    public function testMissingRulesReplaceWildcardsInTheirParameters() {
+        $data = ['items' => [['type' => 'x', 'qty' => 5], ['type' => 'y']]];
+
+        $this->assertFailsRule($data, ['items.*.qty' => 'missing_if:items.*.type,x']);
+        $this->assertPasses($data, ['items.*.qty' => 'missing_if:items.*.type,y']);
+
+        $this->assertFailsRule($data, ['items.*.qty' => 'missing_unless:items.*.type,y']);
+        $this->assertFailsRule($data, ['items.*.qty' => 'missing_with:items.*.type']);
+        $this->assertFailsRule($data, ['items.*.qty' => 'missing_with_all:items.*.type']);
+    }
 }

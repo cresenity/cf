@@ -1,6 +1,6 @@
 <?php
 
-class CQC_Testing_Command extends CConsole_Command {
+class CQC_Testing_AbstractCommand extends CConsole_Command {
     /**
      * Draw a line in console.
      *

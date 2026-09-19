@@ -3,7 +3,7 @@
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinLateralClause;
 
-class CDatabase_Query_Grammar_MariaDBbGrammar extends CDatabase_Query_Grammar_MySqlGrammar {
+class CDatabase_Query_Grammar_MariaDbGrammar extends CDatabase_Query_Grammar_MySqlGrammar {
     /**
      * Compile a "lateral join" clause.
      *

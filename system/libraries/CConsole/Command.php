@@ -171,7 +171,26 @@ class CConsole_Command extends SymfonyCommand {
      * @return mixed
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
-        return CContainer::getInstance()->call([$this, 'handle']);
+        if ($this instanceof Isolatable && $this->option('isolated') !== false
+            && !$this->commandIsolationMutex()->create($this)
+        ) {
+            $this->comment(sprintf(
+                'The [%s] command is already running.',
+                $this->getName()
+            ));
+
+            return (int) (is_numeric($this->option('isolated'))
+                ? $this->option('isolated')
+                : $this->isolatedExitCode);
+        }
+
+        try {
+            return CContainer::getInstance()->call([$this, 'handle']);
+        } finally {
+            if ($this instanceof Isolatable && $this->option('isolated') !== false) {
+                $this->commandIsolationMutex()->forget($this);
+            }
+        }
     }
 
     /**

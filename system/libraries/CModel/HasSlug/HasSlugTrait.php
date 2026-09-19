@@ -2,7 +2,7 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-use CModel_HasSlug_InvalidOptionException as InvalidOptionException;
+use CModel_HasSlug_Exception_InvalidOptionException as InvalidOptionException;
 
 trait CModel_HasSlug_HasSlugTrait {
     /**

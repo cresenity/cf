@@ -1,6 +1,6 @@
 <?php
 
-class CReport_Jasper_Element_Line extends CReport_Jasper_Element {
+class CReport_Jasper_Element_Rectangle extends CReport_Jasper_Element {
     public function generate(CReport_Jasper_Report $report) {
         $data = $this->xmlElement;
         $radius = $data['radius'] + 0;

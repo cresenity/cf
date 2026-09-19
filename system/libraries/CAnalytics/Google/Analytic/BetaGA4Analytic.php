@@ -3,7 +3,7 @@ class CAnalytics_Google_Analytic_BetaGA4Analytic {
     use CTrait_Macroable;
 
     /**
-     * @var \Teodoriu\Analytics\AnalyticsClient
+     * @var CAnalytics_Google_GA4_Client
      */
     protected $client;
 
@@ -21,10 +21,10 @@ class CAnalytics_Google_Analytic_BetaGA4Analytic {
     private $report;
 
     /**
-     * @param \Teodoriu\Analytics\AnalyticsClient $client
+     * @param \Teodoriu\Analytics\CAnalytics_Google_GA4_Client $client
      * @param string                              $propertyId
      */
-    public function __construct(AnalyticsClient $client, string $propertyId) {
+    public function __construct(CAnalytics_Google_GA4_Client $client, string $propertyId) {
         $this->client = $client;
 
         $this->propertyId = $propertyId;

@@ -1,5 +1,5 @@
 <?php
-class CDocument_Pdf_ElementTags {
+class CDocument_Pdf_ElementTag {
     /**
      * The root tag.
      */

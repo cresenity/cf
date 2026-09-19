@@ -2,7 +2,7 @@
 
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 
-class AnalyticsClient {
+class CAnalytics_Google_GA4_Client {
     /**
      * @var BetaAnalyticsDataClient
      */

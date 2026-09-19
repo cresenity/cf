@@ -40,7 +40,7 @@ class CDaemon_Supervisor_Event_LongWaitDetected {
     /**
      * Get a notification representation of the event.
      *
-     * @return \Laravel\Horizon\Notifications\LongWaitDetected
+     * @return null
      */
     public function toNotification() {
         // return new LongWaitDetectedNotification(

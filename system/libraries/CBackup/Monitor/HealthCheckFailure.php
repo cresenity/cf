@@ -1,6 +1,6 @@
 <?php
 
-class CBackup_HealthCheckFailure {
+class CBackup_Monitor_HealthCheckFailure {
     /**
      * @var \CBackup_Monitor_AbstractHealthCheck
      */

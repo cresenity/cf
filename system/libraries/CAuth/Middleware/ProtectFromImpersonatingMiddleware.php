@@ -1,6 +1,6 @@
 <?php
 
-class CAuth_Middleware_ProtectFromImpersonationMiddleware {
+class CAuth_Middleware_ProtectFromImpersonatingMiddleware {
     /**
      * Handle an incoming request.
      *

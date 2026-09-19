@@ -1,6 +1,6 @@
 <?php
 
-class TestView {
+class CTesting_TestView {
     use CTrait_Macroable;
 
     /**

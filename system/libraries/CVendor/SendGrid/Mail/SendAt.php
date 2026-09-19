@@ -62,7 +62,7 @@ class CVendor_SendGrid_Mail_SendAt implements \JsonSerializable {
      * @throws \CVendor_SendGrid_Exception_TypeException
      */
     public function setSendAt($send_at) {
-        CVendor_Sendgrid_Helper_Assert::integer($send_at, 'send_at');
+        CVendor_SendGrid_Helper_Assert::integer($send_at, 'send_at');
 
         $this->send_at = $send_at;
     }

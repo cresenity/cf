@@ -1,6 +1,6 @@
 <?php
 
-interface CApi_Session_DriverAbstract {
+interface CApi_Session_DriverInterface {
     /**
      * Check session exists
      *

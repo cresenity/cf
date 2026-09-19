@@ -1,6 +1,6 @@
 <?php
 
-class CApi_Event_RequestWasMatched {
+class CApi_Contract_HTTP_RequestWasMatched {
     /**
      * Request instance.
      *

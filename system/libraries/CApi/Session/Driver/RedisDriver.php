@@ -1,6 +1,6 @@
 <?php
 
-class CApi_Session_Driver_RedisDriver extends TBApi_Session_AbstractDriver {
+class CApi_Session_Driver_RedisDriver extends CApi_Session_DriverAbstract {
     /**
      * The cache repository instance.
      *

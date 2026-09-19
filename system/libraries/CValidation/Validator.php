@@ -246,6 +246,10 @@ class CValidation_Validator implements CValidation_Contract_ValidatorInterface {
         'Prohibits',
         'Same',
         'Unique',
+        'MissingIf',
+        'MissingUnless',
+        'MissingWith',
+        'MissingWithAll',
     ];
 
     /**

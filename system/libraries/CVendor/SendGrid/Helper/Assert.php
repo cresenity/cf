@@ -5,7 +5,7 @@
  *
  * @package SendGrid\Helper
  */
-class CVendor_Sendgrid_Helper_Assert {
+class CVendor_SendGrid_Helper_Assert {
     /**
      * Assert that value is a string.
      *

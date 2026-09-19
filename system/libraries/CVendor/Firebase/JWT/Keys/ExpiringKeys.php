@@ -3,7 +3,7 @@
 /**
  * @internal
  */
-final class ExpiringKeys implements CVendor_Firebase_JWT_Contract_KeysInterface, CVendor_Firebase_JWT_Contract_ExpirableInterface {
+final class CVendor_Firebase_JWT_Keys_ExpiringKeys implements CVendor_Firebase_JWT_Contract_KeysInterface, CVendor_Firebase_JWT_Contract_ExpirableInterface {
     use CVendor_Firebase_JWT_Concern_KeysTrait;
     use CVendor_Firebase_JWT_Concern_ExpirableTrait;
 

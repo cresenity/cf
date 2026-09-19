@@ -851,7 +851,7 @@ class CView_Compiler_BladeCompiler extends CView_CompilerAbstract implements CVi
         $this->directive($alias, function ($expression) use ($path) {
             $expression = $this->stripParentheses($expression) ?: '[]';
 
-            return "<?php echo \$__env->make('{$path}', {$expression}, \Illuminate\Support\carr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
+            return "<?php echo \$__env->make('{$path}', {$expression}, \carr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
         });
     }
 
