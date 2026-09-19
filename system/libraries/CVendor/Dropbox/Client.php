@@ -8,7 +8,6 @@ use Psr\Http\Message\ResponseInterface;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
 use GrahamCampbell\GuzzleFactory\GuzzleFactory;
-use Spatie\Dropbox\CVendor_Dropbox_UploadSessionCursor;
 
 class CVendor_Dropbox_Client {
     const THUMBNAIL_FORMAT_JPEG = 'jpeg';

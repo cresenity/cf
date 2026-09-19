@@ -1,6 +1,5 @@
 <?php
 
-namespace Spatie\Dropbox;
 
 class CVendor_Dropbox_UploadSessionCursor {
     public $sessionId;
