@@ -251,4 +251,47 @@ class ValidationPasswordRuleTest extends TestCase {
             CValidation::createValidator([], ['pw' => CValidation_Rule_Password::required()])->fails()
         );
     }
+
+    /**
+     * @return void
+     */
+    public function testMaximumLengthIsEnforcedWhenSet() {
+        $rule = CValidation_Rule_Password::min(4)->max(6);
+
+        $this->assertAccepts($rule, 'abcdef');
+        $this->assertRejects($rule, 'abcdefg');
+        // tanpa max() tidak ada batas atas, seperti sebelumnya
+        $this->assertAccepts(CValidation_Rule_Password::min(4), str_repeat('a', 200));
+    }
+
+    /**
+     * @return void
+     */
+    public function testAppliedRulesDescribesTheCurrentState() {
+        $rule = CValidation_Rule_Password::min(10)->max(64)->mixedCase()->numbers()->rules('not_in:password');
+
+        $this->assertSame([
+            'min' => 10,
+            'max' => 64,
+            'mixedCase' => true,
+            'letters' => false,
+            'numbers' => true,
+            'symbols' => false,
+            'uncompromised' => false,
+            'compromisedThreshold' => 0,
+            'customRules' => ['not_in:password'],
+        ], $rule->appliedRules());
+    }
+
+    /**
+     * @return void
+     */
+    public function testPasswordRulesStringForPasswordManagers() {
+        $this->assertSame('minlength: 8;', CValidation_Rule_Password::min(8)->toPasswordRulesString());
+        $this->assertSame(
+            'minlength: 8; maxlength: 64; required: lower; required: upper; required: digit; required: special;',
+            CValidation_Rule_Password::min(8)->max(64)->mixedCase()->numbers()->symbols()->toPasswordRulesString()
+        );
+        $this->assertSame('minlength: 8; required: lower;', CValidation_Rule_Password::min(8)->letters()->toPasswordRulesString());
+    }
 }

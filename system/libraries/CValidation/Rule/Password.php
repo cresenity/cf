@@ -36,6 +36,13 @@ class CValidation_Rule_Password implements CValidation_RuleInterface, CValidatio
     protected $min = 8;
 
     /**
+     * The maximum size of the password.
+     *
+     * @var null|int
+     */
+    protected $max;
+
+    /**
      * If the password requires at least one uppercase and one lowercase letter.
      *
      * @var bool
@@ -192,6 +199,19 @@ class CValidation_Rule_Password implements CValidation_RuleInterface, CValidatio
     }
 
     /**
+     * Set the maximum size of the password.
+     *
+     * @param int $size
+     *
+     * @return $this
+     */
+    public function max($size) {
+        $this->max = $size;
+
+        return $this;
+    }
+
+    /**
      * Ensures the password has not been compromised in data leaks.
      *
      * @param int $threshold
@@ -276,7 +296,7 @@ class CValidation_Rule_Password implements CValidation_RuleInterface, CValidatio
 
         $validator = CValidation::createValidator(
             $this->data,
-            [$attribute => array_merge(['string', 'min:' . $this->min], $this->customRules)],
+            [$attribute => array_merge(['string', 'min:' . $this->min], $this->max ? ['max:' . $this->max] : [], $this->customRules)],
             $this->validator->customMessages,
             $this->validator->customAttributes
         )->after(function ($validator) use ($attribute, $value) {
@@ -337,6 +357,55 @@ class CValidation_Rule_Password implements CValidation_RuleInterface, CValidatio
      */
     public function message() {
         return $this->messages;
+    }
+
+    /**
+     * Get information about the current state of the password validation rules.
+     *
+     * @return array
+     */
+    public function appliedRules() {
+        return [
+            'min' => $this->min,
+            'max' => $this->max,
+            'mixedCase' => $this->mixedCase,
+            'letters' => $this->letters,
+            'numbers' => $this->numbers,
+            'symbols' => $this->symbols,
+            'uncompromised' => $this->uncompromised,
+            'compromisedThreshold' => $this->compromisedThreshold,
+            'customRules' => $this->customRules,
+        ];
+    }
+
+    /**
+     * Render the rules as a `passwordrules` attribute string for password managers.
+     *
+     * @return string
+     */
+    public function toPasswordRulesString() {
+        $rules = ['minlength: ' . $this->min];
+
+        if ($this->max) {
+            $rules[] = 'maxlength: ' . $this->max;
+        }
+
+        if ($this->mixedCase) {
+            $rules[] = 'required: lower';
+            $rules[] = 'required: upper';
+        } elseif ($this->letters) {
+            $rules[] = 'required: lower';
+        }
+
+        if ($this->numbers) {
+            $rules[] = 'required: digit';
+        }
+
+        if ($this->symbols) {
+            $rules[] = 'required: special';
+        }
+
+        return implode('; ', $rules) . ';';
     }
 
     /**

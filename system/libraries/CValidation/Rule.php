@@ -159,6 +159,62 @@ class CValidation_Rule {
     }
 
     /**
+     * Get a numeric rule builder instance.
+     *
+     * @return \CValidation_Rule_Numeric
+     */
+    public static function numeric() {
+        return new CValidation_Rule_Numeric();
+    }
+
+    /**
+     * Get a string rule builder instance.
+     *
+     * @return \CValidation_Rule_StringRule
+     */
+    public static function string() {
+        return new CValidation_Rule_StringRule();
+    }
+
+    /**
+     * Get a date rule builder instance.
+     *
+     * @return \CValidation_Rule_Date
+     */
+    public static function date() {
+        return new CValidation_Rule_Date();
+    }
+
+    /**
+     * Get a date rule builder instance for `Y-m-d H:i:s` values.
+     *
+     * @return \CValidation_Rule_Date
+     */
+    public static function dateTime() {
+        return (new CValidation_Rule_Date())->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Get an email rule builder instance.
+     *
+     * @return \CValidation_Rule_Email
+     */
+    public static function email() {
+        return new CValidation_Rule_Email();
+    }
+
+    /**
+     * Get an "any of" rule builder instance.
+     *
+     * @param array $rules
+     *
+     * @return \CValidation_Rule_AnyOf
+     */
+    public static function anyOf($rules) {
+        return new CValidation_Rule_AnyOf($rules);
+    }
+
+    /**
      * Get a unique constraint builder instance.
      *
      * @param callable $callback

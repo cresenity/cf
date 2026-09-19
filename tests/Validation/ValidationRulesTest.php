@@ -856,4 +856,20 @@ class ValidationRulesTest extends TestCase {
             ['field' => 'exclude_without:other|email']
         );
     }
+
+    /**
+     * `integer:strict` dan `numeric:strict` menolak string numerik.
+     *
+     * @return void
+     */
+    public function testStrictIntegerAndNumericRejectNumericStrings() {
+        $this->assertPasses(['x' => '5'], ['x' => 'integer']);
+        $this->assertFailsRule(['x' => '5'], ['x' => 'integer:strict']);
+        $this->assertPasses(['x' => 5], ['x' => 'integer:strict']);
+        $this->assertFailsRule(['x' => 5.5], ['x' => 'integer:strict']);
+
+        $this->assertPasses(['x' => '5.5'], ['x' => 'numeric']);
+        $this->assertFailsRule(['x' => '5.5'], ['x' => 'numeric:strict']);
+        $this->assertPasses(['x' => 5.5], ['x' => 'numeric:strict']);
+    }
 }

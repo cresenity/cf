@@ -1355,7 +1355,11 @@ trait CValidation_Trait_ValidateAttributeTrait {
      *
      * @return bool
      */
-    public function validateInteger($attribute, $value) {
+    public function validateInteger($attribute, $value, array $parameters = []) {
+        if (($parameters[0] ?? null) === 'strict') {
+            return is_int($value);
+        }
+
         return filter_var($value, FILTER_VALIDATE_INT) !== false;
     }
 
@@ -1734,7 +1738,11 @@ trait CValidation_Trait_ValidateAttributeTrait {
      *
      * @return bool
      */
-    public function validateNumeric($attribute, $value) {
+    public function validateNumeric($attribute, $value, array $parameters = []) {
+        if (($parameters[0] ?? null) === 'strict' && is_string($value)) {
+            return false;
+        }
+
         return is_numeric($value);
     }
 

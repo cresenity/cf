@@ -20,6 +20,7 @@ return [
     'alpha' => ':Attribute hanya boleh berisi huruf.',
     'alpha_dash' => ':Attribute hanya boleh berisi huruf, angka, strip, dan garis bawah.',
     'alpha_num' => ':Attribute hanya boleh berisi huruf dan angka.',
+    'any_of' => ':Attribute tidak valid.',
     'array' => ':Attribute harus berisi sebuah array.',
     'before' => ':Attribute harus berisi tanggal sebelum :date.',
     'before_or_equal' => ':Attribute harus berisi tanggal sebelum atau sama dengan :date.',

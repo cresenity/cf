@@ -210,4 +210,132 @@ class ValidationRuleObjectTest extends TestCase {
         $this->assertSame(['pertama', 'kedua'], $rule->message());
         $this->assertSame('kedua', $rule->message);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Builder fluent: Numeric, StringRule, Date, Email, AnyOf
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * @return void
+     */
+    public function testNumericBuilderRendersItsConstraints() {
+        $this->assertSame('numeric', (string) CValidation_Rule::numeric());
+        $this->assertSame(
+            'numeric|min:1|max:10|multiple_of:0.5|gt:other',
+            (string) CValidation_Rule::numeric()->min(1)->max(10)->multipleOf(0.5)->greaterThan('other')
+        );
+        // digits()/exactly() menyisipkan integer sekali walau dipanggil dua kali
+        $this->assertSame('numeric|integer|digits:4|size:4', (string) CValidation_Rule::numeric()->digits(4)->exactly(4));
+        $this->assertSame('numeric|integer:strict', (string) CValidation_Rule::numeric()->integer(true));
+        $this->assertSame('numeric|decimal:2,4', (string) CValidation_Rule::numeric()->decimal(2, 4));
+    }
+
+    /**
+     * @return void
+     */
+    public function testNumericBuilderIsUsableAsARule() {
+        $this->assertFalse($this->validate(CValidation_Rule::numeric()->between(1, 10), '5')->fails());
+        $this->assertTrue($this->validate(CValidation_Rule::numeric()->between(1, 10), '11')->fails());
+        $this->assertTrue($this->validate(CValidation_Rule::numeric()->integer(true), '5')->fails());
+        $this->assertFalse($this->validate(CValidation_Rule::numeric()->integer(true), 5)->fails());
+    }
+
+    /**
+     * @return void
+     */
+    public function testStringBuilderRendersItsConstraints() {
+        $this->assertSame(
+            'string|min:3|max:10|alpha:ascii|starts_with:a,b|uppercase',
+            (string) CValidation_Rule::string()->min(3)->max(10)->alpha(true)->startsWith('a', 'b')->uppercase()
+        );
+        $this->assertTrue($this->validate(CValidation_Rule::string()->startsWith('ab'), 'xy')->fails());
+        $this->assertFalse($this->validate(CValidation_Rule::string()->startsWith('ab')->max(5), 'abc')->fails());
+    }
+
+    /**
+     * @return void
+     */
+    public function testDateBuilderRendersItsConstraints() {
+        $this->assertSame('date', (string) CValidation_Rule::date());
+        $this->assertSame('date|after:today|before:2030-01-01', (string) CValidation_Rule::date()->afterToday()->before('2030-01-01'));
+        $this->assertSame('date_format:Y-m-d H:i:s', (string) CValidation_Rule::dateTime());
+        // DateTime diformat mengikuti format() yang dipilih
+        $this->assertSame(
+            'date_format:d/m/Y|after_or_equal:01/02/2026',
+            (string) CValidation_Rule::date()->format('d/m/Y')->afterOrEqual(new DateTime('2026-02-01'))
+        );
+        $this->assertTrue($this->validate(CValidation_Rule::date()->afterToday(), '2000-01-01')->fails());
+        $this->assertFalse($this->validate(CValidation_Rule::date()->betweenOrEqual('2026-01-01', '2026-12-31'), '2026-06-15')->fails());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEmailBuilderRunsTheEmailRuleWithItsOptions() {
+        $this->assertFalse($this->validate(CValidation_Rule::email(), 'user@example.com')->fails());
+
+        $validator = $this->validate(CValidation_Rule::email()->rfcCompliant(), 'bukan-email');
+        $this->assertTrue($validator->fails());
+        // pesan berasal dari rule email standar, bukan nama kelas
+        $this->assertStringNotContainsString('CValidation_Rule_Email', $validator->errors()->first('x'));
+
+        $this->assertTrue($this->validate(CValidation_Rule::email()->rules('max:5'), 'user@example.com')->fails());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEmailDefaultsAppliesToEveryDefaultCall() {
+        CValidation_Rule_Email::defaults(function () {
+            return CValidation_Rule::email()->strict();
+        });
+
+        try {
+            $this->assertTrue(CValidation_Rule_Email::defaults()->strictRfcCompliant);
+            $this->assertTrue(CValidation_Rule_Email::default()->strictRfcCompliant);
+        } finally {
+            CValidation_Rule_Email::$defaultCallback = null;
+        }
+
+        $this->assertFalse(CValidation_Rule_Email::defaults()->strictRfcCompliant);
+    }
+
+    /**
+     * `any_of`: lolos kalau salah satu set rule lolos - "email ATAU nomor HP".
+     *
+     * @return void
+     */
+    public function testAnyOfPassesWhenOneRuleSetPasses() {
+        $rule = CValidation_Rule::anyOf(['email', 'digits:10']);
+
+        $this->assertFalse($this->validate($rule, 'user@example.com')->fails());
+        $this->assertFalse($this->validate($rule, '0812345678')->fails());
+
+        $validator = $this->validate($rule, 'bukan keduanya');
+        $this->assertTrue($validator->fails());
+        $this->assertNotEmpty($validator->errors()->first('x'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testAnyOfAcceptsAssociativeRuleSetsForArrayValues() {
+        $rule = CValidation_Rule::anyOf([
+            ['type' => 'required|in:email', 'email' => 'required|email'],
+            ['type' => 'required|in:phone', 'phone' => 'required|digits:10'],
+        ]);
+
+        $this->assertFalse($this->validate($rule, ['type' => 'phone', 'phone' => '0812345678'])->fails());
+        $this->assertTrue($this->validate($rule, ['type' => 'phone', 'phone' => 'x'])->fails());
+    }
+
+    /**
+     * @return void
+     */
+    public function testAnyOfRejectsANonArrayDefinition() {
+        $this->expectException(InvalidArgumentException::class);
+        new CValidation_Rule_AnyOf('email');
+    }
 }
