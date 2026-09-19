@@ -29,9 +29,14 @@ class CHouseKeeping_FileTemp_BackupFileTemp {
             $folder = carr::last(explode('/', $directory));
             $ymd = cstr::substr($folder, 0, 8);
             if (strlen($ymd) == 8 && ctype_digit($ymd)) {
-                //the format maybe is ymd
-                //try to parse it to carbon
-                $carbonDate = CCarbon::parse($ymd);
+                try {
+                    $carbonDate = CCarbon::createFromFormat('Ymd', $ymd)->startOfDay();
+                } catch (Exception $e) {
+                    continue;
+                }
+                if ($carbonDate->format('Ymd') !== $ymd) {
+                    continue;
+                }
 
                 $days = $carbonDate->diffInDays(CCarbon::now());
 
