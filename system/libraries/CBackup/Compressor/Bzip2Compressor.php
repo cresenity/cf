@@ -1,6 +1,6 @@
 <?php
 
-class Bzip2Compressor implements CBackup_AbstractCompressor {
+class CBackup_Compressor_Bzip2Compressor extends CBackup_AbstractCompressor {
     /**
      * @return string
      */

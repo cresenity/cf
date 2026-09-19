@@ -141,7 +141,7 @@ class CBackup_BackupDestination {
             return true;
         }
 
-        return $newestBackup->date()->gt($date);
+        return $newestBackup->date()->lt($date);
     }
 
     public function fresh() {

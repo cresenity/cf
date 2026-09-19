@@ -373,8 +373,8 @@ class CBackup_Database_Dumper_MySqlDumper extends CBackup_Database_AbstractDumpe
                 throw CBackup_Database_Exception_CannotStartDumpException::emptyParameter($requiredProperty);
             }
         }
-        if (strlen('dbName') === 0 && !$this->allDatabasesWasSetAsExtraOption) {
-            throw CBackup_Database_Exception_CannotStartDumpException::emptyParameter($requiredProperty);
+        if (strlen((string) $this->dbName) === 0 && !$this->allDatabasesWasSetAsExtraOption) {
+            throw CBackup_Database_Exception_CannotStartDumpException::emptyParameter('dbName');
         }
     }
 }
