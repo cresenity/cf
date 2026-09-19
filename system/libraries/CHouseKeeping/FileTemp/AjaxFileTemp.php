@@ -18,7 +18,7 @@ class CHouseKeeping_FileTemp_AjaxFileTemp {
         // nama folder yang bukan Ymd dianggap folder app dan diturunkan satu tingkat.
         $directories = [];
         foreach ($disk->directories($basePath) as $directory) {
-            if (strlen(carr::last(explode('/', $directory))) == 8) {
+            if (static::isYmd(carr::last(explode('/', $directory)))) {
                 $directories[] = $directory;
             } else {
                 $directories = array_merge($directories, $disk->directories($directory));
@@ -27,10 +27,15 @@ class CHouseKeeping_FileTemp_AjaxFileTemp {
         foreach ($directories as $directory) {
             //get last path
             $ymd = carr::last(explode('/', $directory));
-            if (strlen($ymd) == 8) {
-                //the format maybe is ymd
-                //try to parse it to carbon
-                $carbonDate = CCarbon::parse($ymd);
+            if (static::isYmd($ymd)) {
+                try {
+                    $carbonDate = CCarbon::createFromFormat('Ymd', $ymd)->startOfDay();
+                } catch (Exception $e) {
+                    continue;
+                }
+                if ($carbonDate->format('Ymd') !== $ymd) {
+                    continue;
+                }
 
                 $days = $carbonDate->diffInDays(CCarbon::now());
 
@@ -51,5 +56,14 @@ class CHouseKeeping_FileTemp_AjaxFileTemp {
         }
 
         return $executed;
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    protected static function isYmd($name) {
+        return preg_match('/^\d{8}$/', (string) $name) === 1;
     }
 }
