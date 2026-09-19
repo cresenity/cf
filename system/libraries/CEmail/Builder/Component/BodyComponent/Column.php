@@ -90,7 +90,7 @@ class CEmail_Builder_Component_BodyComponent_Column extends CEmail_Builder_Compo
                     return $parsedWidth . 'px';
                 }
 
-                return ($parsedWidth / intval($containerWidth)) * 100 . '%';
+                return Helper::formatNumber(($parsedWidth / intval($containerWidth)) * 100) . '%';
         }
     }
 
@@ -102,8 +102,9 @@ class CEmail_Builder_Component_BodyComponent_Column extends CEmail_Builder_Compo
         $parsedWidth = carr::get($widthParserResult, 'parsedWidth');
 
         if ($unit === '%') {
-            return intval($containerWidth) * $parsedWidth / 100 . 'px';
+            return Helper::formatNumber(intval($containerWidth) * $parsedWidth / 100) . 'px';
         }
+
         return $parsedWidth . 'px';
     }
 
@@ -117,7 +118,7 @@ class CEmail_Builder_Component_BodyComponent_Column extends CEmail_Builder_Compo
                 $width = (100 / $nonRawSiblings) . '%';
             }
         }
-        $widthParserResult = Helper::widthParser($width, ['parserFloatToInt' => false]);
+        $widthParserResult = Helper::widthParser($width, ['parseFloatToInt' => false]);
         $unit = carr::get($widthParserResult, 'unit');
         $parsedWidth = carr::get($widthParserResult, 'parsedWidth');
 

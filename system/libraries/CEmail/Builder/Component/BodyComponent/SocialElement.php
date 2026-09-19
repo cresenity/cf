@@ -10,27 +10,27 @@ class CEmail_Builder_Component_BodyComponent_SocialElement extends CEmail_Builde
 
     protected $defaultSocialNetworks = [
         'facebook' => [
-            'share-url' => 'https=>//www.facebook.com/sharer/sharer.php?u=[[URL]]',
+            'share-url' => 'https://www.facebook.com/sharer/sharer.php?u=[[URL]]',
             'background-color' => '#3b5998',
             'src' => self::IMG_BASE_URL . 'facebook.png',
         ],
         'twitter' => [
-            'share-url' => 'https=>//twitter.com/home?status=[[URL]]',
+            'share-url' => 'https://twitter.com/home?status=[[URL]]',
             'background-color' => '#55acee',
             'src' => self::IMG_BASE_URL . 'twitter.png',
         ],
         'google' => [
-            'share-url' => 'https=>//plus.google.com/share?url=[[URL]]',
+            'share-url' => 'https://plus.google.com/share?url=[[URL]]',
             'background-color' => '#dc4e41',
             'src' => self::IMG_BASE_URL . 'google-plus.png',
         ],
         'pinterest' => [
-            'share-url' => 'https=>//pinterest.com/pin/create/button/?url=[[URL]]&media=&description=',
+            'share-url' => 'https://pinterest.com/pin/create/button/?url=[[URL]]&media=&description=',
             'background-color' => '#bd081c',
             'src' => self::IMG_BASE_URL . 'pinterest.png',
         ],
         'linkedin' => [
-            'share-url' => 'https=>//www.linkedin.com/shareArticle?mini=true&url=[[URL]]&title=&summary=&source=',
+            'share-url' => 'https://www.linkedin.com/shareArticle?mini=true&url=[[URL]]&title=&summary=&source=',
             'background-color' => '#0077b5',
             'src' => self::IMG_BASE_URL . 'linkedin.png',
         ],
@@ -52,7 +52,7 @@ class CEmail_Builder_Component_BodyComponent_SocialElement extends CEmail_Builde
         ],
         'tumblr' => [
             'src' => self::IMG_BASE_URL . 'tumblr.png',
-            'share-url' => 'https=>//www.tumblr.com/widgets/share/tool?canonicalUrl=[[URL]]',
+            'share-url' => 'https://www.tumblr.com/widgets/share/tool?canonicalUrl=[[URL]]',
             'background-color' => '#344356',
         ],
         'github' => [
@@ -61,7 +61,7 @@ class CEmail_Builder_Component_BodyComponent_SocialElement extends CEmail_Builde
         ],
         'xing' => [
             'src' => self::IMG_BASE_URL . 'xing.png',
-            'share-url' => 'https=>//www.xing.com/app/user?op=share&url=[[URL]]',
+            'share-url' => 'https://www.xing.com/app/user?op=share&url=[[URL]]',
             'background-color' => '#296366',
         ],
         'vimeo' => [
@@ -93,15 +93,15 @@ class CEmail_Builder_Component_BodyComponent_SocialElement extends CEmail_Builde
         'href' => 'string',
         'icon-size' => 'unit(px,%)',
         'icon-height' => 'unit(px,%)',
-        'icon-padding' => 'unit(px,%)[1,4]',
+        'icon-padding' => 'unit(px,%){1,4}',
         'line-height' => 'unit(px,%,)',
         'name' => 'string',
         'padding-bottom' => 'unit(px,%)',
         'padding-left' => 'unit(px,%)',
         'padding-right' => 'unit(px,%)',
         'padding-top' => 'unit(px,%)',
-        'padding' => 'unit(px,%)[1,4]',
-        'text-padding' => 'unit(px,%)[1,4]',
+        'padding' => 'unit(px,%){1,4}',
+        'text-padding' => 'unit(px,%){1,4}',
         'src' => 'string',
         'alt' => 'string',
         'title' => 'string',
@@ -164,11 +164,14 @@ class CEmail_Builder_Component_BodyComponent_SocialElement extends CEmail_Builde
     }
 
     public function getSocialAttributes() {
-        $socialNetwork = carr::get($this->defaultSocialNetworks, $this->getAttribute('name'), []);
+        $name = (string) $this->getAttribute('name');
+        $noShare = cstr::endsWith($name, '-noshare');
+        $socialNetwork = carr::get($this->defaultSocialNetworks, $noShare ? substr($name, 0, -8) : $name, []);
         $href = $this->getAttribute('href');
-        if ($href) {
-            $socialNetwork['share-url'] = $href;
-        };
+        if ($href && !$noShare && isset($socialNetwork['share-url'])) {
+            // jaringan berbagi: href pengguna disisipkan ke URL share jaringan
+            $href = str_replace('[[URL]]', $href, $socialNetwork['share-url']);
+        }
 
         $attrs = carr::reduce([
             'icon-size',

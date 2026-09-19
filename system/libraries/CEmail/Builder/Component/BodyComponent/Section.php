@@ -40,7 +40,12 @@ class CEmail_Builder_Component_BodyComponent_Section extends CEmail_Builder_Comp
 
         $fullWidth = $this->isFullWidth();
 
-        $background = $this->hasBackground() ? $this->getBackground() : ['background' => $this->getAttribute('background-color'), 'background-color' => $this->getAttribute('background-color')];
+        $background = $this->hasBackground() ? [
+            'background' => $this->getBackground(),
+            'background-position' => 'top center',
+            'background-repeat' => $this->getAttribute('background-repeat'),
+            'background-size' => $this->getAttribute('background-size'),
+        ] : ['background' => $this->getAttribute('background-color'), 'background-color' => $this->getAttribute('background-color')];
         return [
             'tableFullWidth' => array_merge(($fullWidth ? $background : []), ['width' => '100%', 'border-radius' => $this->getAttribute('border-radius')]),
             'table' => array_merge(($fullWidth ? [] : $background), ['width' => '100%', 'border-radius' => $this->getAttribute('border-radius')]),
@@ -228,7 +233,7 @@ class CEmail_Builder_Component_BodyComponent_Section extends CEmail_Builder_Comp
         $optionsAttributes = [];
         $optionsAttributes['align'] = 'center';
         $optionsAttributes['class'] = $this->getAttribute('css-class');
-        $optionsAttributes['background']->$this->getAttribute('background-url');
+        $optionsAttributes['background'] = $this->getAttribute('background-url');
         $optionsAttributes['border'] = 0;
         $optionsAttributes['cellpadding'] = 0;
         $optionsAttributes['cellspacing'] = 0;

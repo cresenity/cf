@@ -30,7 +30,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
                 $containerWidth = $parentParsedWidth / $nonRawSiblings . 'px';
             }
         }
-        $widthParserResult = Helper::widthParser($containerWidth, ['parserFloatToInt' => false]);
+        $widthParserResult = Helper::widthParser($containerWidth, ['parseFloatToInt' => false]);
         $unit = carr::get($widthParserResult, 'unit');
         $parsedWidth = carr::get($widthParserResult, 'parsedWidth');
 
@@ -76,7 +76,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
                 $width = (100 / $nonRawSiblings) . '%';
             }
         }
-        $widthParserResult = Helper::widthParser($width, ['parserFloatToInt' => false]);
+        $widthParserResult = Helper::widthParser($width, ['parseFloatToInt' => false]);
         $unit = carr::get($widthParserResult, 'unit');
         $parsedWidth = carr::get($widthParserResult, 'parsedWidth');
 
@@ -99,7 +99,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
         $parsedWidth = carr::get($widthParserResult, 'parsedWidth');
 
         if ($unit === '%') {
-            return $containerParsedWidth * $parsedWidth / 100 . 'px';
+            return Helper::formatNumber($containerParsedWidth * $parsedWidth / 100) . 'px';
         }
 
         return $parsedWidth . 'px';
@@ -147,7 +147,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
                     return '0px';
                 }
 
-                return ($containerWidth / $nonRawSiblings) . 'px';
+                return Helper::formatNumber(intval($containerWidth) / $nonRawSiblings) . 'px';
             }
 
             $widthParserResult = Helper::widthParser($width, ['parseFloatToInt' => false]);
@@ -158,7 +158,7 @@ class CEmail_Builder_Component_BodyComponent_Group extends CEmail_Builder_Compon
                     return '0px';
                 }
 
-                return (100 * $parsedWidth / $groupParsedWidth) . 'px';
+                return Helper::formatNumber(100 * $parsedWidth / $groupParsedWidth) . 'px';
             }
 
             return $parsedWidth . $unit;

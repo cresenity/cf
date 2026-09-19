@@ -139,8 +139,6 @@ class CEmail_Builder_Component_BodyComponent_Social extends CEmail_Builder_Compo
     }
 
     public function render() {
-        return '
-      ' . $this->getAttribute('mode') === 'horizontal' ? $this->renderHorizontal() : $this->renderVertical() . '
-    ';
+        return $this->getAttribute('mode') === 'horizontal' ? $this->renderHorizontal() : $this->renderVertical();
     }
 }

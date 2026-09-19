@@ -39,7 +39,7 @@ class CEmail_Builder_Component_BodyComponent extends CEmail_Builder_Component {
                 $value = Helper::renderStyle($value);
             }
 
-            if ($value != null && strlen($value) > 0) {
+            if ($value !== null && $value !== false && strlen((string) $value) > 0) {
                 if (($name === 'width' || $name === 'height') && preg_match('/^\d+(\.\d+)?px$/', $value)) {
                     // atribut HTML width/height tanpa satuan; satuan tetap ada di style
                     $value = substr($value, 0, -2);

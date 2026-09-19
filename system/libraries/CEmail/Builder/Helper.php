@@ -9,7 +9,7 @@ class CEmail_Builder_Helper {
         if (preg_match($unitRegex, $width, $matches)) {
             $widthUnit = $matches[1];
         }
-        $parsedWidth = intval($width);
+        $parsedWidth = floatval($width);
 
         switch ($widthUnit) {
             case '%':
@@ -27,9 +27,23 @@ class CEmail_Builder_Helper {
         }
 
         return [
-            'parsedWidth' => $parsedWidth,
+            'parsedWidth' => static::formatNumber($parsedWidth),
             'unit' => $widthUnit,
         ];
+    }
+
+    /**
+     * Bilangan bulat dikembalikan sebagai int; pecahan dibulatkan ke 12 digit agar 600/3*3 tetap 600 dan
+     * tidak ada ekor floating point di CSS.
+     *
+     * @param float|int $number
+     *
+     * @return float|int
+     */
+    public static function formatNumber($number) {
+        $rounded = round((float) $number, 12);
+
+        return $rounded == (int) $rounded ? (int) $rounded : $rounded;
     }
 
     public static function suffixCssClasses($classes, $suffix) {
