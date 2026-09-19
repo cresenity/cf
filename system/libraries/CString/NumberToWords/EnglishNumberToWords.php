@@ -201,7 +201,7 @@ class CString_NumberToWords_EnglishNumberToWords {
             if (($number >= $j) && ($number < $j + 1000000000)) {
                 $r = $number - $j;
 
-                return (new self())->numberToWords($i) . ' Billion ' + ($r > 0 ? (' ' + (new self())->numberToWords($r)) : '');
+                return (new self())->numberToWords($i) . ' Billion ' . ($r > 0 ? (' ' . (new self())->numberToWords($r)) : '');
             }
         }
 

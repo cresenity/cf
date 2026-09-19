@@ -43,7 +43,7 @@ class CXMPP_BOSH extends CXMPP_XMPP {
 
     protected $session = false;
 
-    public function connect($server, $wait = '1', $session = false) {
+    public function connect($server = null, $wait = '1', $session = false) {
         $this->http_server = $server;
         $this->use_encryption = false;
         $this->session = $session;
@@ -142,7 +142,7 @@ class CXMPP_BOSH extends CXMPP_XMPP {
         }
     }
 
-    public function send($msg) {
+    public function send($msg, $timeout = null) {
         $this->log->log("SEND: $msg", CXMPP_Log::LEVEL_VERBOSE);
         $msg = new SimpleXMLElement($msg);
         //$msg->addAttribute('xmlns', 'jabber:client');

@@ -9,7 +9,7 @@ defined('SYSPATH') or die('No direct access allowed.');
  *
  * @deprecated 2.0
  */
-require_once dirname(__FILE__) . '/Lib/fpdf/fpdf.php';
+require_once dirname(__FILE__) . '/../vendor/FPDF.php';
 
 //@codingStandardsIgnoreStart
 class CPDF extends FPDF {
