@@ -214,8 +214,20 @@ class OAuth2ProviderTest extends TestCase {
     public function testConfigObject() {
         $config = new CSocialLogin_Config('k', 's', 'https://cb', ['tenant' => 'x']);
         $this->assertSame(['client_id' => 'k', 'client_secret' => 's', 'redirect' => 'https://cb', 'tenant' => 'x'], $config->get());
-        $spoofed = (new CSocialLogin_ConfigRetriever())->fromServices('layanan-tidak-ada-' . uniqid());
-        $this->assertStringEndsWith('_KEY', $spoofed->get()['client_id'], 'di CLI, layanan yang tidak dikonfigurasi dipalsukan (bukan exception) — perilaku CF');
-        $this->assertSame([], $spoofed->get()['guzzle']);
+        $this->expectException(CSocialLogin_Exception_MissingConfigException::class);
+        (new CSocialLogin_ConfigRetriever())->fromServices('layanan-tidak-ada-' . uniqid());
+    }
+
+    public function testRelativeRedirectIsResolvedAgainstTheAppUrl() {
+        $manager = new CSocialLogin_DriverManager();
+        $method = new ReflectionMethod($manager, 'formatRedirectUrl');
+        $method->setAccessible(true);
+        $this->assertSame('https://cb/x', $method->invoke($manager, ['redirect' => 'https://cb/x']), 'redirect absolut dibiarkan');
+        $resolved = $method->invoke($manager, ['redirect' => '/auth/google/callback']);
+        $this->assertStringEndsWith('/auth/google/callback', $resolved);
+        $this->assertMatchesRegularExpression('#^https?://#', $resolved, 'redirect relatif di-resolve ke URL absolut');
+        $this->assertSame('/lazy', cstr::after($method->invoke($manager, ['redirect' => function () {
+            return '/lazy';
+        }]), '://' . parse_url($resolved, PHP_URL_HOST)), 'redirect boleh closure');
     }
 }

@@ -103,16 +103,7 @@ class CSocialLogin_ConfigRetriever implements CSocialLogin_Contract_ConfigRetrie
         $configArray = CF::config("vendor.{$providerName}");
 
         if (empty($configArray)) {
-            // If we are running in console we should spoof values to make Socialite happy...
-            if (CF::isCli()) {
-                $configArray = [
-                    'client_id' => "{$this->providerIdentifier}_KEY",
-                    'client_secret' => "{$this->providerIdentifier}_SECRET",
-                    'redirect' => "{$this->providerIdentifier}_REDIRECT_URI",
-                ];
-            } else {
-                throw new CSocialLogin_Exception_MissingConfigException("There is no services entry for {$providerName}");
-            }
+            throw new CSocialLogin_Exception_MissingConfigException("There is no services entry for {$providerName}");
         }
 
         return $this->servicesArray = $configArray;
