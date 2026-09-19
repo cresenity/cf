@@ -39,23 +39,39 @@ class CDevSuite_DevCloud_Api {
     }
 
     /**
-     * Log in with a DevCloud username/password and cache the token pair.
+     * Log in with a DevCloud username/password (plus a 2FA code when the account has one) and cache the token pair.
      *
-     * @param string $username
-     * @param string $password
+     * @param string      $username
+     * @param string      $password
+     * @param null|string $otp      TOTP or recovery code; the server rejects with `Two-factor code required` when missing
      *
      * @return array
      */
-    public function login($username, $password) {
-        $token = $this->requestToken([
+    public function login($username, $password, $otp = null) {
+        $params = [
             'grant_type' => 'password',
             'client_id' => static::CLIENT_ID,
             'client_secret' => static::CLIENT_SECRET,
             'username' => $username,
             'password' => $password,
-        ]);
+        ];
+        if (strlen((string) $otp) > 0) {
+            $params['otp'] = $otp;
+        }
+        $token = $this->requestToken($params);
 
         return $this->storeToken($token);
+    }
+
+    /**
+     * Whether a failed login means the account needs a 2FA code (retry with one).
+     *
+     * @param Exception $e
+     *
+     * @return bool
+     */
+    public static function isTwoFactorRequired(Exception $e) {
+        return strpos($e->getMessage(), 'Two-factor code required') !== false;
     }
 
     /**

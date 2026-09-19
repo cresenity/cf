@@ -16,7 +16,15 @@ class CDevSuite_Command_DevCloud_Login extends CDevSuite_CommandAbstract {
         $password = $cfCommand->secret('Password:');
 
         try {
-            CDevSuite::devCloudApi()->login($username, $password);
+            try {
+                CDevSuite::devCloudApi()->login($username, $password);
+            } catch (Exception $e) {
+                if (!CDevSuite_DevCloud_Api::isTwoFactorRequired($e)) {
+                    throw $e;
+                }
+                $otp = $cfCommand->ask('2FA code (authenticator or recovery code):');
+                CDevSuite::devCloudApi()->login($username, $password, $otp);
+            }
         } catch (Exception $e) {
             CDevSuite::error('Login failed: ' . $e->getMessage());
 
