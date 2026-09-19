@@ -847,16 +847,22 @@ class ValidatorTest extends TestCase {
     }
 
     public function testFactoryPassesTheArrayKeysFlagToEveryValidatorItMakes() {
-        $factory = new CValidation_Factory();
+        // factory-nya singleton (c::validator()), jadi kembalikan ke default setelah selesai
+        $factory = CValidation_Factory::instance();
         $data = ['a' => ['b' => 1, 'c' => 2]];
         $rules = ['a' => 'array', 'a.b' => 'integer'];
 
-        $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $factory->make($data, $rules)->validated());
+        try {
+            $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $factory->make($data, $rules)->validated());
 
-        $this->assertSame($factory, $factory->excludeUnvalidatedArrayKeys());
-        $this->assertSame(['a' => ['b' => 1]], $factory->make($data, $rules)->validated());
+            $this->assertSame($factory, $factory->excludeUnvalidatedArrayKeys());
+            $this->assertSame(['a' => ['b' => 1]], $factory->make($data, $rules)->validated());
+            $this->assertSame(['a' => ['b' => 1]], c::validator($data, $rules)->validated());
 
-        $factory->includeUnvalidatedArrayKeys();
-        $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $factory->make($data, $rules)->validated());
+            $factory->includeUnvalidatedArrayKeys();
+            $this->assertSame(['a' => ['b' => 1, 'c' => 2]], $factory->make($data, $rules)->validated());
+        } finally {
+            $factory->includeUnvalidatedArrayKeys();
+        }
     }
 }
