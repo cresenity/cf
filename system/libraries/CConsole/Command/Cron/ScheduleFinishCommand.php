@@ -31,7 +31,7 @@ class CConsole_Command_Cron_ScheduleFinishCommand extends CConsole_Command {
         c::collect(CCron::schedule()->events())->filter(function ($value) {
             return $value->mutexName() == $this->argument('id');
         })->each(function (CCron_Event $event) {
-            $event->callafterCallbacksWithExitCode($this->laravel, $this->argument('code'));
+            $event->callAfterCallbacksWithExitCode($this->argument('code'));
 
             CEvent::dispatcher()->dispatch(new CCron_Event_ScheduledBackgroundTaskFinished($event));
         });

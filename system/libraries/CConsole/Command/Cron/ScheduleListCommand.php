@@ -33,7 +33,7 @@ class CConsole_Command_Cron_ScheduleListCommand extends CConsole_Command {
                 $event->description,
                 (new CronExpression($event->expression))
                     ->getNextRunDate(CCarbon::now()->setTimezone($event->timezone))
-                    ->setTimezone($this->option('timezone', CF::config('app.timezone')))
+                    ->setTimezone($this->option('timezone') ?: CF::config('app.timezone'))
                     ->format('Y-m-d H:i:s P'),
             ];
         }

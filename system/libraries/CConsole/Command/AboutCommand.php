@@ -128,6 +128,20 @@ class CConsole_Command_AboutCommand extends CConsole_Command {
     }
 
     /**
+     * Section names requested through --only, in snake_case.
+     *
+     * @return array
+     */
+    protected function sections() {
+        return c::collect(explode(',', (string) $this->option('only')))
+            ->filter()
+            ->map(function ($only) {
+                return (string) cstr::of(trim($only))->lower()->snake();
+            })
+            ->all();
+    }
+
+    /**
      * Add additional data to the output of the "about" command.
      *
      * @param string                $section
