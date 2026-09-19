@@ -294,7 +294,7 @@ trait CHTTP_Resources_ConditionallyLoadsAttributes {
             $default = new CHTTP_Resources_MissingValue();
         }
 
-        $attribute = (new CBase_String($relationship))->snake()->finish('_count')->c::value();
+        $attribute = (new CBase_String($relationship))->snake()->finish('_count')->value();
 
         if (!array_key_exists($attribute, $this->resource->getAttributes())) {
             return c::value($default);
@@ -331,7 +331,7 @@ trait CHTTP_Resources_ConditionallyLoadsAttributes {
             $default = new CHTTP_Resources_MissingValue();
         }
 
-        $attribute = (new CBase_String($relationship))->snake()->append('_')->append($aggregate)->append('_')->finish($column)->c::value();
+        $attribute = (new CBase_String($relationship))->snake()->append('_')->append($aggregate)->append('_')->finish($column)->value();
 
         if (!array_key_exists($attribute, $this->resource->getAttributes())) {
             return c::value($default);
@@ -366,7 +366,7 @@ trait CHTTP_Resources_ConditionallyLoadsAttributes {
             $default = new CHTTP_Resources_MissingValue();
         }
 
-        $attribute = (new CBase_String($relationship))->snake()->finish('_exists')->c::value();
+        $attribute = (new CBase_String($relationship))->snake()->finish('_exists')->value();
 
         if (!array_key_exists($attribute, $this->resource->getAttributes())) {
             return c::value($default);

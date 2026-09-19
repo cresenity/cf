@@ -57,6 +57,17 @@ class CHTTP_Resources_Json_JsonResource implements ArrayAccess, JsonSerializable
      *
      * @return static
      */
+    /**
+     * Request aktif: binding `request` di container bila ada, kalau tidak request CHTTP saat ini.
+     *
+     * @return CHTTP_Request
+     */
+    protected static function currentRequest() {
+        $container = CContainer::getInstance();
+
+        return $container->bound('request') ? $container->make('request') : c::request();
+    }
+
     public static function make(...$parameters) {
         return new static(...$parameters);
     }
@@ -96,7 +107,7 @@ class CHTTP_Resources_Json_JsonResource implements ArrayAccess, JsonSerializable
      */
     public function resolve($request = null) {
         $data = $this->toArray(
-            $request ?: CContainer::getInstance()->make('request')
+            $request ?: static::currentRequest()
         );
 
         if ($data instanceof Arrayable) {
@@ -217,7 +228,7 @@ class CHTTP_Resources_Json_JsonResource implements ArrayAccess, JsonSerializable
      */
     public function response($request = null) {
         return $this->toResponse(
-            $request ?: CContainer::getInstance()->make('request')
+            $request ?: static::currentRequest()
         );
     }
 
@@ -238,6 +249,6 @@ class CHTTP_Resources_Json_JsonResource implements ArrayAccess, JsonSerializable
      * @return array
      */
     public function jsonSerialize(): array {
-        return $this->resolve(CContainer::getInstance()->make('request'));
+        return $this->resolve(static::currentRequest());
     }
 }
