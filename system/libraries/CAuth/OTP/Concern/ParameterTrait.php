@@ -43,7 +43,7 @@ trait CAuth_OTP_Concern_ParameterTrait {
     /**
      * @return null|string
      */
-    public function getLabel() {
+    public function getLabel(): ?string {
         return $this->label;
     }
 
@@ -54,7 +54,7 @@ trait CAuth_OTP_Concern_ParameterTrait {
     /**
      * @return null|string
      */
-    public function getIssuer() {
+    public function getIssuer(): ?string {
         return $this->issuer;
     }
 
@@ -124,7 +124,7 @@ trait CAuth_OTP_Concern_ParameterTrait {
         $this->setParameter('digits', $digits);
     }
 
-    public function setDigest(string $digest) {
+    public function setDigest(string $digest): void {
         $this->setParameter('algorithm', $digest);
     }
 
