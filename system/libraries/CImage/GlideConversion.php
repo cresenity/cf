@@ -140,7 +140,8 @@ final class CImage_GlideConversion {
         $glideManipulations = [];
         foreach ($manipulationGroup as $name => $argument) {
             if ($name !== 'optimize') {
-                $glideManipulations[$this->convertToGlideParameter($name)] = $argument;
+                // Glide membaca parameter seperti query string; `or` dibandingkan ketat dengan string.
+                $glideManipulations[$this->convertToGlideParameter($name)] = is_scalar($argument) ? (string) $argument : $argument;
             }
         }
 

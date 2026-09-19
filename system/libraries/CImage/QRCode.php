@@ -107,7 +107,7 @@ class CImage_QRCode {
     }
 
     private function dispatchEncode($data, $options) {
-        switch (strtolower(preg_replace('/[^A-Za-z0-9]/', '', $options['s']))) {
+        switch (strtolower(preg_replace('/[^A-Za-z0-9]/', '', carr::get($options, 's', 'qr')))) {
             case 'qrl':
                 return $this->qrEncode($data, 0);
             case 'qrm':
