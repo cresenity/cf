@@ -102,6 +102,10 @@ class CReport_Generator_Expression_Parser {
                 return $left <= $right;
             case '>=':
                 return $left >= $right;
+            case '<':
+                return $left < $right;
+            case '>':
+                return $left > $right;
             case '<>':
                 return $left != $right;
             case '+':

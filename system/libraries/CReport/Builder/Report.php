@@ -104,6 +104,9 @@ class CReport_Builder_Report implements CReport_Builder_Contract_JrXmlElementInt
         if ($xml['bottomMargin']) {
             $report->setBottomMargin((float) $xml['bottomMargin']);
         }
+        if ($xml['orientation']) {
+            $report->setOrientation(cstr::lower((string) $xml['orientation']) == CReport::ORIENTATION_LANDSCAPE ? CReport::ORIENTATION_LANDSCAPE : CReport::ORIENTATION_PORTRAIT);
+        }
         foreach ($xml as $tag => $xmlElement) {
             if ($tag == 'defaultFont') {
                 $report->setDefaultFont(CReport_Builder_Object_Font::fromXml($xmlElement));
