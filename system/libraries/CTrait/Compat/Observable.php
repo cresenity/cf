@@ -358,6 +358,7 @@ trait CTrait_Compat_Observable {
      * @return $this
      */
     public function add_span($id = '') {
+        CF::deprecated(__METHOD__, "addDiv()->addClass('span<n>')", '1.2', null, true);
         $span = CSpan::factory($id);
         $this->add($span);
 
@@ -369,12 +370,13 @@ trait CTrait_Compat_Observable {
      *
      * @param string $id
      *
-     * @return CTableRow
+     * @return CElement_Component_TableRow
      *
      * @deprecated 1.2
      */
     public function addRow($id = '') {
-        $row = CTableRow::factory($id);
+        CF::deprecated(__METHOD__, 'add(CElement_Component_TableRow::factory())', '1.2', null, true);
+        $row = CElement_Component_TableRow::factory($id);
         $this->add($row);
 
         return $row;

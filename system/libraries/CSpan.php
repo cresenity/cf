@@ -19,6 +19,7 @@ class CSpan extends CElement_Element {
     }
 
     public static function factory($id = '') {
+        CF::deprecated(__METHOD__, "CElement_Element_Div dengan class 'span<n>'", '1.2', null, true);
         return new CSpan($id);
     }
 
