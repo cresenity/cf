@@ -38,6 +38,13 @@ class CHTTP_Cookie implements CHTTP_Contract_CookieInterface {
     protected $sameSite = 'lax';
 
     /**
+     * The default partitioned (CHIPS) setting (defaults to false).
+     *
+     * @var bool
+     */
+    protected $partitioned = false;
+
+    /**
      * All of the cookies queued for sending.
      *
      * @var array<string, array<string, \Symfony\Component\HttpFoundation\Cookie>>
@@ -56,15 +63,16 @@ class CHTTP_Cookie implements CHTTP_Contract_CookieInterface {
      * @param bool        $httpOnly
      * @param bool        $raw
      * @param null|string $sameSite
+     * @param null|bool   $partitioned
      *
      * @return \Symfony\Component\HttpFoundation\Cookie
      */
-    public function make($name, $value, $minutes = 0, $path = null, $domain = null, $secure = null, $httpOnly = true, $raw = false, $sameSite = null) {
+    public function make($name, $value, $minutes = 0, $path = null, $domain = null, $secure = null, $httpOnly = true, $raw = false, $sameSite = null, $partitioned = null) {
         list($path, $domain, $secure, $sameSite) = $this->getPathAndDomain($path, $domain, $secure, $sameSite);
 
         $time = ($minutes == 0) ? 0 : $this->availableAt($minutes * 60);
 
-        return new Cookie($name, $value, $time, $path, $domain, $secure, $httpOnly, $raw, $sameSite);
+        return new Cookie($name, $value, $time, $path, $domain, $secure, $httpOnly, $raw, $sameSite, is_bool($partitioned) ? $partitioned : $this->partitioned);
     }
 
     /**
@@ -78,11 +86,12 @@ class CHTTP_Cookie implements CHTTP_Contract_CookieInterface {
      * @param bool        $httpOnly
      * @param bool        $raw
      * @param null|string $sameSite
+     * @param null|bool   $partitioned
      *
      * @return \Symfony\Component\HttpFoundation\Cookie
      */
-    public function forever($name, $value, $path = null, $domain = null, $secure = null, $httpOnly = true, $raw = false, $sameSite = null) {
-        return $this->make($name, $value, 2628000, $path, $domain, $secure, $httpOnly, $raw, $sameSite);
+    public function forever($name, $value, $path = null, $domain = null, $secure = null, $httpOnly = true, $raw = false, $sameSite = null, $partitioned = null) {
+        return $this->make($name, $value, 2628000, $path, $domain, $secure, $httpOnly, $raw, $sameSite, $partitioned);
     }
 
     /**
@@ -193,11 +202,12 @@ class CHTTP_Cookie implements CHTTP_Contract_CookieInterface {
      * @param string      $domain
      * @param bool        $secure
      * @param null|string $sameSite
+     * @param bool        $partitioned
      *
      * @return $this
      */
-    public function setDefaultPathAndDomain($path, $domain, $secure = false, $sameSite = null) {
-        list($this->path, $this->domain, $this->secure, $this->sameSite) = [$path, $domain, $secure, $sameSite];
+    public function setDefaultPathAndDomain($path, $domain, $secure = false, $sameSite = null, $partitioned = false) {
+        list($this->path, $this->domain, $this->secure, $this->sameSite, $this->partitioned) = [$path, $domain, $secure, $sameSite, $partitioned];
 
         return $this;
     }

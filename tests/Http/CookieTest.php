@@ -232,4 +232,46 @@ class CookieTest extends TestCase {
 
         $this->assertSame([], $this->jar->getQueuedCookies());
     }
+
+    public function testMakeDefaultsToNotPartitioned() {
+        $cookie = $this->jar->make('name', 'value');
+
+        $this->assertFalse($cookie->isPartitioned());
+        $this->assertStringNotContainsString('partitioned', (string) $cookie);
+    }
+
+    public function testMakeHonorsExplicitPartitioned() {
+        $cookie = $this->jar->make('name', 'value', 0, null, null, null, true, false, null, true);
+
+        $this->assertTrue($cookie->isPartitioned());
+        $this->assertStringContainsString('; partitioned', (string) $cookie);
+    }
+
+    /**
+     * partitioned follows the same "explicit bool overrides the jar default"
+     * rule as secure (see testANullSecureFallsBackToTheJarDefault) — null
+     * means "use the jar default" rather than silently turning it off.
+     */
+    public function testANullPartitionedFallsBackToTheJarDefault() {
+        $this->jar->setDefaultPathAndDomain('/', 'test.local', true, 'lax', true);
+
+        $this->assertTrue($this->jar->make('name', 'value')->isPartitioned());
+        $this->assertFalse($this->jar->make('name', 'value', 0, null, null, null, true, false, null, false)->isPartitioned());
+    }
+
+    public function testSymfonyCookieWithPartitionedReturnsANewInstance() {
+        $cookie = $this->jar->make('name', 'value');
+        $partitioned = $cookie->withPartitioned();
+
+        $this->assertNotSame($cookie, $partitioned);
+        $this->assertFalse($cookie->isPartitioned());
+        $this->assertTrue($partitioned->isPartitioned());
+    }
+
+    public function testSymfonyCookieFromStringRoundTripsPartitioned() {
+        $original = $this->jar->make('token', 'abc123', 0, '/', null, null, true, false, null, true);
+        $parsed = Symfony\Component\HttpFoundation\Cookie::fromString((string) $original);
+
+        $this->assertTrue($parsed->isPartitioned());
+    }
 }

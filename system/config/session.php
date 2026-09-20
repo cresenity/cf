@@ -80,4 +80,12 @@ return [
      * Supported: "lax", "strict", "none", null
      */
     'same_site' => null,
+    /**
+     * Enable this option to mark the session cookie as partitioned (CHIPS -
+     * Cookies Having Independent Partitioned State), so it is scoped to the
+     * top-level site when read from a cross-site iframe. Needed once browsers
+     * block third-party cookies for a session used inside an embedded widget
+     * (e.g. a canvas/landing page embed on a customer's own domain).
+     */
+    'partitioned' => false,
 ];

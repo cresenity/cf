@@ -197,7 +197,8 @@ class CSession_Middleware_SessionMiddleware {
                 $config['secure'],
                 $config['httponly'],
                 false,
-                $config['same_site']
+                $config['same_site'],
+                carr::get($config, 'partitioned', false)
             ));
         }
     }
