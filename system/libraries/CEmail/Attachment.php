@@ -98,6 +98,54 @@ class CEmail_Attachment {
      *
      * @return $this
      */
+    /**
+     * Ubah bentuk lampiran yang beredar di app menjadi daftar CEmail_Attachment:
+     * path string; `['path', 'filename'|'name'|'as', 'type'|'mime', 'disk']`; `['data', 'name'|'filename', 'mime'|'type']`
+     * (data string atau closure); CEmail_Attachment; CEmail_Contract_AttachableInterface; atau array campuran.
+     *
+     * @param mixed $attachments
+     *
+     * @return static[]
+     */
+    public static function fromLegacy($attachments) {
+        $result = [];
+        foreach (carr::wrap($attachments) as $attachment) {
+            if ($attachment instanceof CEmail_Contract_AttachableInterface) {
+                $attachment = $attachment->toMailAttachment();
+            }
+            if ($attachment instanceof static) {
+                $result[] = $attachment;
+            } elseif (is_string($attachment)) {
+                if (trim($attachment) !== '') {
+                    $result[] = static::fromPath($attachment);
+                }
+            } elseif (is_array($attachment) && array_key_exists('data', $attachment)) {
+                $data = $attachment['data'];
+                $mime = carr::get($attachment, 'mime', carr::get($attachment, 'type'));
+                $entry = static::fromData($data instanceof Closure ? $data : function () use ($data) {
+                    return $data;
+                }, carr::get($attachment, 'name', carr::get($attachment, 'filename', carr::get($attachment, 'as', 'attachment'))));
+                $result[] = $mime ? $entry->withMime($mime) : $entry;
+            } elseif (is_array($attachment) && isset($attachment['path'])) {
+                $name = carr::get($attachment, 'filename', carr::get($attachment, 'name', carr::get($attachment, 'as')));
+                $mime = carr::get($attachment, 'mime', carr::get($attachment, 'type'));
+                $disk = carr::get($attachment, 'disk');
+                $entry = $disk ? static::fromStorageDisk($disk, $attachment['path']) : static::fromPath($attachment['path']);
+                if ($name) {
+                    $entry->as($name);
+                }
+                if ($mime) {
+                    $entry->withMime($mime);
+                }
+                $result[] = $entry;
+            } elseif (is_array($attachment) && !carr::isAssoc($attachment)) {
+                $result = array_merge($result, static::fromLegacy($attachment));
+            }
+        }
+
+        return $result;
+    }
+
     public function as($name) {
         $this->as = $name;
 

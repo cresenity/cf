@@ -267,6 +267,12 @@ class CEmail_Message {
      * @return $this
      */
     public function attach($file, array $options = []) {
+        if ($file instanceof CEmail_Contract_AttachableInterface) {
+            $file = $file->toMailAttachment();
+        }
+        if ($file instanceof CEmail_Attachment) {
+            return $file->attachTo($this);
+        }
         $this->message->attachFromPath($file, $options['as'] ?? null, $options['mime'] ?? null);
 
         return $this;
