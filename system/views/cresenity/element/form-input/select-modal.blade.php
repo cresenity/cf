@@ -33,13 +33,13 @@
     </div>
     <div>
         <span class="btn btn-primary btn-dialog-select">
-            <span class="dialog-select-new"><?php echo clang::__($buttonLabel); ?></span>
+            <span class="dialog-select-new"><?php echo c::__($buttonLabel); ?></span>
             <span class="dialog-select-change dialog-select-exists">
-                <?php echo clang::__('Change'); ?>
+                <?php echo c::__('Change'); ?>
             </span>
             <input type="hidden" id="<?php echo $id; ?>" name="<?php echo $name; ?>" value="<?php echo $value; ?>">
         </span>
-        <!--<a href="javascript:;" class="btn btn-danger dialog-select-remove dialog-select-exists" data-dismiss="dialog-select"><?php echo clang::__('Remove'); ?></a>-->
+        <!--<a href="javascript:;" class="btn btn-danger dialog-select-remove dialog-select-exists" data-dismiss="dialog-select"><?php echo c::__('Remove'); ?></a>-->
     </div>
 </div>
 
@@ -66,7 +66,7 @@
                     <div class="col-md-12 docs-buttons">
                         <div class="btn-group">
                             <button type="button" class="btn btn-primary btn-choose">
-                                <?php echo clang::__('Choose'); ?>
+                                <?php echo c::__('Choose'); ?>
                             </button>
                         </div>
                     </div>

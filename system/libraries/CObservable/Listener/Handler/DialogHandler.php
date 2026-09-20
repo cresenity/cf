@@ -192,7 +192,7 @@ class CObservable_Listener_Handler_DialogHandler extends CObservable_Listener_Ha
 
         $jsOptions .= '}';
 
-        $js_class = ccfg::get('js_class');
+        $js_class = CApp_Config::get('js_class');
         if (strlen($js_class) > 0) {
             $this->js_class = $js_class;
         }

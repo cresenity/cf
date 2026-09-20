@@ -99,9 +99,9 @@ $org = $app->org();
 
                                         <div class="dropdown-menu pull-right">
 
-                                            <li><a href="<?php echo curl::base(); ?>admin/account/password/change"><i class="fas fa-key"></i>&nbsp;&nbsp;<?php echo clang::__('Change Password'); ?></a></li>
+                                            <li><a href="<?php echo curl::base(); ?>admin/account/password/change"><i class="fas fa-key"></i>&nbsp;&nbsp;<?php echo c::__('Change Password'); ?></a></li>
 
-                                            <li><a href="<?php echo curl::base(); ?>admin/auth/logout"><i class="fas fa-sign-out-alt"></i>&nbsp;&nbsp;<?php echo clang::__('Logout'); ?></a></li>
+                                            <li><a href="<?php echo curl::base(); ?>admin/auth/logout"><i class="fas fa-sign-out-alt"></i>&nbsp;&nbsp;<?php echo c::__('Logout'); ?></a></li>
                                         </div>
 
                                     </div>

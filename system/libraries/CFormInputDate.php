@@ -25,7 +25,7 @@ class CFormInputDate extends CFormInput {
 
         $this->type = 'date';
         $this->date_format = 'yyyy-mm-dd';
-        $date_format = ccfg::get('date_formatted');
+        $date_format = CApp_Config::get('date_formatted');
         if ($date_format != null) {
             $date_format = str_replace('Y', 'yyyy', $date_format);
             $date_format = str_replace('m', 'mm', $date_format);

@@ -392,11 +392,11 @@ class CForm extends CElement_Element {
             $ajax_url = $this->action;
             if (strlen($redirect_url) == 0) {
                 //ajax to this page
-                $ajax_url = curl::base() . crouter::complete_uri();
+                $ajax_url = curl::base() . c::router()->current()->getRouteData()->getCompleteUri();
             }
             if (strlen($redirect_url) == 0) {
                 //redirect to this page
-                $redirect_url = curl::base() . crouter::complete_uri();
+                $redirect_url = curl::base() . c::router()->current()->getRouteData()->getCompleteUri();
             }
             $script_redirect_url = '';
             if ($this->ajax_redirect) {

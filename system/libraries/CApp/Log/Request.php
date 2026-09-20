@@ -61,7 +61,7 @@ class CApp_Log_Request {
         }
         $ip_address = Base::remoteAddress();
 
-        $platform_version = crequest::platform_version();
+        $platform_version = '';
         $description = CF::domain();
 
         $data = [
@@ -76,11 +76,11 @@ class CApp_Log_Request {
             'platform_version' => $platform_version,
             'remote_addr' => $ip_address,
             'user_id' => $userId,
-            'uri' => crouter::complete_uri(),
-            'routed_uri' => crouter::routed_uri(),
-            'controller' => crouter::controller(),
-            'method' => crouter::method(),
-            'query_string' => crouter::query_string(),
+            'uri' => c::router()->current()->getRouteData()->getCompleteUri(),
+            'routed_uri' => c::router()->current()->getRouteData()->getRoutedUri(),
+            'controller' => c::router()->current()->getController(),
+            'method' => c::router()->current()->getRouteData()->getMethod(),
+            'query_string' => c::router()->current()->getRouteData()->getQueryString(),
             'nav' => $nav_name,
             'nav_label' => $nav_label,
             'action' => $action_name,

@@ -47,16 +47,16 @@ class CApp_ErrorHandler {
 
         $message = $html;
         if ($email == null) {
-            $email = ccfg::get('admin_email');
+            $email = CApp_Config::get('admin_email');
         }
 
         $smtpOptions = [];
-        if (ccfg::get('mail_error_smtp')) {
-            $smtpUsername = ccfg::get('smtp_username_error');
-            $smtpPassword = ccfg::get('smtp_password_error');
-            $smtpHost = ccfg::get('smtp_host_error');
-            $smtpPort = ccfg::get('smtp_port_error');
-            $secure = ccfg::get('smtp_secure_error');
+        if (CApp_Config::get('mail_error_smtp')) {
+            $smtpUsername = CApp_Config::get('smtp_username_error');
+            $smtpPassword = CApp_Config::get('smtp_password_error');
+            $smtpHost = CApp_Config::get('smtp_host_error');
+            $smtpPort = CApp_Config::get('smtp_port_error');
+            $secure = CApp_Config::get('smtp_secure_error');
 
             if (strlen($smtpUsername) > 0) {
                 $smtpOptions['smtp_username'] = $smtpUsername;

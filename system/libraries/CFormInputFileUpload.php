@@ -194,7 +194,7 @@ class CFormInputFileUpload extends CFormInput {
                 <input id="' . $div_id . '_input_temp" type="file" name="' . $div_id . '_input_temp[]" multiple style="display:none;">
                 <div id="' . $div_id . '_message" class="row alert alert-danger fade in">
                 </div>
-                <div id="' . $div_id . '_description">' . clang::__('Click or Drop Files On Box Below') . '</div>
+                <div id="' . $div_id . '_description">' . c::__('Click or Drop Files On Box Below') . '</div>
                 <div id="' . $div_id . '" class="row control-fileupload">
                 ');
         foreach ($this->files as $f) {
@@ -232,7 +232,7 @@ class CFormInputFileUpload extends CFormInput {
         ');
         $html->appendln('
             <div>
-                <div id="' . $div_id . '_btn_upload" class="btn btn-success">' . clang::__('Upload Image') . '</div>
+                <div id="' . $div_id . '_btn_upload" class="btn btn-success">' . c::__('Upload Image') . '</div>
             </div>
         ');
 

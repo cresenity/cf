@@ -80,12 +80,12 @@ class CFormInputImage extends CFormInput {
         if ($this->disabled_upload == false) {
             $html->appendln('		<span class="btn btn-file">');
 
-            $html->appendln('			<span class="fileupload-new">' . clang::__('Select Image') . '</span>');
-            $html->appendln('			<span class="fileupload-exists">' . clang::__('Change') . '</span>');
+            $html->appendln('			<span class="fileupload-new">' . c::__('Select Image') . '</span>');
+            $html->appendln('			<span class="fileupload-exists">' . c::__('Change') . '</span>');
             $html->appendln('				<input type="file" name="' . $this->name . '" id="' . $this->id . '"/>');
             $html->appendln('		</span>');
 
-            $html->appendln('		<a href="#" class="btn fileupload-exists" data-dismiss="fileupload">' . clang::__('Remove') . '</a>');
+            $html->appendln('		<a href="#" class="btn fileupload-exists" data-dismiss="fileupload">' . c::__('Remove') . '</a>');
         }
         $html->appendln('	</div>');
         $html->appendln('</div>');

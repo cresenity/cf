@@ -8,11 +8,11 @@ class CManager_Transform_DefaultMethod {
         if (strlen($rp) == 0) {
             return $rp;
         }
-        $ds = ccfg::get('decimal_separator');
+        $ds = CApp_Config::get('decimal_separator');
         if ($ds == null) {
             $ds = '.'; //decimal separator
         }
-        $ts = ccfg::get('thousand_separator');
+        $ts = CApp_Config::get('thousand_separator');
         if ($ts == null) {
             $ts = ','; //thousand separator
         }
@@ -57,7 +57,7 @@ class CManager_Transform_DefaultMethod {
                 $float = '';
             }
         }
-        $digit = ccfg::get('decimal_digit');
+        $digit = CApp_Config::get('decimal_digit');
         if ($decimal === null) {
             if ($digit != null) {
                 $float = substr($float, 0, $digit + 1) . '';
@@ -151,11 +151,11 @@ class CManager_Transform_DefaultMethod {
     }
 
     public static function unformatCurrency($x) {
-        $ds = ccfg::get('decimal_separator');
+        $ds = CApp_Config::get('decimal_separator');
         if ($ds == null) {
             $ds = '.'; //decimal separator
         }
-        $ts = ccfg::get('thousand_separator');
+        $ts = CApp_Config::get('thousand_separator');
         if ($ts == null) {
             $ts = ','; //thousand separator
         }

@@ -166,7 +166,7 @@ class CManager_Lang_Data {
                 foreach ($subData as $charKey => $subSubData) {
                     if ($char == null || $char == $charKey) {
                         $filename = static::getLangFile($charKey, $langKey);
-                        cphp::save_value($subSubData, $filename);
+                        CFile::putPhpValue($filename, $subSubData);
                     }
                 }
             }

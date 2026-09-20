@@ -117,7 +117,7 @@ class CWidget extends CElement_Element {
 
     public function set_title($title, $lang = true) {
         if ($lang) {
-            $title = clang::__($title);
+            $title = c::__($title);
         }
         $this->title = $title;
 

@@ -47,12 +47,12 @@
                     </a>
 
                     <a class="brand" href="<?php echo curl::base(); ?>">
-                        <?php echo ccfg::get('title'); ?>				
+                        <?php echo CApp_Config::get('title'); ?>				
                     </a>		
 
                     <div class="nav-collapse">
                         <ul class="nav pull-right">
-                            <?php if (ccfg::get("multilang")): ?>
+                            <?php if (CApp_Config::get("multilang")): ?>
                                     <li class="dropdown">
 
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -77,7 +77,7 @@
 
                                     </li>
                                 <?php endif; ?>
-                            <?php if (ccfg::get("signup")): ?>
+                            <?php if (CApp_Config::get("signup")): ?>
                                     <li class="">						
                                         <a href="<?php echo curl::base(); ?>cresenity/signup" class="">
                                             Create an Account
@@ -105,20 +105,20 @@
 
                 <form method="post" action="" id="form-login">
 
-                    <h1 class="align-center"><?php echo clang::__('Sign In'); ?></h1>		
+                    <h1 class="align-center"><?php echo c::__('Sign In'); ?></h1>		
 
                     <div class="login-fields">
                         <h4 class="align-center"><?php echo CApp::instance()->name() ?></h4>
                         <p>&nbsp;</p>
-                        <!-- <p><?php echo clang::__('Sign in using your registered account'); ?>:</p> -->
+                        <!-- <p><?php echo c::__('Sign in using your registered account'); ?>:</p> -->
 
                         <div class="field">
-                            <label for="email"><?php echo clang::__('ID'); ?>:</label>
+                            <label for="email"><?php echo c::__('ID'); ?>:</label>
                             <input type="text" id="email" name="email" value="<?php echo $username; ?>" placeholder="Email/Username" class="login username-field" autocomplete="off"/>
                         </div> <!-- /field -->
 
                         <div class="field">
-                            <label for="password"><?php echo clang::__('Password'); ?>:</label>
+                            <label for="password"><?php echo c::__('Password'); ?>:</label>
                             <input type="password" id="password" name="password" value="<?php echo $password; ?>" placeholder="Password" class="login password-field" autocomplete="off"/>
                         </div> <!-- /password -->
 
@@ -128,11 +128,11 @@
                         <span class="login-checkbox">
                             <!--
                             <input id="Field" name="Field" type="checkbox" class="field login-checkbox" value="First Choice" tabindex="4" />
-                            <label class="choice" for="Field"><?php echo clang::__('Keep me signed in'); ?></label>
+                            <label class="choice" for="Field"><?php echo c::__('Keep me signed in'); ?></label>
                             -->
                         </span>
 
-                        <button class="button btn btn-warning btn-large"><?php echo clang::__('Sign In'); ?></button>
+                        <button class="button btn btn-warning btn-large"><?php echo c::__('Sign In'); ?></button>
 
                     </div> <!-- .actions -->
 
@@ -144,13 +144,13 @@
 
         </div> <!-- /account-container -->
 
-        <?php if (ccfg::get("signup")): ?>
+        <?php if (CApp_Config::get("signup")): ?>
 
                 <!-- Text Under Box -->
                 <div class="login-extra">
-                    Don't have an account? <a href="<?php echo curl::base(); ?>cresenity/signup"><?php echo clang::__('Sign Up'); ?></a><br/>
+                    Don't have an account? <a href="<?php echo curl::base(); ?>cresenity/signup"><?php echo c::__('Sign Up'); ?></a><br/>
                     <!--
-                    <?php echo clang::__('Remind'); ?> <a href="<?php echo curl::base(); ?>/cresenity/forget_password"><?php echo clang::__('Password'); ?></a>
+                    <?php echo c::__('Remind'); ?> <a href="<?php echo curl::base(); ?>/cresenity/forget_password"><?php echo c::__('Password'); ?></a>
                     -->
                 </div> <!-- /login-extra -->
             <?php endif; ?>

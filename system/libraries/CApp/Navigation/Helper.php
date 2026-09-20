@@ -434,7 +434,7 @@ class CApp_Navigation_Helper {
         if (isset($nav['requirements'])) {
             $requirements = $nav['requirements'];
             foreach ($requirements as $k => $v) {
-                $configValue = ccfg::get($k, $domain);
+                $configValue = CApp_Config::get($k, $domain);
                 if ($configValue != $v) {
                     return false;
                 }
@@ -473,7 +473,7 @@ class CApp_Navigation_Helper {
                     $requirements = $act['requirements'];
 
                     foreach ($requirements as $k => $v) {
-                        $config_value = ccfg::get($k, $domain);
+                        $config_value = CApp_Config::get($k, $domain);
                         if ($config_value != $v) {
                             return false;
                         }

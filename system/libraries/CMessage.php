@@ -44,25 +44,25 @@
             case 'warning':
                 $icon = 'fa-warning';
                 $class = ' alert-warning';
-                $header = clang::__('Warning') . '!';
+                $header = c::__('Warning') . '!';
 
                 break;
             case 'info':
                 $icon = 'fa-info';
                 $class = ' alert-info';
-                $header = clang::__('Info') . '!';
+                $header = c::__('Info') . '!';
 
                 break;
             case 'success':
                 $icon = 'fa-check';
                 $class = ' alert-success';
-                $header = clang::__('Success') . '!';
+                $header = c::__('Success') . '!';
 
                 break;
             default:
                 $icon = 'fa-ban';
                 $class = ' alert-error alert-danger';
-                $header = clang::__('Error') . '!';
+                $header = c::__('Error') . '!';
 
                 break;
         }

@@ -44,7 +44,7 @@ $org = $app->org();
 
                     <a class="brand" href="<?php echo curl::base(); ?>">
                         <?php
-                        $web_title = ccfg::get('title');
+                        $web_title = CApp_Config::get('title');
                         //if($org!=null) $web_title = strtoupper($org->name);
                         echo $web_title;
                         ?>
@@ -53,7 +53,7 @@ $org = $app->org();
                     </span>
                     <div class="nav-collapse">
                         <ul class="nav pull-right">
-                            <?php if (ccfg::get('top_menu_cashier')): ?>
+                            <?php if (CApp_Config::get('top_menu_cashier')): ?>
                                 <li >
                                     <a href="<?php echo curl::base(); ?>retail/sales" id="">
                                         <i class="icon-th"></i>
@@ -87,7 +87,7 @@ $org = $app->org();
                                 <?php endif; ?>
 
                             </li>
-                            <?php if (ccfg::get('multilang')): ?>
+                            <?php if (CApp_Config::get('multilang')): ?>
                                 <li class="dropdown">
 
                                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -128,11 +128,11 @@ $org = $app->org();
                                     <li><a href="javascript:;">My Groups</a></li>
                                     <li class="divider"></li>
                                     -->
-                                    <li><a href="<?php echo curl::base(); ?>account/profile"><i class="icon icon-user"></i>&nbsp;&nbsp;<?php echo clang::__('My Profile'); ?></a></li>
-                                    <li><a href="<?php echo curl::base(); ?>account/settings"><i class="icon icon-wrench"></i>&nbsp;&nbsp;<?php echo clang::__('My Settings'); ?></a></li>
+                                    <li><a href="<?php echo curl::base(); ?>account/profile"><i class="icon icon-user"></i>&nbsp;&nbsp;<?php echo c::__('My Profile'); ?></a></li>
+                                    <li><a href="<?php echo curl::base(); ?>account/settings"><i class="icon icon-wrench"></i>&nbsp;&nbsp;<?php echo c::__('My Settings'); ?></a></li>
                                     <li class="divider"></li>
-                                    <li><a href="<?php echo curl::base(); ?>account/change_password"><i class="icon icon-key"></i>&nbsp;&nbsp;<?php echo clang::__('Change Password'); ?></a></li>
-                                    <li><a href="<?php echo curl::base(); ?>cresenity/logout"><i class="icon icon-signout"></i>&nbsp;&nbsp;<?php echo clang::__('Logout'); ?></a></li>
+                                    <li><a href="<?php echo curl::base(); ?>account/change_password"><i class="icon icon-key"></i>&nbsp;&nbsp;<?php echo c::__('Change Password'); ?></a></li>
+                                    <li><a href="<?php echo curl::base(); ?>cresenity/logout"><i class="icon icon-signout"></i>&nbsp;&nbsp;<?php echo c::__('Logout'); ?></a></li>
                                 </ul>
 
                             </li>
@@ -259,10 +259,10 @@ echo $ready_client_script;
     </body>
 </html>
 <?php
-if (ccfg::get('log_request')) {
+if (CApp_Config::get('log_request')) {
     $user = CApp::instance()->user();
     if ($user != null) {
-        clog::request($user->user_id);
+        CApp_Log_Request::populate();
     }
 }
 ?>

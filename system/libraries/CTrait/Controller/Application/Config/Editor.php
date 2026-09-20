@@ -105,7 +105,7 @@ trait CTrait_Controller_Application_Config_Editor {
                 $currentConfig = include $appConfigFile;
             }
             carr::set_path($currentConfig, $key, $newValueCasted);
-            cphp::save_value($currentConfig, $appConfigFile);
+            CFile::putPhpValue($appConfigFile, $currentConfig);
             if ($errCode == 0) {
                 cmsg::add('success', 'Successfully edit setting');
                 curl::redirect($this->baseUri());

@@ -8,7 +8,7 @@ class CHelper_Formatter {
             return $time;
         }
         if ($format == null) {
-            $format = ccfg::get('long_date_formatted');
+            $format = CApp_Config::get('long_date_formatted');
         }
         if (strlen($format) == 0) {
             $format = 'Y-m-d H:i:s';
