@@ -165,15 +165,39 @@ class DeprecatedCollectorTest extends TestCase {
     }
 
     public function testCemailSenderAndLinkedinDriverReportThemselves() {
-        CEmail::sender(['driver' => 'null']);
-        CSocialLogin::driver('linkedin', ['client_id' => 'a', 'client_secret' => 'b', 'redirect' => 'https://cb']);
+        $originalSwitch = CConfig::repository()->get('email.legacy_sender_via_mailer');
+        CConfig::repository()->set('email.legacy_sender_via_mailer', false);
+        try {
+            CEmail::sender(['driver' => 'null']);
+            CEmail::sender(['smtp_host' => 'smtp.sendgrid.net', 'smtp_password' => 'k']);
+            CSocialLogin::driver('linkedin', ['client_id' => 'a', 'client_secret' => 'b', 'redirect' => 'https://cb']);
+        } finally {
+            CConfig::repository()->set('email.legacy_sender_via_mailer', $originalSwitch);
+        }
 
         $apis = array_column($this->collector->stored, 'api');
-        $this->assertSame(['CEmail::sender', 'CSocialLogin driver linkedin'], $apis);
+        $this->assertSame(['CEmail::sender', 'CEmail_Driver_NullDriver', 'CEmail::sender', 'CEmail_Config smtp_* options', 'CEmail_Driver_SendGridDriver', 'CSocialLogin driver linkedin'], $apis, 'fasad (per baris pemanggil), driver lama yang benar-benar dipakai, dan bentuk config smtp_* masing-masing dilaporkan');
         $this->assertSame('CEmail::mailer()', $this->collector->stored[0]['replacement']);
-        $this->assertSame(__FILE__, $this->collector->stored[0]['file'], 'pemanggil CEmail::sender = test ini');
-        $this->assertSame(__FILE__, $this->collector->stored[1]['file'], 'walau lewat DriverManager di framework, pemanggil yang dicatat tetap kode di luar system/');
-        $this->assertSame('CSocialLogin_DriverManager->createLinkedinDriver', $this->collector->stored[1]['deprecatedIn']);
+        $this->assertSame("CEmail::mailer() dengan transport 'sendgrid' (atau email.legacy_sender_via_mailer)", $this->collector->stored[4]['replacement']);
+        foreach ([0, 1, 2, 3, 4, 5] as $i) {
+            $this->assertSame(__FILE__, $this->collector->stored[$i]['file'], 'entri #' . $i . ': walau lewat beberapa lapis framework, pemanggil yang dicatat tetap kode di luar system/');
+        }
+        $this->assertSame('CSocialLogin_DriverManager->createLinkedinDriver', $this->collector->stored[5]['deprecatedIn']);
+        $this->assertSame('CEmail_Factory::createDriver', $this->collector->stored[1]['deprecatedIn']);
+        $this->assertSame('CEmail_Config->reformatOptions', $this->collector->stored[3]['deprecatedIn']);
+    }
+
+    public function testSenderThroughTheMailerAdapterOnlyReportsTheFacade() {
+        $originalSwitch = CConfig::repository()->get('email.legacy_sender_via_mailer');
+        CConfig::repository()->set('email.legacy_sender_via_mailer', true);
+        try {
+            CEmail::sender(['driver' => 'null']);
+        } finally {
+            CConfig::repository()->set('email.legacy_sender_via_mailer', $originalSwitch);
+            CEmail_Sender_MailerDriver::forgetMailers();
+        }
+
+        $this->assertSame(['CEmail::sender'], array_column($this->collector->stored, 'api'), 'adaptor bukan jalur deprecated, hanya fasadnya yang dilaporkan');
     }
 
     public function testFileFallbackWritesOneJsonLinePerEntryUnderTempCollectorDeprecated() {

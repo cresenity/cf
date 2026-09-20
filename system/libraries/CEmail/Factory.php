@@ -39,6 +39,8 @@ class CEmail_Factory {
         }
 
         if ($class) {
+            CF::deprecated($class, "CEmail::mailer() dengan transport '" . CEmail_Config::transportForDriver($driver) . "' (atau email.legacy_sender_via_mailer)", '1.9');
+
             return new $class($config);
         }
 

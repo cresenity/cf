@@ -107,6 +107,7 @@ class CEmail_Config {
         $newConfig = $config;
 
         if ($isLegacyOptions) {
+            CF::deprecated('CEmail_Config smtp_* options', "'driver' => '<smtp|sendgrid|...>' + host/port/username/password (bentuk email.mailers.<name>)", '1.9');
             $smtpHost = carr::get($config, 'host', carr::get($config, 'smtp_host'));
             if ($smtpHost == null) {
                 throw new CEmail_Exception_InvalidConfigException('Konfigurasi email tidak punya driver maupun host SMTP; isi salah satu dari: driver, host/smtp_host, app.email.host, app.smtp_host');
@@ -229,9 +230,20 @@ class CEmail_Config {
      *
      * @return array
      */
+    /**
+     * Transport CEmail_MailManager untuk nama driver lama.
+     *
+     * @param string $driver
+     *
+     * @return string
+     */
+    public static function transportForDriver($driver) {
+        return carr::get(static::$driverToTransportMap, strtolower(str_replace(['_', '-'], '', (string) $driver)), (string) $driver);
+    }
+
     public function toMailerConfig($name = null) {
         $driver = (string) $this->driver;
-        $transport = carr::get(static::$driverToTransportMap, strtolower(str_replace(['_', '-'], '', $driver)), $driver);
+        $transport = static::transportForDriver($driver);
         $config = ['name' => $name ?: 'legacy-' . $driver, 'transport' => $transport];
 
         switch ($transport) {
