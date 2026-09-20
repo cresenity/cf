@@ -495,6 +495,24 @@ final class CF {
      *
      * @return bool
      */
+    /**
+     * Semua isi modules/ (modules/cresenity: vendor Google/Facebook/League lama, media) sudah deprecated;
+     * kelas yang masih dimuat dari sana dilaporkan ke kolektor deprecation lalu path-nya dikembalikan.
+     *
+     * @param string $class
+     * @param string $path
+     *
+     * @return string
+     */
+    protected static function reportDeprecatedModuleFile($class, $path) {
+        if (defined('MODPATH') && strpos($path, MODPATH) === 0) {
+            $relative = ltrim(substr($path, strlen(DOCROOT)), DS);
+            static::deprecated('modules: ' . $class, 'padanannya di system/libraries atau system/vendor (modules/ dihapus di 2.0)', '1.9', 'Kelas ' . $class . ' dimuat dari ' . $relative . ' (modules/ deprecated)');
+        }
+
+        return $path;
+    }
+
     public static function autoLoad($class, $directory = 'libraries') {
         if (class_exists($class, false)) {
             return true;
@@ -538,7 +556,7 @@ final class CF {
         if ($type == 'controllers') {
             foreach ($fileCandidates as $fileCandidate) {
                 if ($filename = self::findFile($type, $fileCandidate, false, false, false, false)) {
-                    require $filename;
+                    require static::reportDeprecatedModuleFile($class, $filename);
 
                     return true;
                 }
@@ -550,7 +568,7 @@ final class CF {
         }
 
         if ($filename = self::findFile($type, $file)) {
-            require $filename;
+            require static::reportDeprecatedModuleFile($class, $filename);
             $classNotFound = true;
 
             return true;
@@ -582,7 +600,7 @@ final class CF {
                 if ($path = self::findFile('vendor', $routingFile)) {
                     // Load the class file
 
-                    require $path;
+                    require static::reportDeprecatedModuleFile($class, $path);
 
                     if (class_exists($class) || interface_exists($class)) {
                         $classNotFound = false;
@@ -597,7 +615,7 @@ final class CF {
                     if ($path = self::findFile('tests', $routingFile)) {
                         // Load the class file
 
-                        require $path;
+                        require static::reportDeprecatedModuleFile($class, $path);
 
                         if (class_exists($class) || interface_exists($class)) {
                             $classNotFound = false;
@@ -611,7 +629,7 @@ final class CF {
             // find file at libraries
             if ($path = self::findFile($directory, $routingFile)) {
                 // Load the class file
-                require $path;
+                require static::reportDeprecatedModuleFile($class, $path);
                 $classNotFound = true;
 
                 return true;
@@ -627,7 +645,7 @@ final class CF {
                     if ($path = self::findFile($directory, $routingFile)) {
                         // Load the class file
 
-                        require $path;
+                        require static::reportDeprecatedModuleFile($class, $path);
                         $classNotFound = true;
 
                         return true;

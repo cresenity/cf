@@ -200,6 +200,34 @@ class DeprecatedCollectorTest extends TestCase {
         $this->assertSame(['CEmail::sender'], array_column($this->collector->stored, 'api'), 'adaptor bukan jalur deprecated, hanya fasadnya yang dilaporkan');
     }
 
+    public function testClassesAutoloadedFromModulesAreReported() {
+        if (!is_file(DOCROOT . 'modules/cresenity/vendor/Facebook/FacebookBatchRequest.php')) {
+            $this->markTestSkipped('modules/cresenity tidak ada di checkout ini');
+        }
+        if (class_exists('Facebook\\FacebookBatchRequest', false)) {
+            $this->markTestSkipped('kelas sudah dimuat proses lain');
+        }
+
+        $line = __LINE__ + 1;
+        $this->assertTrue(class_exists('Facebook\\FacebookBatchRequest'));
+
+        $reports = array_values(array_filter($this->collector->stored, function ($data) {
+            return strpos($data['api'], 'modules: ') === 0;
+        }));
+        $this->assertNotEmpty($reports, 'kelas dari modules/ dilaporkan');
+        $this->assertSame('modules: Facebook\\FacebookBatchRequest', $reports[0]['api']);
+        $this->assertStringContainsString('modules/cresenity/vendor/Facebook/FacebookBatchRequest.php', $reports[0]['message']);
+        $this->assertSame(__FILE__, $reports[0]['file'], 'pemanggil = kode yang memicu autoload');
+        $this->assertSame($line, $reports[0]['line']);
+        $this->assertSame('1.9', $reports[0]['since']);
+
+        $this->collector->stored = [];
+        $this->assertTrue(class_exists('CEmail_Address'));
+        $this->assertSame([], array_filter($this->collector->stored, function ($data) {
+            return strpos($data['api'], 'modules: ') === 0;
+        }), 'kelas dari system/ tidak dilaporkan');
+    }
+
     public function testFileFallbackWritesOneJsonLinePerEntryUnderTempCollectorDeprecated() {
         $real = new CDebug_Collector_Deprecated();
         $path = DOCROOT . 'temp' . DS . 'collector' . DS . 'deprecated' . DS . date('Ymd') . '.txt';
