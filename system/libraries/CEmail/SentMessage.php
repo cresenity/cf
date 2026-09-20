@@ -5,7 +5,7 @@ use Symfony\Component\Mailer\SentMessage as SymfonySentMessage;
 /**
  * @mixin \Symfony\Component\Mailer\SentMessage
  */
-class CEmail_SentMessage {
+class CEmail_SentMessage implements JsonSerializable {
     use CTrait_ForwardsCalls;
 
     /**
@@ -52,6 +52,30 @@ class CEmail_SentMessage {
      *
      * @return array
      */
+    /**
+     * Ringkasan untuk log (mis. log_notification.vendor_response): id pesan, penerima envelope, debug transport.
+     *
+     * @return array
+     */
+    public function jsonSerialize() {
+        $recipients = array_map(function ($address) {
+            return $address->getAddress();
+        }, $this->sentMessage->getEnvelope()->getRecipients());
+
+        return [
+            'message_id' => $this->sentMessage->getMessageId(),
+            'recipients' => $recipients,
+            'debug' => trim($this->sentMessage->getDebug()),
+        ];
+    }
+
+    /**
+     * @return string id pesan
+     */
+    public function __toString() {
+        return (string) $this->sentMessage->getMessageId();
+    }
+
     public function __serialize() {
         $originalMessage = $this->sentMessage->getOriginalMessage();
         /** @var \Symfony\Component\Mime\Email $originalMessage */

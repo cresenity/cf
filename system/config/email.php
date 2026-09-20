@@ -3,6 +3,9 @@ defined('SYSPATH') or die('No direct access allowed.');
 
 return [
     'default' => c::env('MAIL_MAILER', 'mail'),
+    // true: CEmail::sender()->send() (jalur lama) dikirim lewat mailer/transport di bawah,
+    // bukan CEmail_Driver_* lama. Tanda tangan dan nilai baliknya tidak berubah.
+    'legacy_sender_via_mailer' => c::env('MAIL_LEGACY_SENDER_VIA_MAILER', false),
     'mailers' => [
         'mail' => [
             'transport' => 'mail',

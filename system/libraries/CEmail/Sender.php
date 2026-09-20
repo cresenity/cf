@@ -12,7 +12,16 @@ class CEmail_Sender {
         if (!($config instanceof CEmail_Config)) {
             $config = new CEmail_Config($config);
         }
-        $this->driver = CEmail_Factory::createDriver($config);
+        $this->driver = static::viaMailer() ? new CEmail_Sender_MailerDriver($config) : CEmail_Factory::createDriver($config);
+    }
+
+    /**
+     * Saklar `email.legacy_sender_via_mailer`: kirim lewat CEmail_Mailer (Symfony) alih-alih CEmail_Driver_* lama.
+     *
+     * @return bool
+     */
+    public static function viaMailer() {
+        return (bool) CF::config('email.legacy_sender_via_mailer', false);
     }
 
     /**
