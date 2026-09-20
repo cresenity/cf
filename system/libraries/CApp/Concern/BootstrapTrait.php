@@ -85,9 +85,7 @@ trait CApp_Concern_BootstrapTrait {
                 'label' => CElement_FormInput_Label::class,
                 'quill' => CElement_FormInput_Textarea_Quill::class,
                 'ckeditor' => CElement_FormInput_Textarea_CKEditor::class,
-                // 'filedrop' => CFormInputFileDrop::class,
                 'slider' => CElement_FormInput_Slider::class,
-                //'tooltip' => CFormInputTooltip::class,
                 'fileupload' => CElement_FormInput_MultipleImageAjax::class,
             ]);
 

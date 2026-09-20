@@ -39,7 +39,7 @@ class CWidget extends CElement_Element {
     /**
      * Undocumented variable.
      *
-     * @var CFormInput
+     * @var CElement_FormInput
      */
     protected $switcher;
 
