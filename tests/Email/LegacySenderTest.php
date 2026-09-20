@@ -141,9 +141,17 @@ class LegacySenderTest extends TestCase {
         $options = $method->invoke($sender, ['smtp_from_name' => 'Dari Record', 'cc' => 'cc@x.test', 'attachments' => '/tmp/a.pdf']);
         $this->assertSame('noreply@app.test', $options['from']);
         $this->assertSame('Dari Record', $options['from_name']);
+
         $this->assertSame(['cc@x.test'], $options['cc'], 'cc string dibungkus array');
         $this->assertSame([], $options['bcc']);
         $this->assertSame(['/tmp/a.pdf'], $options['attachments']);
+
+        $configured = CEmail::sender(['driver' => 'null', 'from' => 'kirim@x.test', 'from_name' => 'Config']);
+        $options = $method->invoke($configured, []);
+        $this->assertSame('kirim@x.test', $options['from'], 'from di config pengirim menang atas default app');
+        $this->assertSame('Config', $options['from_name']);
+        $options = $method->invoke($configured, ['from' => 'opsi@x.test']);
+        $this->assertSame('opsi@x.test', $options['from'], 'opsi per-kirim menang atas config');
     }
 
     public function testFactoryResolvesDriverNamesAndRejectsUnknownOnes() {
