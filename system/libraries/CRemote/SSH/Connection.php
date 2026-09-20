@@ -32,9 +32,7 @@ class CRemote_SSH_Connection implements CRemote_SSH_ConnectionInterface {
     protected $output;
 
     /**
-     * @param string                       $name
-     * @param CRemote_SSH_Config           $config
-     * @param CRemote_SSH_GatewayInterface $gateway
+     * @param string $name
      */
     public function __construct($name, CRemote_SSH_Config $config, ?CRemote_SSH_GatewayInterface $gateway = null) {
         $this->name = $name;
@@ -55,8 +53,7 @@ class CRemote_SSH_Connection implements CRemote_SSH_ConnectionInterface {
     }
 
     /**
-     * @param string   $task
-     * @param \Closure $callback
+     * @param string $task
      *
      * @return void
      */
@@ -68,7 +65,6 @@ class CRemote_SSH_Connection implements CRemote_SSH_ConnectionInterface {
 
     /**
      * @param string|array $commands
-     * @param \Closure     $callback
      *
      * @return mixed
      */
@@ -103,16 +99,33 @@ class CRemote_SSH_Connection implements CRemote_SSH_ConnectionInterface {
     }
 
     /**
+     * The connect attempt is retried once on a transient connection failure
+     * (e.g. "Connection closed by server") before giving up - the first
+     * attempt can land on a socket the remote end already dropped, and
+     * simply trying again against a fresh connection usually succeeds.
+     *
      * @throws \RuntimeException
      *
      * @return CRemote_SSH_Gateway
      */
     public function getGateway() {
         if (!$this->gateway->connected()) {
-            try {
-                $connected = $this->gateway->connect($this->config->getUsername());
-            } catch (\Exception $ex) {
-                throw new \RuntimeException('Unable to connect to remote server: ' . $ex->getMessage(), 0, $ex);
+            $lastException = null;
+
+            for ($attempt = 1; $attempt <= 2; $attempt++) {
+                try {
+                    $connected = $this->gateway->connect($this->config->getUsername());
+                    $lastException = null;
+
+                    break;
+                } catch (\Exception $ex) {
+                    $lastException = $ex;
+                    $this->gateway->resetConnection();
+                }
+            }
+
+            if ($lastException !== null) {
+                throw new \RuntimeException('Unable to connect to remote server: ' . $lastException->getMessage(), 0, $lastException);
             }
             if (!$connected) {
                 throw new \RuntimeException('Unable to connect to remote server: authentication failed for user ' . $this->config->getUsername());
@@ -160,8 +173,6 @@ class CRemote_SSH_Connection implements CRemote_SSH_ConnectionInterface {
     }
 
     /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
-     *
      * @return void
      */
     public function setOutput(OutputInterface $output) {

@@ -2,11 +2,10 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-
 use phpseclib3\Net\SFTP;
 use phpseclib3\Net\SSH2;
-use phpseclib3\Crypt\PublicKeyLoader;
 use phpseclib3\System\SSH\Agent;
+use phpseclib3\Crypt\PublicKeyLoader;
 
 class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
     /**
@@ -33,9 +32,6 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
      */
     protected $tunnelKeyFile;
 
-    /**
-     * @param CRemote_SSH_Config $config
-     */
     public function __construct(CRemote_SSH_Config $config) {
         $this->config = $config;
     }
@@ -147,6 +143,25 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
     }
 
     /**
+     * Melepas objek koneksi SSH2/SFTP dan tunnel proxy-jump (kalau ada) yang
+     * sudah dibangun, supaya getConnection() membangun sambungan baru dari
+     * nol pada pemanggilan berikutnya - dipakai saat mencoba ulang setelah
+     * koneksi ditutup paksa oleh server (lihat
+     * CRemote_SSH_Connection::getGateway()), karena me-retry connect() pada
+     * objek SFTP yang socket-nya sudah mati hanya gagal lagi dengan cara
+     * yang sama.
+     *
+     * @return void
+     */
+    public function resetConnection() {
+        if ($this->connection) {
+            $this->connection->disconnect();
+        }
+        $this->connection = null;
+        $this->closeTunnel();
+    }
+
+    /**
      * Membuka local port forward lewat bastion host memakai binary ssh
      * sistem, lalu mengembalikan host:port lokal yang siap dipakai
      * phpseclib seolah koneksi langsung.
@@ -215,10 +230,9 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
     }
 
     /**
-     * @param CRemote_SSH_Config $jump
-     * @param string             $targetHost
-     * @param int                $targetPort
-     * @param int                $localPort
+     * @param string $targetHost
+     * @param int    $targetPort
+     * @param int    $localPort
      *
      * @throws \RuntimeException
      *

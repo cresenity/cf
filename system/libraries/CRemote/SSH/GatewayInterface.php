@@ -20,6 +20,14 @@ interface CRemote_SSH_GatewayInterface {
     public function connected();
 
     /**
+     * Discard the current connection (and any proxy-jump tunnel) so the next
+     * call builds a fresh one instead of retrying on a dead socket.
+     *
+     * @return void
+     */
+    public function resetConnection();
+
+    /**
      * Run a command against the server (non-blocking).
      *
      * @param string $command
