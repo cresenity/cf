@@ -116,13 +116,13 @@ class CDebug_DebugBar_Renderer {
         $html = '';
 
         foreach ($this->cssFiles as $css) {
-            $cssRoute = curl::base() . 'modules/cresenity/media/css/' . $css;
+            $cssRoute = CManager_Asset_Helper::urlCssFile(CManager_Asset_Helper::fullpathCssFile($css));
             $html .= "<link rel='stylesheet' type='text/css' property='stylesheet' href='{$cssRoute}'>" . PHP_EOL;
         }
         $jquery = curl::base() . 'media/js/libs/jquery-3.3.1/jquery-3.3.1.min.js';
         $html .= "<script type='text/javascript' src='{$jquery}'></script>" . PHP_EOL;
         foreach ($this->jsFiles as $js) {
-            $jsRoute = curl::base() . 'modules/cresenity/media/js/' . $js;
+            $jsRoute = CManager_Asset_Helper::urlJsFile(CManager::asset()->runTime()->fullpathJsFile($js));
             $html .= "<script type='text/javascript' src='{$jsRoute}'></script>" . PHP_EOL;
         }
         // finds assets provided by collectors
@@ -130,11 +130,11 @@ class CDebug_DebugBar_Renderer {
             if (($collector instanceof AssetProvider) && !in_array($collector->getName(), $this->ignoredCollectors)) {
                 $assets = $collector->getAssets();
                 foreach (carr::get($assets, 'css', []) as $css) {
-                    $cssRoute = curl::base() . 'modules/cresenity/media/css/' . $css;
+                    $cssRoute = CManager_Asset_Helper::urlCssFile(CManager_Asset_Helper::fullpathCssFile($css));
                     $html .= "<link rel='stylesheet' type='text/css' property='stylesheet' href='{$cssRoute}'>" . PHP_EOL;
                 }
                 foreach (carr::get($assets, 'js', []) as $js) {
-                    $jsRoute = curl::base() . 'modules/cresenity/media/js/' . $js;
+                    $jsRoute = CManager_Asset_Helper::urlJsFile(CManager::asset()->runTime()->fullpathJsFile($js));
                     $html .= "<script type='text/javascript' src='{$jsRoute}'></script>" . PHP_EOL;
                 }
                 foreach (carr::get($assets, 'inline_head', []) as $inline) {
