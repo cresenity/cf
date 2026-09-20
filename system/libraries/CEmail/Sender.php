@@ -36,19 +36,14 @@ class CEmail_Sender {
 
     protected function rebuildOptions($options) {
         if (!isset($options['from'])) {
-            //`app.email.from` dibaca lebih dulu, sejalan dengan baris
-            //`from_name` di bawah. Sebelumnya hanya `app.smtp_from` yang
-            //dibaca, sehingga aplikasi yang memakai bentuk `app.email.*`
-            //diam-diam mengirim dengan alamat bawaan kerangka kerja - dan
-            //penyedia email menolaknya karena pengirimnya tidak terautentikasi.
-            $options['from'] = carr::get($options, 'smtp_from', CF::config('app.email.from', CF::config('app.smtp_from')));
+            $options['from'] = CEmail_Config::resolveFrom($options);
         }
         if (!isset($options['domain'])) {
             $options['domain'] = carr::get($options, 'smtp_domain', CF::config('app.smtp_domain'));
         }
 
         if (!isset($options['from_name'])) {
-            $options['from_name'] = carr::get($options, 'smtp_from_name', CF::config('app.email.from_name', CF::config('app.smtp_from_name')));
+            $options['from_name'] = CEmail_Config::resolveFromName($options);
         }
 
         if (!isset($options['attachments'])) {

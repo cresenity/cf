@@ -10,6 +10,7 @@ class CEmail_Factory {
         'ses' => CEmail_Driver_SesDriver::class,
         'sesV2' => CEmail_Driver_SesV2Driver::class,
         'smtp' => CEmail_Driver_SmtpDriver::class,
+        'null' => CEmail_Driver_NullDriver::class,
     ];
 
     /**
@@ -18,8 +19,16 @@ class CEmail_Factory {
      * @return CEmail_DriverAbstract
      */
     public static function createDriver(CEmail_Config $config) {
-        $driver = $config->getDriver();
+        $driver = (string) $config->getDriver();
         $class = carr::get(static::$driverMap, $driver);
+        if (!$class) {
+            $normalized = strtolower(str_replace(['_', '-'], '', $driver));
+            foreach (static::$driverMap as $name => $mapped) {
+                if (strtolower($name) === $normalized) {
+                    $class = $mapped;
+                }
+            }
+        }
         if (!$class) {
             if (class_exists('CEmail_Driver_' . cstr::ucfirst(cstr::camel($driver)) . 'Driver')) {
                 $class = 'CEmail_Driver_' . cstr::ucfirst(cstr::camel($driver)) . 'Driver';
@@ -30,6 +39,6 @@ class CEmail_Factory {
             return new $class($config);
         }
 
-        throw new Exception('Mail driver:' . $driver . ' not found');
+        throw new CEmail_Exception_DriverNotFoundException('Mail driver [' . $driver . '] not found; known drivers: ' . implode(', ', array_keys(static::$driverMap)));
     }
 }

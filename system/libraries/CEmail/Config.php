@@ -84,7 +84,7 @@ class CEmail_Config {
         if ($isLegacyOptions) {
             $smtpHost = carr::get($config, 'host', carr::get($config, 'smtp_host'));
             if ($smtpHost == null) {
-                throw new Exception('SMTP Host is null');
+                throw new CEmail_Exception_InvalidConfigException('Konfigurasi email tidak punya driver maupun host SMTP; isi salah satu dari: driver, host/smtp_host, app.email.host, app.smtp_host');
             }
 
             $driver = carr::get(static::$smtpHostToDriverMap, $smtpHost, 'smtp');
@@ -107,13 +107,13 @@ class CEmail_Config {
 
     public function mergeWithDefaultConfig($config) {
         if (!isset($config['from']) || c::blank($config['from'])) {
-            $config['from'] = carr::get($config, 'smtp_from', CF::config('app.email.from', CF::config('app.smtp_from')));
+            $config['from'] = static::resolveFrom($config);
         }
 
         if (!isset($config['from_name']) || c::blank($config['from_name'])) {
-            $config['from_name'] = carr::get($config, 'smtp_from_name', CF::config('app.email.from_name', CF::config('app.smtp_from_name')));
+            $config['from_name'] = static::resolveFromName($config);
         }
-        if (!isset($config['host']) || c::blank($config['from'])) {
+        if (!isset($config['host']) || c::blank($config['host'])) {
             $config['host'] = carr::get($config, 'smtp_host', CF::config('app.email.host', CF::config('app.smtp_host')));
         }
         if (!isset($config['username']) || c::blank($config['username'])) {
@@ -133,6 +133,59 @@ class CEmail_Config {
     /**
      * @return string
      */
+    /**
+     * Alamat pengirim: from → smtp_from → app.email.from → app.smtp_from. Satu-satunya urutan
+     * yang dipakai Sender dan Config.
+     *
+     * @param array $options
+     *
+     * @return null|string
+     */
+    public static function resolveFrom(array $options) {
+        foreach (['from', 'smtp_from'] as $key) {
+            if (!c::blank(carr::get($options, $key))) {
+                return carr::get($options, $key);
+            }
+        }
+
+        return CF::config('app.email.from', CF::config('app.smtp_from'));
+    }
+
+    /**
+     * Nama pengirim: from_name → smtp_from_name → app.email.from_name → app.smtp_from_name.
+     *
+     * @param array $options
+     *
+     * @return null|string
+     */
+    public static function resolveFromName(array $options) {
+        foreach (['from_name', 'smtp_from_name'] as $key) {
+            if (!c::blank(carr::get($options, $key))) {
+                return carr::get($options, $key);
+            }
+        }
+
+        return CF::config('app.email.from_name', CF::config('app.smtp_from_name'));
+    }
+
+    /**
+     * Enkripsi SMTP yang dinormalkan dari nilai `secure` apa pun yang ditulis app:
+     * tls/starttls → 'tls', ssl → 'ssl', false/'false'/none/'' → null.
+     *
+     * @return null|string
+     */
+    public function getEncryption() {
+        $secure = strtolower(trim((string) $this->secure));
+        if (in_array($secure, ['tls', 'starttls', 'true', '1'], true)) {
+            return 'tls';
+        }
+        if ($secure === 'ssl') {
+            return 'ssl';
+        }
+
+        return null;
+    }
+
     public function getDriver() {
         return $this->driver;
     }
