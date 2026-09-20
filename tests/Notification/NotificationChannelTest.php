@@ -34,6 +34,20 @@ class UjiNotif_Message extends CNotification_MethodAbstract {
  * CustomChannel dengan handler closure yang menulis log_notification (SQLite in-memory) —
  * status SUCCESS/FAILED, vendor_response, recipient model/koleksi, jalur send() tanpa antrean.
  */
+class UjiNotif_EmailMessage extends CNotification_MethodAbstract {
+    public function execute() {
+        return [[
+            'recipient' => [['email' => 'a@x.test', 'name' => 'Budi'], 'b@x.test'],
+            'subject' => 'Subjek Email',
+            'message' => '<p>Isi</p>',
+            'cc' => 'cc@x.test',
+            'attachments' => [['data' => 'isi', 'name' => 'catatan.txt', 'mime' => 'text/plain']],
+            'mailer' => carr::get($this->options, 'mailer'),
+            'options' => ['smtp_from' => 'kirim@x.test', 'smtp_from_name' => 'Pengirim', 'reply_to' => 'balas@x.test'] + (carr::get($this->options, 'mailer') ? [] : ['driver' => 'null']),
+        ]];
+    }
+}
+
 class NotificationChannelTest extends TestCase {
     const CONNECTION = 'uji_notif';
 
@@ -68,6 +82,45 @@ class NotificationChannelTest extends TestCase {
         return array_map(function ($r) {
             return (array) $r;
         }, $this->db->table('log_notification')->orderBy('log_notification_id')->get()->all());
+    }
+
+    // ---- email channel ----
+
+    public function testEmailChannelSendsARecordThroughANamedMailer() {
+        $originalMailers = CConfig::repository()->get('email.mailers');
+        CConfig::repository()->set('email.mailers.uji_array', ['transport' => 'array']);
+        CEmail::manager()->purge('uji_array');
+        try {
+            CNotification::email()->sendWithoutQueue(UjiNotif_EmailMessage::class, ['mailer' => 'uji_array']);
+            $messages = CEmail::mailer('uji_array')->getSymfonyTransport()->messages();
+            $this->assertCount(1, $messages, 'record dengan kunci mailer terkirim lewat CEmail::mailer(), bukan TypeError');
+            $email = $messages[0]->getOriginalMessage();
+            $this->assertSame('Subjek Email', $email->getSubject());
+            $this->assertSame(['a@x.test', 'b@x.test'], array_map(function ($a) {
+                return $a->getAddress();
+            }, $email->getTo()));
+            $this->assertSame('Budi', $email->getTo()[0]->getName());
+            $this->assertSame('cc@x.test', $email->getCc()[0]->getAddress());
+            $this->assertSame('kirim@x.test', $email->getFrom()[0]->getAddress());
+            $this->assertSame('Pengirim', $email->getFrom()[0]->getName());
+            $this->assertSame('balas@x.test', $email->getReplyTo()[0]->getAddress());
+            $this->assertSame('<p>Isi</p>', $email->getHtmlBody());
+            $this->assertCount(1, $email->getAttachments());
+            $log = $this->logs();
+            $this->assertSame('SUCCESS', $log[0]['notification_status']);
+            $this->assertNotEmpty($log[0]['vendor_response']);
+        } finally {
+            CConfig::repository()->set('email.mailers', $originalMailers);
+            CEmail::manager()->purge('uji_array');
+        }
+    }
+
+    public function testEmailChannelWithoutMailerGoesThroughTheLegacySender() {
+        CNotification::email()->sendWithoutQueue(UjiNotif_EmailMessage::class, []);
+        $log = $this->logs();
+        $this->assertCount(1, $log);
+        $this->assertSame('SUCCESS', $log[0]['notification_status'], 'driver null lewat CEmail::sender() tidak melempar');
+        $this->assertSame('Email', $log[0]['channel']);
     }
 
     // ---- manager ----
