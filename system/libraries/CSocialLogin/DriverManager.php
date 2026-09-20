@@ -73,6 +73,8 @@ class CSocialLogin_DriverManager {
      * @return CSocialLogin_OAuth2_AbstractProvider
      */
     protected function createLinkedinDriver() {
+        CF::deprecated('CSocialLogin driver linkedin', "driver 'linkedin-openid'", '1.9');
+
         return $this->buildProvider(CSocialLogin_OAuth2_Provider_LinkedInProvider::class, $this->config);
     }
 
@@ -104,6 +106,8 @@ class CSocialLogin_DriverManager {
      * @return CSocialLogin_OAuth2_AbstractProvider
      */
     protected function createInstagramDriver() {
+        CF::deprecated('CSocialLogin driver instagram', 'Instagram API with Instagram Login (belum ada provider)', '1.9');
+
         return $this->buildProvider(CSocialLogin_OAuth2_Provider_InstagramProvider::class, $this->config);
     }
 

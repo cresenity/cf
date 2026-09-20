@@ -12,8 +12,11 @@ class CEmail {
      * @param array $config
      *
      * @return CEmail_Sender
+     *
+     * @deprecated 1.9 pakai CEmail::mailer($name) (config `email.mailers.<name>`); sender() tetap berjalan dan bisa dialihkan ke mailer lewat `email.legacy_sender_via_mailer`
      */
     public static function sender(array $config = []) {
+        CF::deprecated('CEmail::sender', 'CEmail::mailer()', '1.9');
 
         return new CEmail_Sender($config);
     }
