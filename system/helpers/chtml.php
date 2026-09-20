@@ -20,6 +20,7 @@ class chtml {
      * @return string
      */
     public static function specialchars($str, $double_encode = true) {
+        CF::deprecated(__METHOD__, 'c::e', null, null, true);
         // Force the string to be a string
         $str = (string) $str;
 

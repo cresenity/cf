@@ -12,6 +12,7 @@ class crouter {
      * @deprecated since 1.2, use CF::domain
      */
     public static function domain() {
+        CF::deprecated(__METHOD__, 'CF::domain', '1.2', null, true);
         return CF::domain();
     }
 
@@ -21,10 +22,12 @@ class crouter {
      * @deprecated since 1.3, use c::router()->current()->getController();
      */
     public static function controller() {
+        CF::deprecated(__METHOD__, 'c::router()->current()->getController()', '1.3', null, true);
         return c::router()->current()->getController();
     }
 
     public static function controller_dir() {
+        CF::deprecated(__METHOD__, 'c::router()', '1.8', null, true);
         return c::router()->current()->getRouteData()->getControllerDir();
     }
 
@@ -34,6 +37,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function method() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getMethod();
     }
 
@@ -43,6 +47,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function routed_uri() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getRoutedUri();
     }
 
@@ -52,6 +57,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function complete_uri() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getCompleteUri();
     }
 
@@ -61,6 +67,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function query_string() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getQueryString();
     }
 
@@ -70,6 +77,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function current_uri() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getUri();
     }
 
@@ -79,6 +87,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function urlSuffix() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getUrlSuffix();
     }
 
@@ -88,6 +97,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function segments() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getSegments();
     }
 
@@ -97,6 +107,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function controller_path() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getControllerPath();
     }
 
@@ -106,6 +117,7 @@ class crouter {
      * @deprecated since 1.3, dont use anymore, build from c::request
      */
     public static function arguments() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.3', null, true);
         return c::router()->current()->getRouteData()->getArguments();
     }
 }

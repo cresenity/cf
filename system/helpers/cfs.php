@@ -17,6 +17,7 @@ class cfs {
      * @return array
      */
     public static function list_files_in_dir($dir, &$results = [], $ignore_dir = []) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         $files = scandir($dir);
 
         foreach ($files as $key => $value) {
@@ -40,6 +41,7 @@ class cfs {
      * @return array
      */
     public static function list_files($dir) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         $result = [];
         $dir = rtrim($dir, DS) . DS;
         if (is_dir($dir)) {
@@ -68,6 +70,7 @@ class cfs {
      * @return array
      */
     public static function list_dir($dir) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         $result = [];
         $dir = rtrim($dir, DS) . DS;
         if (is_dir($dir)) {
@@ -89,6 +92,7 @@ class cfs {
     }
 
     public static function delete_dir($dir, $virtual = false) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         $ds = DIRECTORY_SEPARATOR;
         $dir = $virtual ? realpath($dir) : $dir;
         $dir = substr($dir, -1) == $ds ? substr($dir, 0, -1) : $dir;
@@ -112,6 +116,7 @@ class cfs {
     }
 
     public static function basename($str) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         return basename($str);
     }
 
@@ -124,6 +129,7 @@ class cfs {
      * @return bool TRUE if folder exists and is writable, otherwise FALSE
      */
     public static function mkdir($dir) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         // Test write-permissions for the folder and create/fix if necessary.
         if ((is_dir($dir) && is_writable($dir)) || (!is_dir($dir) && @mkdir($dir, 0755, true)) || chmod($dir, 0755)) {
             return true;
@@ -133,16 +139,19 @@ class cfs {
     }
 
     public static function is_dir($dir) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         return is_dir($dir);
     }
 
     public static function is_file($value) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         $value = strval(str_replace("\0", '', $value));
 
         return is_file($value);
     }
 
     public static function file_exists($value) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         if (!cfs::is_file($value)) {
             return false;
         }
@@ -151,10 +160,12 @@ class cfs {
     }
 
     public static function mtime($file) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         return filemtime($file);
     }
 
     public static function mtime_diff($file, $time = null) {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         if ($time == null) {
             return time() - cfs::mtime($file);
         }
@@ -181,6 +192,7 @@ class cfs {
      * @return mixed number of bytes written on success, otherwise FALSE
      */
     public static function atomic_write($filename, $data, $atomic_suffix = 'atomictmp') {
+        CF::deprecated(__METHOD__, 'CFile', '1.6', null, true);
         // Perform an exclusive (locked) overwrite to a temporary file.
         $filenameTmp = sprintf('%s.%s', $filename, $atomic_suffix);
         $writeResult = @file_put_contents($filenameTmp, $data, LOCK_EX);

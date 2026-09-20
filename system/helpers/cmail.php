@@ -24,6 +24,7 @@ class cmail {
      */
     //@codingStandardsIgnoreStart
     public static function send_smtp($to, $subject, $message, $attachments = [], $cc = [], $bcc = [], $options = []) {
+        CF::deprecated(__METHOD__, 'CEmail', '1.2', null, true);
         //@codingStandardsIgnoreEnd
         $options['cc'] = $cc;
         $options['bcc'] = $bcc;
@@ -133,6 +134,7 @@ class cmail {
     }
 
     public static function send($to, $subject, $message, $headers) {
+        CF::deprecated(__METHOD__, 'CEmail', '1.6', null, true);
         return @mail($to, $subject, $message, $headers);
     }
 }

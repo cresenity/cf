@@ -15,6 +15,7 @@ class crole {
     protected static $roles = [];
 
     public static function get($id) {
+        CF::deprecated(__METHOD__, 'c::app()->role()', '1.2', null, true);
         return c::app()->getRole($id);
     }
 }

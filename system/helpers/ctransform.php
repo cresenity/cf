@@ -17,6 +17,7 @@ class ctransform {
      * @return string
      */
     public static function thousand_separator($rp, $decimal = null, $always_decimal = false) {
+        CF::deprecated(__METHOD__, 'c::app()->formatter()', '1.3', null, true);
         $minus_str = '';
         $rp = floatval($rp);
         $rp = sprintf('%d', $rp);
@@ -95,6 +96,7 @@ class ctransform {
     }
 
     public static function short_date_format($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         if (strlen($x) > 10) {
             $x = substr($x, 0, 10);
         }
@@ -103,26 +105,32 @@ class ctransform {
     }
 
     public static function uppercase($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return strtoupper($x);
     }
 
     public static function lowercase($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return strtolower($x);
     }
 
     public static function month_name($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return cutils::month_name($x);
     }
 
     public static function html_specialchars($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return chtml::specialchars($x);
     }
 
     public static function lang($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return clang::__($x);
     }
 
     public static function date_formatted($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         if (strlen($x) == 0) {
             return $x;
         }
@@ -135,6 +143,7 @@ class ctransform {
     }
 
     public static function long_date_formatted($x, $unformat = false) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         if (strlen($x) == 0) {
             return $x;
         }
@@ -150,30 +159,37 @@ class ctransform {
     }
 
     public static function format_date($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return self::date_formatted($x);
     }
 
     public static function unformat_date($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return date('Y-m-d', strtotime($x));
     }
 
     public static function format_long_date($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return self::long_date_formatted($x);
     }
 
     public static function format_datetime($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return self::long_date_formatted($x);
     }
 
     public static function unformat_long_date($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return date('Y-m-d H:i:s', strtotime($x));
     }
 
     public static function unformat_datetime($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         return date('Y-m-d H:i:s', strtotime($x));
     }
 
     public static function format_currency($x, $unformat = false) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         if ($unformat) {
             return self::unformat_currency($x);
         } else {
@@ -182,6 +198,7 @@ class ctransform {
     }
 
     public static function unformat_currency($x) {
+        CF::deprecated(__METHOD__, 'c::transform', '1.6', null, true);
         $ds = ccfg::get('decimal_separator');
         if ($ds == null) {
             $ds = '.'; //decimal separator

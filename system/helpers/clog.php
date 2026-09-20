@@ -28,6 +28,7 @@ class clog {
      * @return void
      */
     public static function login($user_id) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         $app = CApp::instance();
         $app_id = $app->appId();
         $db = c::db();
@@ -56,6 +57,7 @@ class clog {
     }
 
     public static function loginFail($username, $password, $errorMessage) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         $app = CApp::instance();
 
         $data = [
@@ -78,10 +80,12 @@ class clog {
     }
 
     public static function request($user_id = null) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         CApp_Log_Request::populate();
     }
 
     public static function activity($param, $activity_type = '', $description = '') {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         $data_before = [];
         $data_after = [];
         if (!is_array($param)) {
@@ -159,6 +163,7 @@ class clog {
     }
 
     public static function backup($user_id, $filename, $directory = '') {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         $db = c::db();
         $app = c::app();
         $org = $app->org();
@@ -178,6 +183,7 @@ class clog {
     }
 
     public static function cleanup($user_id) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         $db = c::db();
         $app = c::app();
         $org = $app->org();
@@ -192,6 +198,7 @@ class clog {
     }
 
     public static function log($filename, $type, $message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         $date = date('Y-m-d H:i:s');
         $type = str_replace(["\r", "\n"], ' ', (string) $type);
         $message = str_replace(["\r", "\n"], ' ', (string) $message);
@@ -224,44 +231,54 @@ class clog {
      * @return bool
      */
     public static function write($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         $level = CLogger::INFO;
 
         return CLogger::logger()->log($level, $message);
     }
 
     public static function emergency($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->emergency($message);
     }
 
     public static function alert($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->alert($message);
     }
 
     public static function critical($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->critical($message);
     }
 
     public static function error($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->error($message);
     }
 
     public static function warning($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->warning($message);
     }
 
     public static function notice($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->notice($message);
     }
 
     public static function info($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->info($message);
     }
 
     public static function debug($message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return CLogger::logger()->debug($message);
     }
 
     public static function login_fail($username, $password, $error_message) {
+        CF::deprecated(__METHOD__, 'c::log()', '1.6', null, true);
         return self::loginFail($username, $password, $error_message);
     }
 }

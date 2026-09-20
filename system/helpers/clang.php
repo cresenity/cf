@@ -14,6 +14,7 @@ class clang {
     ];
 
     public static function __($message, $params = [], $lang = null) {
+        CF::deprecated(__METHOD__, 'c::__', '1.6', null, true);
         if (strpos($message, '.') !== false) {
             $message = CTranslation::translator()->get($message, $params, $lang);
         }
@@ -61,6 +62,7 @@ class clang {
      */
 
     public static function current_lang_name() {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         $code = clang::getlang();
         $name = clang::get_lang_name_by_code($code);
 
@@ -68,6 +70,7 @@ class clang {
     }
 
     public static function get_lang_name_by_code($code) {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         foreach (self::$langs as $k => $v) {
             if ($k == $code) {
                 return $v;
@@ -78,14 +81,17 @@ class clang {
     }
 
     public static function get_lang_list() {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         return self::$langs;
     }
 
     public static function defaultlang() {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         return ccfg::get('lang');
     }
 
     public static function getlang() {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         $session = CSession::instance();
 
         $lang = $session->get('lang');
@@ -98,11 +104,13 @@ class clang {
     }
 
     public static function setlang($lang) {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         $session = CSession::instance();
         $session->set('lang', $lang);
     }
 
     public static function get_file($lang) {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         $file = CF::getFile('lang', $lang);
         if ($file != null) {
             return $file;
@@ -112,6 +120,7 @@ class clang {
     }
 
     public static function get_dir($lang) {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         $file = CF::getDir('lang');
         if ($file != null) {
             return $file;
@@ -121,6 +130,7 @@ class clang {
     }
 
     public static function langfiles($directory, $filename, $required = false, $ext = false) {
+        CF::deprecated(__METHOD__, 'CTranslation', '1.6', null, true);
         // NOTE: This test MUST be not be a strict comparison (===), or empty
         // extensions will be allowed!
         if ($ext == '') {

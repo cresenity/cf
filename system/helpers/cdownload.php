@@ -22,6 +22,7 @@ class cdownload {
      * @return void
      */
     public static function force($filename = null, $data = null, $nicename = null) {
+        CF::deprecated(__METHOD__, 'c::response()->download()', '1.6', null, true);
         if (empty($filename)) {
             return false;
         }

@@ -44,6 +44,7 @@ class cdbg {
      */
     //@codingStandardsIgnoreStart
     public static function var_dump($var, $return = false) {
+        CF::deprecated(__METHOD__, 'cdbg::varDump()', '1.2', null, true);
         return cdbg::varDump($var, $return);
     }
 

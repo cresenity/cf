@@ -17,6 +17,7 @@ class cobj {
      * @deprecated since 1.2 use c::get
      */
     public static function get($object, $key, $default = null) {
+        CF::deprecated(__METHOD__, 'c::get', '1.2', null, true);
         return isset($object->$key) ? $object->$key : $default;
     }
 }

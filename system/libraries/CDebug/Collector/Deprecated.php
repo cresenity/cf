@@ -15,23 +15,27 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
 
     /**
      * @param string $message
-     * @param array  $context ['api' => 'CEmail::sender', 'replacement' => 'CEmail::mailer()', 'since' => '1.9']
+     * @param array  $context ['api' => 'CEmail::sender', 'replacement' => 'CEmail::mailer()', 'since' => '1.9', 'appCallerOnly' => false]
      *
      * @return null|array data yang dikumpulkan, null bila dilewati
      */
     public function collect($message = '', array $context = []) {
-        if (!CF::config('collector.deprecated')) {
-            return null;
-        }
-
         try {
-            $data = $this->getDataFromDeprecation((string) $message, $context, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 25));
-            $key = md5($data['api'] . '|' . $data['message'] . '|' . $data['file'] . '|' . $data['line']);
-            if (isset($this->collected[$key])) {
+            if (!CF::config('collector.deprecated')) {
                 return null;
             }
             $limit = (int) CF::config('collector.deprecatedLimit', 50);
             if ($limit > 0 && count($this->collected) >= $limit) {
+                return null;
+            }
+
+            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 25);
+            if (carr::get($context, 'appCallerOnly') && !$this->isCalledFromApp($trace)) {
+                return null;
+            }
+            $data = $this->getDataFromDeprecation((string) $message, $context, $trace);
+            $key = md5($data['api'] . '|' . $data['message'] . '|' . $data['file'] . '|' . $data['line']);
+            if (isset($this->collected[$key])) {
                 return null;
             }
             $this->collected[$key] = true;
@@ -83,16 +87,14 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
     }
 
     /**
-     * Pisahkan trace menjadi: fungsi deprecated yang memanggil collect (class::method), frame pemanggilnya
-     * (berkas/baris di kode app), dan ringkasan 5 frame.
+     * Buang frame milik kolektor sendiri: collect(), collectDeprecated(), CDebug::collector(), CF::deprecated().
      *
      * @param array $trace
      *
-     * @return array [deprecatedIn, callerFrame, frames]
+     * @return array
      */
-    protected function resolveFrames(array $trace) {
-        // buang frame milik kolektor sendiri: collect(), collectDeprecated(), CDebug::collector(), CF::deprecated()
-        $frames = array_values(array_filter($trace, function ($frame) {
+    protected function filterCollectorFrames(array $trace) {
+        return array_values(array_filter($trace, function ($frame) {
             $class = carr::get($frame, 'class');
             $function = carr::get($frame, 'function');
             if ($class === 'CF' && $function === 'deprecated') {
@@ -101,6 +103,18 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
 
             return $class !== 'CDebug' && $class !== 'CDebug_CollectorManager' && !is_a($class ?: 'stdClass', CDebug_Collector_Deprecated::class, true);
         }));
+    }
+
+    /**
+     * Pisahkan trace menjadi: fungsi deprecated yang memanggil collect (class::method), frame pemanggilnya
+     * (berkas/baris di kode app), dan ringkasan 5 frame.
+     *
+     * @param array $trace
+     *
+     * @return array [deprecatedIn, callerFrame, frames]
+     */
+    protected function resolveFrames(array $trace) {
+        $frames = $this->filterCollectorFrames($trace);
 
         // frame[0] = fungsi deprecated (yang memanggil collectDeprecated); 'file'/'line' tiap frame = tempat ia dipanggil
         $deprecatedFrame = carr::get($frames, 0, []);
@@ -127,6 +141,20 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
         }
 
         return [$deprecatedIn, $caller, $summary];
+    }
+
+    /**
+     * Benar bila fungsi deprecated (frame pertama setelah kolektor) dipanggil langsung dari berkas di luar system/.
+     *
+     * @param array $trace
+     *
+     * @return bool
+     */
+    protected function isCalledFromApp(array $trace) {
+        $frames = $this->filterCollectorFrames($trace);
+        $directCallerFile = carr::get(carr::get($frames, 0, []), 'file');
+
+        return $directCallerFile !== null && strpos($directCallerFile, rtrim(SYSPATH, DS) . DS) !== 0;
     }
 
     /**

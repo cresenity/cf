@@ -15,6 +15,7 @@ class cvalid {
      * @return bool
      */
     public static function email($email) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         return (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
 
         //return (bool) preg_match('/^[-_a-z0-9\'+*$^&%=~!?{}]++(?:\.[-_a-z0-9\'+*$^&%=~!?{}]+)*+@(?:(?![-.])[-a-z0-9.]+(?<![-.])\.[a-z]{2,6}|\d{1,3}(?:\.\d{1,3}){3})(?::\d++)?$/iD', (string) $email);
@@ -30,6 +31,7 @@ class cvalid {
      * @return bool
      */
     public static function email_domain($email) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // If we can't prove the domain is invalid, consider it valid
         // Note: checkdnsrr() is not implemented on Windows platforms
         if (!function_exists('checkdnsrr')) {
@@ -54,6 +56,7 @@ class cvalid {
      * @return bool
      */
     public static function email_rfc($email) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         $qtext = '[^\\x0d\\x22\\x5c\\x80-\\xff]';
         $dtext = '[^\\x0d\\x5b-\\x5d\\x80-\\xff]';
         $atom = '[^\\x00-\\x20\\x22\\x28\\x29\\x2c\\x2e\\x3a-\\x3c\\x3e\\x40\\x5b-\\x5d\\x7f-\\xff]+';
@@ -79,6 +82,7 @@ class cvalid {
      * @return bool
      */
     public static function url($url) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         return (bool) filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED);
     }
 
@@ -95,6 +99,7 @@ class cvalid {
      * @return bool
      */
     public static function ip($ip, $ipv6 = false, $allow_private = true) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // By default do not allow private and reserved range IPs
         $flags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
         if ($allow_private === true) {
@@ -121,6 +126,7 @@ class cvalid {
      * @return bool
      */
     public static function credit_card($number, $type = null) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // Remove all non-digit characters from the number
         if (($number = preg_replace('/\D+/', '', $number)) === '') {
             return false;
@@ -197,6 +203,7 @@ class cvalid {
      * @return bool
      */
     public static function phone($number, $lengths = null) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         if (!is_array($lengths)) {
             $lengths = [7, 10, 11];
         }
@@ -217,6 +224,7 @@ class cvalid {
      * @return bool
      */
     public static function date($str) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         return strtotime($str) !== false;
     }
 
@@ -231,6 +239,7 @@ class cvalid {
      * @return bool
      */
     public static function alpha($str, $utf8 = false) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         return ($utf8 === true)
             ? (bool) preg_match('/^\pL++$/uD', (string) $str)
             : ctype_alpha((string) $str);
@@ -247,6 +256,7 @@ class cvalid {
      * @return bool
      */
     public static function alpha_numeric($str, $utf8 = false) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         return ($utf8 === true)
             ? (bool) preg_match('/^[\pL\pN]++$/uD', (string) $str)
             : ctype_alnum((string) $str);
@@ -263,6 +273,7 @@ class cvalid {
      * @return bool
      */
     public static function alpha_dash($str, $utf8 = false) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         return ($utf8 === true)
             ? (bool) preg_match('/^[-\pL\pN_]++$/uD', (string) $str)
             : (bool) preg_match('/^[-a-z0-9_]++$/iD', (string) $str);
@@ -279,6 +290,7 @@ class cvalid {
      * @return bool
      */
     public static function digit($str, $utf8 = false) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         return ($utf8 === true)
             ? (bool) preg_match('/^\pN++$/uD', (string) $str)
             : ctype_digit((string) $str);
@@ -296,6 +308,7 @@ class cvalid {
      * @return bool
      */
     public static function numeric($str) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // Use localeconv to set the decimal_point value: Usually a comma or period.
         $locale = localeconv();
 
@@ -312,6 +325,7 @@ class cvalid {
      * @return bool
      */
     public static function standard_text($str) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // pL matches letters
         // pN matches numbers
         // pZ matches whitespace
@@ -335,6 +349,7 @@ class cvalid {
      * @return bool
      */
     public static function decimal($str, $format = null) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // Create the pattern
         $pattern = '/^[0-9]%s\.[0-9]%s$/';
 
@@ -355,6 +370,7 @@ class cvalid {
     }
 
     public static function passport($passport) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // Passport must be only digits
         if (preg_match("/^\d{10}$|^\d{12}$/", $passport) === 0) {
             return false;
@@ -364,6 +380,7 @@ class cvalid {
     }
 
     public function mysql_date($date) {
+        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
         // Date mask YYYY-MM-DD
         if (preg_match('/^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$/', $date) === 0) {
             return false;

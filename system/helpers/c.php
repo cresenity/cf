@@ -444,6 +444,7 @@ class c {
      * @return string
      */
     public static function html($str) {
+        CF::deprecated(__METHOD__, 'c::e', null, null, true);
         return c::e($str);
     }
 

@@ -720,14 +720,19 @@ final class CF {
      * @param null|string $replacement mis. 'CEmail::mailer()'
      * @param null|string $since       versi yang men-deprecate, mis. '1.9'
      * @param null|string $message     pesan tambahan; default dibangun dari api/replacement
+     * @param bool        $appCallerOnly hanya catat bila pemanggil langsungnya di luar system/ (untuk helper yang masih dipakai framework sendiri)
      *
      * @return void
      */
-    public static function deprecated($api, $replacement = null, $since = null, $message = null) {
-        if ($message === null) {
-            $message = $api . ' sudah deprecated' . ($since ? ' sejak ' . $since : '') . ($replacement ? ', pakai ' . $replacement : '');
+    public static function deprecated($api, $replacement = null, $since = null, $message = null, $appCallerOnly = false) {
+        try {
+            if ($message === null) {
+                $message = $api . ' sudah deprecated' . ($since ? ' sejak ' . $since : '') . ($replacement ? ', pakai ' . $replacement : '');
+            }
+            CDebug::collector()->collectDeprecated($message, ['api' => $api, 'replacement' => $replacement, 'since' => $since, 'appCallerOnly' => $appCallerOnly]);
+        } catch (Throwable $e) {
+            // penanda deprecated tidak boleh pernah mengganggu jalur normal
         }
-        CDebug::collector()->collectDeprecated($message, ['api' => $api, 'replacement' => $replacement, 'since' => $since]);
     }
 
     /**

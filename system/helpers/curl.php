@@ -270,6 +270,7 @@ class curl {
      * @deprecated
      */
     public static function as_post_string($val, $key = null) {
+        CF::deprecated(__METHOD__, 'http_build_query()', null, null, true);
         return static::asPostString($val, $key);
     }
 
@@ -291,6 +292,7 @@ class curl {
      */
     //@codingStandardsIgnoreStart
     public static function remove_scheme($url) {
+        CF::deprecated(__METHOD__, 'curl::removeScheme()', null, null, true);
         return static::removeScheme($url);
     }
 

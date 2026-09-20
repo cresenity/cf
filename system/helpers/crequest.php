@@ -16,6 +16,7 @@ class crequest {
      * @return string
      */
     public static function referrer($default = false) {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         if (!empty($_SERVER['HTTP_REFERER'])) {
             // Set referrer
             $ref = $_SERVER['HTTP_REFERER'];
@@ -30,10 +31,12 @@ class crequest {
     }
 
     public static function current_container_id() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         return carr::get($_GET, 'capp_current_container_id');
     }
 
     public static function userAgent() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         return CHTTP::request()->userAgent();
     }
 
@@ -43,10 +46,12 @@ class crequest {
      * @return string
      */
     public static function user_agent() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.2', null, true);
         return static::userAgent();
     }
 
     public static function browser() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         return CHTTP::request()->browser()->getBrowser();
     }
 
@@ -56,14 +61,17 @@ class crequest {
      * @return string
      */
     public static function browser_version() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.2', null, true);
         return static::browserVersion();
     }
 
     public static function browserVersion() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         return CHTTP::request()->browser()->getVersion();
     }
 
     public static function platform() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         return CHTTP::request()->browser()->getPlatform();
     }
 
@@ -73,6 +81,7 @@ class crequest {
      * @return string
      */
     public static function platform_version() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.2', null, true);
         return '';
     }
 
@@ -84,6 +93,7 @@ class crequest {
      * @return string
      */
     public static function remoteAddress() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.2', null, true);
         return CHTTP::request()->ip();
     }
 
@@ -95,6 +105,7 @@ class crequest {
      * @deprecated 1.2
      */
     public static function remote_address() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.2', null, true);
         return CHTTP::request()->ip();
     }
 
@@ -105,6 +116,7 @@ class crequest {
      * @return string
      */
     public static function protocol() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         if (PHP_SAPI === 'cli') {
             return null;
         } elseif (!empty($_SERVER['HTTPS']) and $_SERVER['HTTPS'] === 'on') {
@@ -121,6 +133,7 @@ class crequest {
      * @return bool
      */
     public static function is_ajax() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) and strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
@@ -133,6 +146,7 @@ class crequest {
      * @static
      */
     public static function is_https() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.2', null, true);
         return static::isHttps();
     }
 
@@ -145,6 +159,7 @@ class crequest {
      * @static
      */
     public static function isHttps() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         return static::protocol() === 'https';
     }
 
@@ -154,6 +169,7 @@ class crequest {
      * @return string
      */
     public static function method() {
+        CF::deprecated(__METHOD__, 'c::request()', '1.6', null, true);
         $method = strtolower(carr::get($_SERVER, 'REQUEST_METHOD', 'GET'));
 
         return $method;

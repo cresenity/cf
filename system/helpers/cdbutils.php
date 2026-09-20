@@ -45,6 +45,7 @@ class cdbutils {
      * @return mixed
      */
     public static function row_exists($table, $where = [], $db = null) {
+        CF::deprecated(__METHOD__, null, '1.6', null, true);
         if ($db == null) {
             $db = c::db();
         }
@@ -66,6 +67,7 @@ class cdbutils {
      * @return mixed
      */
     public static function get_value($query, $db = null) {
+        CF::deprecated(__METHOD__, 'c::db()->getValue', '1.6', null, true);
         if ($db == null) {
             $db = c::db();
         }
@@ -94,6 +96,7 @@ class cdbutils {
      * @return object
      */
     public static function get_row($query, $db = null) {
+        CF::deprecated(__METHOD__, 'c::db()->getRow', '1.6', null, true);
         if ($db == null) {
             $db = c::db();
         }
@@ -114,6 +117,7 @@ class cdbutils {
      * @return array
      */
     public static function get_array($query, $db = null) {
+        CF::deprecated(__METHOD__, 'c::db()->getArray', '1.6', null, true);
         if ($db == null) {
             $db = c::db();
         }
@@ -148,6 +152,7 @@ class cdbutils {
      * @return array
      */
     public static function get_list($query, $db = null) {
+        CF::deprecated(__METHOD__, 'c::db()->getList', '1.6', null, true);
         if ($db == null) {
             $db = c::db();
         }

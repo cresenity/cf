@@ -17,6 +17,7 @@ class cmailapi {
      * @param mixed $options
      */
     public static function sendgridv3($to, $subject, $message, $attachments = [], $cc = [], $bcc = [], $options = []) {
+        CF::deprecated(__METHOD__, 'CEmail', '1.2', null, true);
         $options['driver'] = 'sendgrid';
         $options['cc'] = $cc;
         $options['bcc'] = $bcc;
@@ -139,6 +140,7 @@ class cmailapi {
      * @param mixed $options
      */
     public static function sendgrid($to, $subject, $message, $attachments = [], $cc = [], $bcc = [], $options = []) {
+        CF::deprecated(__METHOD__, 'CEmail', '1.2', null, true);
         $options['driver'] = 'sendgrid';
         $options['cc'] = $cc;
         $options['bcc'] = $bcc;
@@ -219,6 +221,7 @@ class cmailapi {
     }
 
     public static function mailgun($to, $subject, $message, $attachments = [], $cc = [], $bcc = [], $options = []) {
+        CF::deprecated(__METHOD__, 'CEmail', '1.6', null, true);
         //$sendgrid_apikey = "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";
         //public key: pubkey-c338bfc1568e4d6e79331119e6c56645
         //private key: key-5f194bedfdade1fa513910895857d447
@@ -306,6 +309,7 @@ class cmailapi {
     }
 
     public static function elasticemail($to, $subject, $message, $attachments = [], $cc = [], $bcc = [], $options = []) {
+        CF::deprecated(__METHOD__, 'CEmail', '1.6', null, true);
         $smtp_password = carr::get($options, 'smtp_password');
         $smtp_host = carr::get($options, 'smtp_host');
         if (!$smtp_password) {
@@ -379,6 +383,7 @@ class cmailapi {
     }
 
     public static function postmark($to, $subject, $message, $attachments = [], $cc = [], $bcc = [], $options = []) {
+        CF::deprecated(__METHOD__, 'CEmail', '1.6', null, true);
         $smtp_password = carr::get($options, 'smtp_password');
         $smtp_host = carr::get($options, 'smtp_host');
         if (!$smtp_password) {
