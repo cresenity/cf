@@ -269,6 +269,28 @@ class CEmail_MailManager implements CEmail_Contract_FactoryInterface {
         return new CEmail_Transport_BrevoTransport(CVendor_Brevo::transactionalEmail(['apiKey' => $key]));
     }
 
+    /**
+     * @param array $config
+     *
+     * @return CEmail_Transport_MailersendTransport
+     */
+    protected function createMailersendTransport(array $config) {
+        $key = carr::get($config, 'key') ?: CF::config('vendor.mailersend.api_key');
+
+        return new CEmail_Transport_MailersendTransport(new CVendor_MailerSend(['api_key' => $key]));
+    }
+
+    /**
+     * @param array $config
+     *
+     * @return CEmail_Transport_KirimEmailTransport
+     */
+    protected function createKirimemailTransport(array $config) {
+        $key = carr::get($config, 'key') ?: CF::config('vendor.kirimemail.api_key');
+
+        return new CEmail_Transport_KirimEmailTransport($key, carr::get($config, 'domain'));
+    }
+
     protected function createSesTransport(array $config) {
         $config = array_merge(
             CF::config('vendor.ses', []),
