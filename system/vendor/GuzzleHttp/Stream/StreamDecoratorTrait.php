@@ -9,6 +9,9 @@ use GuzzleHttp\Stream\Exception\CannotAttachException;
  */
 trait StreamDecoratorTrait
 {
+    /** @var StreamInterface */
+    protected $stream;
+
     /**
      * @param StreamInterface $stream Stream to decorate
      */

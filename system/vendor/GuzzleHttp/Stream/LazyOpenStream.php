@@ -23,6 +23,8 @@ class LazyOpenStream implements StreamInterface
     {
         $this->filename = $filename;
         $this->mode = $mode;
+        // let __get() lazily create it, same as before $stream was declared
+        unset($this->stream);
     }
 
     /**

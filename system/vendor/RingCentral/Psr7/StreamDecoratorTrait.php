@@ -9,12 +9,20 @@ use Psr\Http\Message\StreamInterface;
  */
 abstract class StreamDecoratorTrait implements StreamInterface
 {
+    /** @var StreamInterface */
+    protected $stream;
+
     /**
      * @param StreamInterface $stream Stream to decorate
      */
     public function __construct(StreamInterface $stream = null)
     {
-        if ($stream) $this->stream = $stream;
+        if ($stream) {
+            $this->stream = $stream;
+        } else {
+            // let __get() lazily create it, same as before $stream was declared
+            unset($this->stream);
+        }
     }
 
     /**

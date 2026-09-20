@@ -7,6 +7,16 @@ namespace GuzzleHttp\Ring\Future;
 class FutureArray implements FutureArrayInterface
 {
     use MagicFutureTrait;
+    use BaseFutureTrait {
+        BaseFutureTrait::__construct as private baseFutureConstruct;
+    }
+
+    public function __construct(\React\Promise\PromiseInterface $promise, callable $wait = null, callable $cancel = null)
+    {
+        $this->baseFutureConstruct($promise, $wait, $cancel);
+        // let __get() lazily create it, same as before $_value was declared
+        unset($this->_value);
+    }
 
     public function offsetExists($offset)
     {

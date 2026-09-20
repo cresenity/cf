@@ -13,6 +13,11 @@ trait MagicFutureTrait
     use BaseFutureTrait;
 
     /**
+     * @var mixed
+     */
+    protected $_value;
+
+    /**
      * This function handles retrieving the dereferenced result when requested.
      *
      * @param string $name Should always be "data" or an exception is thrown.
