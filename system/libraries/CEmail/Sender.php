@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Pengirim jalur lama: `CEmail::sender($config)->send($to, $subject, $html, $options)`.
+ *
+ * @deprecated 1.9 pakai CEmail::mailer($name)->to($to)->send(Mailable) atau CEmail::mailer()->html($html, $callback); jalur ini tetap ada dan bisa dialihkan ke mailer lewat `email.legacy_sender_via_mailer`
+ */
 class CEmail_Sender {
     /**
      * Email Driver.

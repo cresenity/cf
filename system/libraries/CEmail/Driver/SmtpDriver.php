@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @deprecated 1.9 jalur pengirim lama; pakai CEmail::mailer() dengan transport `smtp` (atau nyalakan `email.legacy_sender_via_mailer`)
+ */
 class CEmail_Driver_SmtpDriver extends CEmail_DriverAbstract {
     /**
      * The SMTP connection.

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @deprecated 1.9 perakit MIME driver SMTP lama; pesan dibangun Symfony Mime lewat CEmail_Mailer
+ */
 class CEmail_Driver_Smtp_Message {
     protected $body;
 

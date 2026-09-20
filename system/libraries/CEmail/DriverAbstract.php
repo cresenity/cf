@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @deprecated 1.9 dasar driver lama; formatAddress()/emailAddresses() tetap dipakai CEmail_Sender_MailerDriver
+ */
 abstract class CEmail_DriverAbstract implements CEmail_DriverInterface {
     /**
      * Email Config.

@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @deprecated 1.9 pabrik driver lama; CEmail_MailManager membangun transport dari CEmail_Config::toMailerConfig()
+ */
 class CEmail_Factory {
     protected static $driverMap = [
         'sendgrid' => CEmail_Driver_SendGridDriver::class,

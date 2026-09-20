@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @deprecated 1.9 jalur pengirim lama; pakai CEmail::mailer() dengan transport `mailersend` (atau nyalakan `email.legacy_sender_via_mailer`)
+ */
 class CEmail_Driver_MailersendDriver extends CEmail_DriverAbstract {
     public function send(array $to, $subject, $body, $options = []) {
         $apiKey = $this->config->getPassword();

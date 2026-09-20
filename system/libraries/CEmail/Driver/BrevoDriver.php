@@ -14,6 +14,8 @@
  * Tidak memakai SDK resmi di `system/vendor/Brevo`: SDK itu menuntut PHP 8.1
  * (enum, `new` di nilai bawaan parameter), sedangkan kerangka kerja ini
  * menyatakan PHP >= 7.4 dan sebagian vhost memang masih 7.4.
+ *
+ * @deprecated 1.9 jalur pengirim lama; pakai CEmail::mailer() dengan transport `brevo` (atau nyalakan `email.legacy_sender_via_mailer`)
  */
 class CEmail_Driver_BrevoDriver extends CEmail_DriverAbstract {
     /**

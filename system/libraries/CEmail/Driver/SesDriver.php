@@ -2,6 +2,9 @@
 use Aws\Ses\SesClient;
 use Aws\Exception\AwsException;
 
+/**
+ * @deprecated 1.9 jalur pengirim lama; pakai CEmail::mailer() dengan transport `ses` (atau nyalakan `email.legacy_sender_via_mailer`)
+ */
 class CEmail_Driver_SesDriver extends CEmail_DriverAbstract {
     protected $ses;
 

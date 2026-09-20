@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @deprecated 1.9 jalur pengirim lama; pakai CEmail::mailer() dengan transport `mail` (atau nyalakan `email.legacy_sender_via_mailer`)
+ */
 class CEmail_Driver_MailDriver extends CEmail_DriverAbstract {
     public function send(array $to, $subject, $body, $options = []) {
         $addresses = $this->formatAddresses($to);
