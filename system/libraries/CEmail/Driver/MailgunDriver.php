@@ -36,13 +36,13 @@ class CEmail_Driver_MailgunDriver extends CEmail_DriverAbstract {
         if (is_array($cc) && count($cc) > 0) {
             $params['cc'] = $cc;
         }
-        if (is_array($cc) && count($bcc) > 0) {
+        if (is_array($bcc) && count($bcc) > 0) {
             $params['bcc'] = $bcc;
         }
 
         // Generate curl request
         $session = curl_init($url);
-        curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($session, CURLOPT_SSL_VERIFYPEER, carr::get($options, 'verify_peer', true));
         curl_setopt($session, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         curl_setopt($session, CURLOPT_USERPWD, 'api:' . $apiKey);
         curl_setopt($session, CURLOPT_ENCODING, 'UTF-8');

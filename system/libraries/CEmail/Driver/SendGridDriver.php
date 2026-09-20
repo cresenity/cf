@@ -87,7 +87,7 @@ class CEmail_Driver_SendGridDriver extends CEmail_DriverAbstract {
         $sg = new CVendor_SendGrid($apiKey);
 
         $response = $sg->send($mail);
-        if ($response->statusCode() > 400) {
+        if ($response->statusCode() >= 400) {
             throw new Exception('Fail to send mail, API Response:(' . $response->statusCode() . ')' . $response->body());
         }
 

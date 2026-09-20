@@ -15,7 +15,7 @@ class CEmail_Driver_SesDriver extends CEmail_DriverAbstract {
         $sesOptions = [];
         $key = $this->config->get('key', CF::config('vendor.ses.key')) ?: $this->config->getUsername();
         $secret = $this->config->get('secret', CF::config('vendor.ses.secret')) ?: $this->config->getPassword();
-        $region = $this->config->get('region', $this->config->get('ses_region', CF::config('vendor.ses.secret'))) ?: ($this->config->get('smtp_region') ?: 'ap-southeast-1');
+        $region = $this->config->get('region', $this->config->get('ses_region', CF::config('vendor.ses.region'))) ?: ($this->config->get('smtp_region') ?: 'ap-southeast-1');
         $sesConfig = [
             'credentials' => [
                 'key' => $key,
