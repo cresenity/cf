@@ -36,14 +36,14 @@ class CEmail_Sender {
 
     protected function rebuildOptions($options) {
         if (!isset($options['from'])) {
-            $options['from'] = CEmail_Config::resolveFrom($options);
+            $options['from'] = CEmail_Config::resolveFrom($options, $this->driver->getConfig());
         }
         if (!isset($options['domain'])) {
             $options['domain'] = carr::get($options, 'smtp_domain', CF::config('app.smtp_domain'));
         }
 
         if (!isset($options['from_name'])) {
-            $options['from_name'] = CEmail_Config::resolveFromName($options);
+            $options['from_name'] = CEmail_Config::resolveFromName($options, $this->driver->getConfig());
         }
 
         if (!isset($options['attachments'])) {

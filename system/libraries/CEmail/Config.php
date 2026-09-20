@@ -134,35 +134,43 @@ class CEmail_Config {
      * @return string
      */
     /**
-     * Alamat pengirim: from → smtp_from → app.email.from → app.smtp_from. Satu-satunya urutan
-     * yang dipakai Sender dan Config.
+     * Alamat pengirim: from → smtp_from → config pengirim → app.email.from → app.smtp_from. Satu-satunya
+     * urutan yang dipakai Sender dan Config.
      *
-     * @param array $options
+     * @param array             $options
+     * @param null|CEmail_Config $config
      *
      * @return null|string
      */
-    public static function resolveFrom(array $options) {
+    public static function resolveFrom(array $options, CEmail_Config $config = null) {
         foreach (['from', 'smtp_from'] as $key) {
             if (!c::blank(carr::get($options, $key))) {
                 return carr::get($options, $key);
             }
+        }
+        if ($config && !c::blank($config->getFrom())) {
+            return $config->getFrom();
         }
 
         return CF::config('app.email.from', CF::config('app.smtp_from'));
     }
 
     /**
-     * Nama pengirim: from_name → smtp_from_name → app.email.from_name → app.smtp_from_name.
+     * Nama pengirim: from_name → smtp_from_name → config pengirim → app.email.from_name → app.smtp_from_name.
      *
-     * @param array $options
+     * @param array             $options
+     * @param null|CEmail_Config $config
      *
      * @return null|string
      */
-    public static function resolveFromName(array $options) {
+    public static function resolveFromName(array $options, CEmail_Config $config = null) {
         foreach (['from_name', 'smtp_from_name'] as $key) {
             if (!c::blank(carr::get($options, $key))) {
                 return carr::get($options, $key);
             }
+        }
+        if ($config && !c::blank($config->getFromName())) {
+            return $config->getFromName();
         }
 
         return CF::config('app.email.from_name', CF::config('app.smtp_from_name'));
