@@ -3,6 +3,11 @@
 class CTemporary_Instance {
     protected static $instance;
 
+    /**
+     * @var string
+     */
+    protected $disk;
+
     public static function instance($disk = null) {
         if ($disk == null) {
             $disk = CF::config('storage.temp');
@@ -52,16 +57,6 @@ class CTemporary_Instance {
     }
 
     public function getDirectory($folder = null) {
-        $path = DOCROOT . 'temp' . DIRECTORY_SEPARATOR;
-
-        if ($folder != null) {
-            $path .= CTemporary::appFolder($folder) . DIRECTORY_SEPARATOR;
-        }
-
-        if (!is_dir($path)) {
-            @mkdir($path, 0777, true);
-        }
-
-        return $path;
+        return CTemporary::getDirectory($folder);
     }
 }

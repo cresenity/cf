@@ -3,8 +3,6 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 class CTemporary {
-    use CTrait_Compat_Temporary;
-
     /**
      * @param null|mixed $diskName
      *
@@ -185,7 +183,7 @@ class CTemporary {
                 if (strlen($c) == 0) {
                     $c = '_';
                 }
-                $path = $path = $path . $c . DIRECTORY_SEPARATOR;
+                $path = $path . $c . DIRECTORY_SEPARATOR;
             }
         }
 

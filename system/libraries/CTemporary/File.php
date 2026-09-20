@@ -9,11 +9,6 @@ class CTemporary_File {
     protected $directory;
 
     /**
-     * @var CTemporary_PathAbstract
-     */
-    protected $pathEngine;
-
-    /**
      * @var CFile
      */
     protected $file;
