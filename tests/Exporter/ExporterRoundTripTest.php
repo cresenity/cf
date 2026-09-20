@@ -158,6 +158,7 @@ class ExporterRoundTripTest extends TestCase {
     /**
      * @return array[]
      */
+    // toArray(null, true, false): nilai mentah - sejak PhpSpreadsheet 1.29 formatData default mengembalikan angka sebagai string terformat
     protected function rows() {
         return [
             ['code' => 'a1', 'name' => 'Apel', 'price' => 10],
@@ -170,7 +171,7 @@ class ExporterRoundTripTest extends TestCase {
         $this->assertStringStartsWith("PK\x03\x04", $contents, 'xlsx = arsip zip');
         $sheet = $this->spreadsheet($contents)->getActiveSheet();
         $this->assertSame('Barang', $sheet->getTitle());
-        $this->assertSame([['Kode', 'Nama', 'Harga'], ['a1', 'Apel', 10], ['b2', 'Beras', 20.5]], $sheet->toArray());
+        $this->assertSame([['Kode', 'Nama', 'Harga'], ['a1', 'Apel', 10], ['b2', 'Beras', 20.5]], $sheet->toArray(null, true, false));
     }
 
     public function testMappingColumnFormatsAndStrictNullComparison() {
@@ -182,14 +183,14 @@ class ExporterRoundTripTest extends TestCase {
     }
 
     public function testFromCollectionAndFromIterator() {
-        $this->assertSame([['a', 1], ['b', 2]], $this->spreadsheet(CExporter::raw(new UjiExport_Collection(), CExporter::XLSX))->getActiveSheet()->toArray());
-        $this->assertSame([['x', 10], ['y', 20], ['z', 30]], $this->spreadsheet(CExporter::raw(new UjiExport_Iterator(), CExporter::XLSX))->getActiveSheet()->toArray());
+        $this->assertSame([['a', 1], ['b', 2]], $this->spreadsheet(CExporter::raw(new UjiExport_Collection(), CExporter::XLSX))->getActiveSheet()->toArray(null, true, false));
+        $this->assertSame([['x', 10], ['y', 20], ['z', 30]], $this->spreadsheet(CExporter::raw(new UjiExport_Iterator(), CExporter::XLSX))->getActiveSheet()->toArray(null, true, false));
     }
 
     public function testPlainArrayAndCollectionAreWrappedByTheDetector() {
         // raw() menuntut exportable (hulu juga); store()/download() yang memanggil detektor
-        $this->assertSame([[1, 2], [3, 4]], $this->spreadsheet(CExporter::raw(CExporter_ExportableDetector::toExportable([[1, 2], [3, 4]]), CExporter::XLSX))->getActiveSheet()->toArray(), 'array polos');
-        $this->assertSame([['k', 'v']], $this->spreadsheet(CExporter::raw(CExporter_ExportableDetector::toExportable(c::collect([['k', 'v']])), CExporter::XLSX))->getActiveSheet()->toArray(), 'koleksi polos');
+        $this->assertSame([[1, 2], [3, 4]], $this->spreadsheet(CExporter::raw(CExporter_ExportableDetector::toExportable([[1, 2], [3, 4]]), CExporter::XLSX))->getActiveSheet()->toArray(null, true, false), 'array polos');
+        $this->assertSame([['k', 'v']], $this->spreadsheet(CExporter::raw(CExporter_ExportableDetector::toExportable(c::collect([['k', 'v']])), CExporter::XLSX))->getActiveSheet()->toArray(null, true, false), 'koleksi polos');
         $this->assertInstanceOf(CExporter_Exportable_Array::class, CExporter_ExportableDetector::toExportable([[1]]));
         $this->assertInstanceOf(CExporter_Exportable_Collection::class, CExporter_ExportableDetector::toExportable(c::collect([])));
         $this->assertInstanceOf(CExporter_Exportable_Iterator::class, CExporter_ExportableDetector::toExportable(new ArrayIterator([])));
@@ -201,8 +202,8 @@ class ExporterRoundTripTest extends TestCase {
         $spreadsheet = $this->spreadsheet(CExporter::raw(new UjiExport_Sheets(), CExporter::XLSX));
         $this->assertSame(2, $spreadsheet->getSheetCount());
         $this->assertSame('Barang', $spreadsheet->getSheet(0)->getTitle());
-        $this->assertSame([['Kode', 'Nama', 'Harga'], ['A', 'Apel', 1]], $spreadsheet->getSheet(0)->toArray());
-        $this->assertSame([['a', 1], ['b', 2]], $spreadsheet->getSheet(1)->toArray());
+        $this->assertSame([['Kode', 'Nama', 'Harga'], ['A', 'Apel', 1]], $spreadsheet->getSheet(0)->toArray(null, true, false));
+        $this->assertSame([['a', 1], ['b', 2]], $spreadsheet->getSheet(1)->toArray(null, true, false));
     }
 
     public function testEventsFireInOrderAndCanTouchTheSheet() {

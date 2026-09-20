@@ -26,6 +26,8 @@ class Functions
     const RETURNDATE_PHP_DATETIME_OBJECT = 'O';
     const RETURNDATE_EXCEL = 'E';
 
+    public const NOT_YET_IMPLEMENTED = '#Not Yet Implemented';
+
     /**
      * Compatibility mode to use for error checking and responses.
      *
@@ -130,22 +132,26 @@ class Functions
         return '#Not Yet Implemented';
     }
 
-    public static function isMatrixValue($idx)
+    /** @param mixed $idx */
+    public static function isMatrixValue($idx): bool
     {
         return (substr_count($idx, '.') <= 1) || (preg_match('/\.[A-Z]/', $idx) > 0);
     }
 
-    public static function isValue($idx)
+    /** @param mixed $idx */
+    public static function isValue($idx): bool
     {
         return substr_count($idx, '.') === 0;
     }
 
-    public static function isCellValue($idx)
+    /** @param mixed $idx */
+    public static function isCellValue($idx): bool
     {
         return substr_count($idx, '.') > 1;
     }
 
-    public static function ifCondition($condition)
+    /** @param mixed $condition */
+    public static function ifCondition($condition): string
     {
         $condition = self::flattenSingleValue($condition);
 
@@ -180,6 +186,11 @@ class Functions
         return str_replace('""""', '""', $operator . $operand);
     }
 
+    /**
+     * @param mixed $operand
+     *
+     * @return mixed
+     */
     private static function operandSpecialHandling($operand)
     {
         if (is_numeric($operand) || is_bool($operand)) {
@@ -635,7 +646,7 @@ class Functions
     public static function expandDefinedName(string $coordinate, Cell $cell): string
     {
         $worksheet = $cell->getWorksheet();
-        $spreadsheet = $worksheet->getParent();
+        $spreadsheet = $worksheet->getParentOrThrow();
         // Uppercase coordinate
         $pCoordinatex = strtoupper($coordinate);
         // Eliminate leading equal sign
@@ -654,7 +665,7 @@ class Functions
 
     public static function trimTrailingRange(string $coordinate): string
     {
-        return (string) preg_replace('/:[\\w\$]+$/', '', $coordinate);
+        return (string) preg_replace('/:[\w\$]+$/', '', $coordinate);
     }
 
     public static function trimSheetFromCellReference(string $coordinate): string
