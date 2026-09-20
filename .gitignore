@@ -170,6 +170,7 @@ capp.code-workspace
 /docs
 /papers
 /reference
+/notes
 
 # CLAUDE.md sekarang disinkron dari devcloud (appCode "cf"), bukan git —
 # lihat phpcf claude:sync. Sebelumnya berkas ini publik di repo CF; kalau
