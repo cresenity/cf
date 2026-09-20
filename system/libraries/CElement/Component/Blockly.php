@@ -126,7 +126,7 @@ class CElement_Component_Blockly extends CElement_Component {
         $jsOptions['blocklyElementId'] = $this->blocklyWrapper->id();
         $jsOptions['toolboxElementId'] = $this->toolbox->id();
         $jsOptions['saveElementId'] = $this->saveAction->id();
-        $jsOptions['mediaFolder'] = '/modules/cresenity/media/js/blockly/media/';
+        $jsOptions['mediaFolder'] = curl::base() . 'system/media/js/blockly/media/';
         $jsOptions['variables'] = $this->variables;
         $jsOptions['saveUrl'] = $this->saveUrl;
         if ($this->isFunctionWithReturn) {

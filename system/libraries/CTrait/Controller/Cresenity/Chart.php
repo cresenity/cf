@@ -33,7 +33,7 @@ trait CTrait_Controller_Cresenity_Chart {
         ]);
         $image->drawScale(['drawSubTicks' => true]);
         $image->setShadow(true, ['x' => 1, 'y' => 1, 'r' => 0, 'g' => 0, 'b' => 0, 'alpha' => 10]);
-        $image->setFontProperties(['fontName' => 'fonts/pf_arma_five.ttf', 'fontSize' => 6]);
+        $image->setFontProperties(['fontName' => CConstant::CRESENITY_FONT_PATH . '/pf_arma_five.ttf', 'fontSize' => 6]);
         $image->drawLineChart(['displayValues' => true, 'displayColor' => Constant::DISPLAY_AUTO]);
         $image->setShadow(false);
 

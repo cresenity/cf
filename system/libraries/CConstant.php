@@ -29,15 +29,15 @@ class CConstant {
     const HANDLER_TYPE_RELOAD = CObservable_Listener_Handler::TYPE_RELOAD;
 
     /**
-     * Path Constant.
+     * Path Constant. Aset bawaan framework kini di system/media (modules/ deprecated).
      */
-    const CRESENITY_PATH = DOCROOT . '/modules/cresenity';
+    const CRESENITY_PATH = DOCROOT . 'system';
 
-    const CRESENITY_MEDIA_PATH = DOCROOT . '/modules/cresenity/media';
+    const CRESENITY_MEDIA_PATH = DOCROOT . 'system/media';
 
-    const CRESENITY_FONT_PATH = DOCROOT . '/modules/cresenity/media/font';
+    const CRESENITY_FONT_PATH = DOCROOT . 'system/media/font';
 
-    const CRESENITY_IMAGE_PATH = DOCROOT . '/modules/cresenity/media/img';
+    const CRESENITY_IMAGE_PATH = DOCROOT . 'system/media/img';
 
     /**
      * Align Constant.
