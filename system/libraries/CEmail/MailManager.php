@@ -258,6 +258,17 @@ class CEmail_MailManager implements CEmail_Contract_FactoryInterface {
      *
      * @return \CEmail_Transport_SesTransport
      */
+    /**
+     * @param array $config
+     *
+     * @return CEmail_Transport_BrevoTransport
+     */
+    protected function createBrevoTransport(array $config) {
+        $key = carr::get($config, 'key') ?: CF::config('vendor.brevo.api_key');
+
+        return new CEmail_Transport_BrevoTransport(CVendor_Brevo::transactionalEmail(['apiKey' => $key]));
+    }
+
     protected function createSesTransport(array $config) {
         $config = array_merge(
             CF::config('vendor.ses', []),
