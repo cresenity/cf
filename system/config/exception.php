@@ -60,6 +60,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Git context
+    |--------------------------------------------------------------------------
+    |
+    | Konteks git (hash, message, tag, remote, isDirty) yang ikut laporan exception.
+    | Hash & remote dibaca dari .git/ tanpa proses; message/tag/isDirty lewat biner git
+    | dengan timeout (detik) dan hasilnya di-cache selama cacheSeconds. `dirty` = null
+    | berarti `git status` hanya dijalankan di luar production.
+    |
+    */
+    'git' => [
+        'enabled' => true,
+        'dirty' => null,
+        'cacheSeconds' => 60,
+        'timeout' => 3,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Solution Providers
     |--------------------------------------------------------------------------
     |

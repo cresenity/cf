@@ -206,7 +206,7 @@ class CManager_Asset_Helper {
      *
      * @return null|string
      */
-    protected static function gitRevision($basePath) {
+    public static function gitRevision($basePath) {
         $gitPath = $basePath . '.git' . DS;
         if (!is_file($gitPath . 'HEAD')) {
             return null;
