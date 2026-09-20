@@ -154,6 +154,66 @@ class LegacySenderTest extends TestCase {
         $this->assertSame('opsi@x.test', $options['from'], 'opsi per-kirim menang atas config');
     }
 
+    public function testToMailerConfigMapsEveryLegacyDriverToATransport() {
+        CConfig::repository()->set('vendor.ses', ['key' => 'AKIA', 'secret' => 'rahasia', 'region' => 'ap-southeast-3']);
+        $cases = [
+            [['driver' => 'smtp', 'host' => 'mail.x.test', 'port' => '587', 'secure' => 'tls', 'username' => 'u', 'password' => 'p', 'domain' => 'x.test', 'timeout' => 7],
+                ['name' => 'legacy-smtp', 'transport' => 'smtp', 'host' => 'mail.x.test', 'port' => 587, 'encryption' => 'tls', 'username' => 'u', 'password' => 'p', 'timeout' => 7, 'local_domain' => 'x.test']],
+            [['driver' => 'smtp', 'host' => 'mail.x.test', 'secure' => 'ssl'],
+                ['name' => 'legacy-smtp', 'transport' => 'smtp', 'host' => 'mail.x.test', 'port' => 465, 'encryption' => 'tls']],
+            [['smtp_host' => 'mail.x.test', 'smtp_secure' => 'false'],
+                ['name' => 'legacy-smtp', 'transport' => 'smtp', 'host' => 'mail.x.test', 'port' => 25]],
+            [['smtp_host' => 'smtp.sendgrid.net', 'smtp_password' => 'SG.key'],
+                ['name' => 'legacy-sendgrid', 'transport' => 'sendgrid', 'key' => 'SG.key']],
+            [['driver' => 'ses', 'username' => 'ignored', 'password' => 'ignored'],
+                ['name' => 'legacy-ses', 'transport' => 'ses', 'key' => 'AKIA', 'secret' => 'rahasia', 'region' => 'ap-southeast-3']],
+            [['driver' => 'sesV2', 'key' => 'K', 'secret' => 'S', 'region' => 'eu-west-1'],
+                ['name' => 'legacy-sesV2', 'transport' => 'sesV2', 'key' => 'K', 'secret' => 'S', 'region' => 'eu-west-1']],
+            [['driver' => 'ses_v2', 'key' => 'K', 'secret' => 'S'],
+                ['name' => 'legacy-ses_v2', 'transport' => 'sesV2', 'key' => 'K', 'secret' => 'S', 'region' => 'ap-southeast-3']],
+            [['driver' => 'brevo', 'password' => 'smtp-key-lama'],
+                ['name' => 'legacy-brevo', 'transport' => 'brevo', 'key' => 'smtp-key-lama']],
+            [['driver' => 'mailersend', 'password' => 'ms-key'],
+                ['name' => 'legacy-mailersend', 'transport' => 'mailersend', 'key' => 'ms-key']],
+            [['driver' => 'mailgun', 'password' => 'mg-key', 'domain' => 'mg.x.test', 'endpoint' => 'api.eu.mailgun.net'],
+                ['name' => 'legacy-mailgun', 'transport' => 'mailgun', 'secret' => 'mg-key', 'domain' => 'mg.x.test', 'endpoint' => 'api.eu.mailgun.net']],
+            [['driver' => 'kirimemail', 'username' => 'akun', 'password' => 'ke-key'],
+                ['name' => 'legacy-kirimemail', 'transport' => 'kirimemail', 'username' => 'akun', 'key' => 'ke-key']],
+            [['driver' => 'mail'], ['name' => 'legacy-mail', 'transport' => 'mail']],
+            [['driver' => 'null'], ['name' => 'legacy-null', 'transport' => 'array']],
+            [['smtp_host' => 'smtp25.elasticemail.com', 'smtp_port' => '2525', 'smtp_username' => 'u', 'smtp_password' => 'p'],
+                ['name' => 'legacy-elasticemail', 'transport' => 'smtp', 'host' => 'smtp25.elasticemail.com', 'port' => 2525, 'username' => 'u', 'password' => 'p']],
+            [['smtp_host' => 'smtp.postmarkapp.com', 'smtp_password' => 'pm-token'],
+                ['name' => 'legacy-postmarkapp', 'transport' => 'postmark', 'token' => 'pm-token']],
+        ];
+        foreach ($cases as $index => list($input, $expected)) {
+            $actual = (new CEmail_Config($input))->toMailerConfig();
+            unset($actual['from']);
+            $this->assertSame($expected, $actual, 'kasus #' . $index . ': ' . json_encode($input));
+        }
+
+        $withFrom = (new CEmail_Config(['driver' => 'null', 'from' => 'kirim@x.test', 'from_name' => 'Pengirim']))->toMailerConfig('kustom');
+        $this->assertSame('kustom', $withFrom['name']);
+        $this->assertSame(['address' => 'kirim@x.test', 'name' => 'Pengirim'], $withFrom['from'], 'from ikut agar MailManager memasang pengirim bawaan');
+        $this->assertSame(['address' => 'noreply@app.test', 'name' => 'Aplikasi'], (new CEmail_Config(['driver' => 'null']))->toMailerConfig()['from'], 'from default app ikut juga');
+    }
+
+    public function testMailManagerBuildsASmtpMailerFromTheMappedConfig() {
+        $manager = CEmail::manager();
+        $starttls = $manager->build((new CEmail_Config(['driver' => 'smtp', 'host' => 'mail.x.test', 'port' => 587, 'secure' => 'tls', 'username' => 'u', 'password' => 'p']))->toMailerConfig());
+        $this->assertInstanceOf(CEmail_Mailer::class, $starttls);
+        $this->assertSame('smtp://mail.x.test:587', (string) $starttls->getSymfonyTransport(), 'tls di 587 = STARTTLS (smtp), bukan smtps');
+
+        $implicit = $manager->build((new CEmail_Config(['driver' => 'smtp', 'host' => 'mail.x.test', 'secure' => 'ssl']))->toMailerConfig());
+        $this->assertSame('smtps://mail.x.test', (string) $implicit->getSymfonyTransport(), 'ssl = TLS implisit di 465');
+
+        $plain = $manager->build((new CEmail_Config(['smtp_host' => 'mail.x.test', 'smtp_secure' => 'false']))->toMailerConfig());
+        $this->assertSame('smtp://mail.x.test', (string) $plain->getSymfonyTransport());
+
+        $array = $manager->build((new CEmail_Config(['driver' => 'null', 'from' => 'kirim@x.test']))->toMailerConfig());
+        $this->assertInstanceOf(CEmail_Transport_ArrayTransport::class, $array->getSymfonyTransport());
+    }
+
     public function testFactoryResolvesDriverNamesAndRejectsUnknownOnes() {
         $this->assertInstanceOf(CEmail_Driver_NullDriver::class, CEmail_Factory::createDriver(new CEmail_Config(['driver' => 'null'])));
         $this->assertInstanceOf(CEmail_Driver_MailDriver::class, CEmail_Factory::createDriver(new CEmail_Config(['driver' => 'mail'])));

@@ -48,6 +48,31 @@ class CEmail_Config {
      */
     protected $fromName;
 
+    /**
+     * Nama driver lama (huruf kecil, tanpa _/-) → transport CEmail_MailManager.
+     *
+     * @var array
+     */
+    protected static $driverToTransportMap = [
+        'smtp' => 'smtp',
+        'sendgrid' => 'sendgrid',
+        'ses' => 'ses',
+        'sesv2' => 'sesV2',
+        'brevo' => 'brevo',
+        'sendinblue' => 'brevo',
+        'mailersend' => 'mailersend',
+        'mailgun' => 'mailgun',
+        'kirimemail' => 'kirimemail',
+        'mail' => 'mail',
+        'sendmail' => 'sendmail',
+        'null' => 'array',
+        'array' => 'array',
+        'log' => 'log',
+        'elasticemail' => 'smtp',
+        'postmarkapp' => 'postmark',
+        'postmark' => 'postmark',
+    ];
+
     protected static $smtpHostToDriverMap = [
         'smtp.sendgrid.net' => 'sendgrid',
         'smtp.mailgun.org' => 'mailgun',
@@ -96,7 +121,7 @@ class CEmail_Config {
             $newConfig['from'] = carr::get($config, 'from', carr::get($config, 'smtp_from'));
             $newConfig['from_name'] = carr::get($config, 'from_name', carr::get($config, 'smtp_from_name'));
             $newConfig['secure'] = carr::get($config, 'secure', carr::get($config, 'smtp_secure'));
-            if ($driver == 'smtp') {
+            if ($driver == 'smtp' || carr::get(static::$driverToTransportMap, $driver) === 'smtp') {
                 $newConfig['host'] = carr::get($config, 'host', carr::get($config, 'smtp_host'));
                 $newConfig['port'] = carr::get($config, 'port', carr::get($config, 'smtp_port'));
             }
@@ -192,6 +217,86 @@ class CEmail_Config {
         }
 
         return null;
+    }
+
+    /**
+     * Konfigurasi ini dalam bentuk `email.mailers.<name>` yang dibaca CEmail_MailManager::build().
+     * Driver lama dipetakan ke transport: smtp→smtp, sendgrid→sendgrid, ses/sesV2→ses/sesV2, brevo→brevo,
+     * mailersend→mailersend, mailgun→mailgun, kirimemail→kirimemail, mail→mail, null→array,
+     * elasticemail→smtp, postmarkapp→postmark.
+     *
+     * @param null|string $name nama mailer; default `legacy-<driver>`
+     *
+     * @return array
+     */
+    public function toMailerConfig($name = null) {
+        $driver = (string) $this->driver;
+        $transport = carr::get(static::$driverToTransportMap, strtolower(str_replace(['_', '-'], '', $driver)), $driver);
+        $config = ['name' => $name ?: 'legacy-' . $driver, 'transport' => $transport];
+
+        switch ($transport) {
+            case 'smtp':
+                $encryption = $this->getEncryption();
+                $port = $this->port ?: ($encryption === 'ssl' ? 465 : ($encryption === 'tls' ? 587 : 25));
+                $config += [
+                    'host' => $this->host,
+                    'port' => (int) $port,
+                    'encryption' => $encryption ? 'tls' : null,
+                    'username' => $this->username ?: null,
+                    'password' => $this->password ?: null,
+                    'timeout' => $this->getOption('timeout'),
+                    'local_domain' => $this->getOption('domain'),
+                ];
+                if ($this->getOption('stream')) {
+                    $config['stream'] = $this->getOption('stream');
+                }
+
+                break;
+            case 'sendgrid':
+            case 'mailersend':
+                $config['key'] = $this->getOption('key', $this->password);
+
+                break;
+            case 'brevo':
+                $config['key'] = $this->getOption('key') ?: (CF::config('email.mailers.brevo.key') ?: (CF::config('vendor.brevo.api_key') ?: $this->password));
+
+                break;
+            case 'kirimemail':
+                $config['username'] = $this->username;
+                $config['key'] = $this->getOption('key', $this->password);
+
+                break;
+            case 'mailgun':
+                $config['secret'] = $this->getOption('secret', $this->password);
+                $config['domain'] = $this->getOption('domain', CF::config('vendor.mailgun.domain'));
+                if ($this->getOption('endpoint')) {
+                    $config['endpoint'] = $this->getOption('endpoint');
+                }
+
+                break;
+            case 'ses':
+            case 'sesV2':
+                $config['key'] = $this->getOption('key', CF::config('vendor.ses.key')) ?: $this->username;
+                $config['secret'] = $this->getOption('secret', CF::config('vendor.ses.secret')) ?: $this->password;
+                $config['region'] = $this->getOption('region', $this->getOption('ses_region', CF::config('vendor.ses.region'))) ?: ($this->getOption('smtp_region') ?: 'ap-southeast-1');
+                if ($this->getOption('token')) {
+                    $config['token'] = $this->getOption('token');
+                }
+
+                break;
+            case 'postmark':
+                $config['token'] = $this->getOption('token', $this->password);
+
+                break;
+        }
+        if ($this->from) {
+            // ikut di config agar CEmail_MailManager::setGlobalAddress memasang pengirim bawaan mailer
+            $config['from'] = array_filter(['address' => $this->from, 'name' => $this->fromName]);
+        }
+
+        return array_filter($config, function ($value) {
+            return $value !== null;
+        });
     }
 
     public function getDriver() {

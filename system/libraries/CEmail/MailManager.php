@@ -174,8 +174,13 @@ class CEmail_MailManager implements CEmail_Contract_FactoryInterface {
     protected function createSmtpTransport(array $config) {
         $factory = new EsmtpTransportFactory();
 
+        $scheme = '';
+        if (!empty($config['encryption']) && $config['encryption'] === 'tls') {
+            // smtps = TLS implisit (465); di port lain STARTTLS dinegosiasikan sendiri oleh EsmtpTransport
+            $scheme = (($config['port'] ?? 587) == 465) ? 'smtps' : 'smtp';
+        }
         $transport = $factory->create(new Dsn(
-            !empty($config['encryption']) && $config['encryption'] === 'tls' ? 'smtps' : '',
+            $scheme,
             $config['host'],
             $config['username'] ?? null,
             $config['password'] ?? null,
