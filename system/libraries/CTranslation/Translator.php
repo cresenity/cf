@@ -107,11 +107,20 @@ class CTranslation_Translator extends CBase_NamespacedItemResolver implements CT
      * @return null|string|array
      */
     public function get($key, array $replace = [], $locale = null, $fallback = true) {
-        list($namespace, $group, $item) = $this->parseKey($key);
         // Here we will get the locale that should be used for the language line. If one
         // was not passed, we will use the default locales which was given to us when
         // the translator was instantiated. Then, we can load the lines and return.
         $locales = $fallback ? $this->localeArray($locale) : [$locale ?: $this->locale];
+
+        // kalimat polos dicari dulu di i18n/<locale>.json (satu berkas per locale, satu tingkat)
+        foreach ($locales as $currentLocale) {
+            $this->load('*', '*', $currentLocale);
+            if (isset($this->loaded['*']['*'][$currentLocale][$key]) && is_string($this->loaded['*']['*'][$currentLocale][$key])) {
+                return $this->makeReplacements($this->loaded['*']['*'][$currentLocale][$key], $replace);
+            }
+        }
+
+        list($namespace, $group, $item) = $this->parseKey($key);
         foreach ($locales as $currentLocale) {
             if (!is_null($line = $this->getLine(
                 $namespace,

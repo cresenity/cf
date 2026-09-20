@@ -149,7 +149,14 @@ class CTranslation_Loader_FileLoader extends CTranslation_LoaderAbstract {
      * @return array
      */
     protected function loadJsonPaths($locale) {
-        return c::collect(array_merge($this->jsonPaths, [$this->path]))
+        // <system|app>/i18n/<locale>.json lewat CF::paths() (system dulu, app menimpa), lalu path yang didaftarkan
+        $cfJsonPaths = [];
+        foreach (array_reverse(CF::paths()) as $cfPath) {
+            $cfJsonPaths[] = $cfPath . trim($this->path, '/');
+        }
+
+        return c::collect(array_merge($cfJsonPaths, $this->jsonPaths, [$this->path]))
+            ->unique()
             ->reduce(function ($output, $path) use ($locale) {
                 if ($this->files->exists($full = "{$path}/{$locale}.json")) {
                     $decoded = json_decode($this->files->get($full), true);
