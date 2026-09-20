@@ -90,9 +90,9 @@ class CEmail_Driver_SmtpDriver extends CEmail_DriverAbstract {
         $this->debug('MAIL FROM:<' . $returnPath . '>');
         $this->debug($this->smtpSend('MAIL FROM:<' . $returnPath . '>', 250));
 
-        foreach ([$this->arrayAddresses($to), carr::get($options, 'cc', []), carr::get($options, 'bcc', [])] as $addresses) {
-            $rcpt = $this->formatAddresses($addresses);
-            if (strlen($rcpt) > 0) {
+        foreach ([$to, carr::wrap(carr::get($options, 'cc', [])), carr::wrap(carr::get($options, 'bcc', []))] as $addresses) {
+            // satu RCPT TO per alamat (RFC 5321); daftar berkoma dalam satu perintah ditolak server
+            foreach ($this->emailAddresses($addresses) as $rcpt) {
                 $this->debug('RCPT TO:<' . $rcpt . '>');
                 $this->debug($this->smtpSend('RCPT TO:<' . $rcpt . '>', [250, 251]));
             }
@@ -102,13 +102,6 @@ class CEmail_Driver_SmtpDriver extends CEmail_DriverAbstract {
         $this->debug('DATA');
         $this->smtpSend('DATA', 354);
         $newLine = $this->newline();
-
-        $headers = [];
-
-        foreach (['cc' => 'Cc', 'bcc' => 'Bcc', 'reply_to' => 'Reply-To'] as $key => $headerKey) {
-            $value = $this->formatAddresses(carr::get($options, $key, []));
-            $headers[$headerKey] = $value;
-        }
 
         $lines = explode($this->newline(), $message['header'] . preg_replace('/^\./m', '..$1', $message['body']));
 
@@ -192,9 +185,12 @@ class CEmail_Driver_SmtpDriver extends CEmail_DriverAbstract {
         if (!empty($this->smtpConnection)) {
             return;
         }
-        $protocol = 'tcp';
-        $secure = $this->config->getSecure();
+        $secure = $this->config->getEncryption();
         $protocol = $this->config->getProtocol();
+        if ($secure === 'ssl' && $protocol === 'tcp') {
+            // implicit TLS (umumnya port 465): sambung langsung lewat ssl://
+            $protocol = 'ssl';
+        }
         // add a transport if not given
         if (strpos($smtpHost, '://') === false) {
             $smtpHost = $protocol . '://' . $smtpHost;
@@ -239,7 +235,7 @@ class CEmail_Driver_SmtpDriver extends CEmail_DriverAbstract {
             try {
                 $this->debug('STARTTLS');
                 $this->debug($this->smtpSend('STARTTLS', 220));
-                if (!stream_socket_enable_crypto($this->smtpConnection, true, STREAM_CRYPTO_METHOD_TLS_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT)) {
+                if (!stream_socket_enable_crypto($this->smtpConnection, true, $this->cryptoMethod())) {
                     throw new CEmail_Exception_SmtpConnectionException('STARTTLS failed, Crypto client can not be enabled.');
                 }
             } catch (CEmail_Exception_SmtpCommandFailureException $e) {
@@ -270,6 +266,20 @@ class CEmail_Driver_SmtpDriver extends CEmail_DriverAbstract {
     /**
      * Close SMTP connection.
      */
+    /**
+     * TLS 1.2+ (dan 1.3 bila tersedia) untuk STARTTLS; 1.0/1.1 sudah tidak diterima MTA modern.
+     *
+     * @return int
+     */
+    protected function cryptoMethod() {
+        $method = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+        if (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT')) {
+            $method |= STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+        }
+
+        return $method;
+    }
+
     protected function smtpDisconnect() {
         $this->debug('QUIT');
 
@@ -307,7 +317,13 @@ class CEmail_Driver_SmtpDriver extends CEmail_DriverAbstract {
             $this->debug($password);
             $this->debug($this->smtpSend($password, 235));
         } catch (CEmail_Exception_SmtpCommandFailureException $e) {
-            throw new CEmail_Exception_SmtpAuthenticationFailedException('Failed authentication.');
+            // server tanpa AUTH LOGIN: coba AUTH PLAIN sebelum menyerah
+            try {
+                $this->debug('AUTH PLAIN');
+                $this->debug($this->smtpSend('AUTH PLAIN ' . base64_encode("\0" . $smtpUsername . "\0" . $smtpPassword), 235));
+            } catch (CEmail_Exception_SmtpCommandFailureException $plainException) {
+                throw new CEmail_Exception_SmtpAuthenticationFailedException('Failed authentication: ' . $plainException->getMessage(), 0, $plainException);
+            }
         }
     }
 

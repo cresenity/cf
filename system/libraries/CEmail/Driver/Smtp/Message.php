@@ -19,23 +19,33 @@ class CEmail_Driver_Smtp_Message {
 
     protected $alt_body;
 
+    protected $attachments = [];
+
     public function __construct($to, $body, $subject, CEmail_Config $config, $options) {
         $this->config = $config;
         $this->options = $options;
         $this->body = $body;
         $this->headers = [];
         $this->extraHeaders = [];
-
-        $from = $this->config->getFrom();
-        if ($this->config->getFromName()) {
-            $from = $this->config->getFromName() . ' <' . $this->config->getFrom() . '>';
+        $this->attachments = $this->prepareAttachments(carr::get($options, 'attachments', carr::get($options, 'attachment', [])));
+        if (count($this->attachments) > 0 && !isset($options['type'])) {
+            $this->options['type'] = 'html_attach';
+        }
+        if (!isset($options['encoding'])) {
+            $this->options['encoding'] = '8bit';
         }
 
-        $this->setHeader('Subject', $subject);
-        $this->setHeader('From', $from);
+        $from = carr::get($options, 'from', $this->config->getFrom());
+        $fromName = carr::get($options, 'from_name', $this->config->getFromName());
+        $returnPath = carr::get($options, 'returnPath', $from);
+
+        $this->setHeader('Date', date('r'));
+        $this->setHeader('Return-Path', '<' . $returnPath . '>');
+        $this->setHeader('Subject', $this->encodeMimeheader($subject));
+        $this->setHeader('From', CEmail_DriverAbstract::formatAddress(['email' => $from, 'name' => $fromName]));
         $this->setHeader('To', CEmail_DriverAbstract::formatAddresses($to));
 
-        foreach (['cc' => 'Cc', 'bcc' => 'Bcc', 'reply_to' => 'Reply-To'] as $key => $header) {
+        foreach (['cc' => 'Cc', 'bcc' => 'Bcc', 'reply_to' => 'Reply-To', 'replyTo' => 'Reply-To'] as $key => $header) {
             $list = carr::get($options, $key, []);
             $list = c::collect(carr::wrap($list))->filter()->all();
             if (count($list) > 0) {
@@ -43,9 +53,125 @@ class CEmail_Driver_Smtp_Message {
             }
         }
 
-        $this->setHeader('MINE-Version', '1.0');
-        $this->setHeader('Content-Type', 'text/' . $this->type() . '; charset="' . $this->charset() . '"');
-        $this->setHeader('Content-Transfer-Encoding', $this->encoding());
+        $this->setHeader('Message-ID', '<' . $this->generateId() . '@' . $this->messageIdDomain($from) . '>');
+        $this->setHeader('X-Mailer', 'Cresenity Framework');
+        $this->setHeader('MIME-Version', '1.0');
+        if ($this->isMultipart()) {
+            $this->setBoundaries();
+            $this->setHeader('Content-Type', 'multipart/mixed; boundary="' . $this->boundaries[0] . '"');
+        } else {
+            $this->setHeader('Content-Type', 'text/' . $this->type() . '; charset="' . $this->charset() . '"');
+            $this->setHeader('Content-Transfer-Encoding', $this->encoding());
+        }
+    }
+
+    /**
+     * @return array struktur internal lampiran: file => [path, nama], mime, contents (base64), cid
+     */
+    public function getAttachments() {
+        return $this->attachments;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isMultipart() {
+        return !in_array($this->type(), ['plain', 'html'], true);
+    }
+
+    /**
+     * Domain untuk Message-ID: config `domain`, lalu domain alamat pengirim, lalu nama server.
+     *
+     * @param string $from
+     *
+     * @return string
+     */
+    protected function messageIdDomain($from) {
+        $domain = $this->config->getOption('domain');
+        if (!$domain && strpos((string) $from, '@') !== false) {
+            $domain = substr(strrchr($from, '@'), 1);
+        }
+
+        return $domain ?: (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost.local');
+    }
+
+    /**
+     * Normalisasi lampiran dari bentuk yang dipakai app (path, ['path','filename','type','disk'],
+     * ['data','name','mime'], CEmail_Attachment) ke struktur yang dirakit buildMessage().
+     *
+     * @param mixed $attachments
+     *
+     * @return array
+     */
+    protected function prepareAttachments($attachments) {
+        $prepared = [];
+        foreach (carr::wrap($attachments) as $attachment) {
+            $entry = null;
+            if ($attachment instanceof CEmail_Attachment) {
+                $entry = $attachment->attachWith(function ($path, $attachmentObject = null) {
+                    return $this->attachmentFromPath($path, $attachmentObject ? $attachmentObject->as : null, $attachmentObject ? $attachmentObject->mime : null);
+                }, function ($data, $attachmentObject = null) {
+                    return $this->attachmentFromData($data(), $attachmentObject ? $attachmentObject->as : 'attachment', $attachmentObject ? $attachmentObject->mime : null);
+                });
+            } elseif ($attachment instanceof CEmail_Contract_AttachableInterface) {
+                return $this->prepareAttachments($attachment->toMailAttachment());
+            } elseif (is_array($attachment) && isset($attachment['contents'], $attachment['file'])) {
+                $entry = $attachment;
+            } elseif (is_array($attachment) && isset($attachment['data'])) {
+                $entry = $this->attachmentFromData($attachment['data'], carr::get($attachment, 'name', carr::get($attachment, 'filename', 'attachment')), carr::get($attachment, 'mime', carr::get($attachment, 'type')));
+            } elseif (is_array($attachment) && isset($attachment['path'])) {
+                $disk = carr::get($attachment, 'disk');
+                $name = carr::get($attachment, 'filename', carr::get($attachment, 'name', carr::get($attachment, 'as')));
+                $mime = carr::get($attachment, 'type', carr::get($attachment, 'mime'));
+                if ($disk) {
+                    $entry = $this->attachmentFromData(CStorage::instance()->disk($disk)->get($attachment['path']), $name ?: basename($attachment['path']), $mime);
+                } else {
+                    $entry = $this->attachmentFromPath($attachment['path'], $name, $mime);
+                }
+            } elseif (is_string($attachment) && $attachment !== '') {
+                $entry = $this->attachmentFromPath($attachment);
+            }
+            if ($entry) {
+                $prepared[] = $entry;
+            }
+        }
+
+        return $prepared;
+    }
+
+    /**
+     * @param string      $path
+     * @param null|string $name
+     * @param null|string $mime
+     *
+     * @return array
+     */
+    protected function attachmentFromPath($path, $name = null, $mime = null) {
+        if (!is_file($path)) {
+            throw new CEmail_Exception_EmailSendingFailedException('Attachment file not found: ' . $path);
+        }
+        if (!$mime) {
+            $mime = function_exists('mime_content_type') ? mime_content_type($path) : null;
+        }
+
+        return $this->attachmentFromData(file_get_contents($path), $name ?: basename($path), $mime, $path);
+    }
+
+    /**
+     * @param string      $data
+     * @param string      $name
+     * @param null|string $mime
+     * @param null|string $path
+     *
+     * @return array
+     */
+    protected function attachmentFromData($data, $name, $mime = null, $path = null) {
+        return [
+            'file' => [$path ?: $name, $name],
+            'mime' => $mime ?: 'application/octet-stream',
+            'contents' => chunk_split(base64_encode($data), 76, $this->newline()),
+            'cid' => 'cid:' . md5($name . microtime(true)),
+        ];
     }
 
     /**
@@ -96,11 +222,11 @@ class CEmail_Driver_Smtp_Message {
                 case 'html_attach':
                 case 'html_inline':
                     $body .= '--' . $this->boundaries[0] . $newline;
-                    $text_type = (stripos($this->type, 'html') !== false) ? 'html' : 'plain';
+                    $text_type = (stripos($this->type(), 'html') !== false) ? 'html' : 'plain';
                     $body .= 'Content-Type: text/' . $text_type . '; charset="' . $charset . '"' . $newline;
                     $body .= 'Content-Transfer-Encoding: ' . $encoding . $newline . $newline;
                     $body .= $this->body . $newline . $newline;
-                    $attach_type = (stripos($this->type, 'attach') !== false) ? 'attachment' : 'inline';
+                    $attach_type = (stripos($this->type(), 'attach') !== false) ? 'attachment' : 'inline';
                     $body .= $this->getAttachmentHeaders($attach_type, $this->boundaries[0]);
                     $body .= '--' . $this->boundaries[0] . '--';
 
@@ -125,7 +251,7 @@ class CEmail_Driver_Smtp_Message {
                 case 'html_inline_attach':
                     $body .= '--' . $this->boundaries[0] . $newline;
                     $body .= 'Content-Type: multipart/alternative;' . $newline . "\t boundary=\"{$this->boundaries[1]}\"" . $newline . $newline;
-                    if (stripos($this->type, 'alt') !== false) {
+                    if (stripos($this->type(), 'alt') !== false) {
                         $body .= '--' . $this->boundaries[1] . $newline;
                         $body .= 'Content-Type: text/plain; charset="' . $charset . '"' . $newline;
                         $body .= 'Content-Transfer-Encoding: ' . $encoding . $newline . $newline;
@@ -135,7 +261,7 @@ class CEmail_Driver_Smtp_Message {
                     $body .= 'Content-Type: text/html; charset="' . $charset . '"' . $newline;
                     $body .= 'Content-Transfer-Encoding: ' . $encoding . $newline . $newline;
                     $body .= $this->body . $newline . $newline;
-                    if (stripos($this->type, 'inline') !== false) {
+                    if (stripos($this->type(), 'inline') !== false) {
                         $body .= $this->getAttachmentHeaders('inline', $this->boundaries[1]);
                         $body .= $this->alt_body . $newline . $newline;
                     }
@@ -248,6 +374,10 @@ class CEmail_Driver_Smtp_Message {
      * @return string Mimeheader encoded string
      */
     protected function encodeMimeheader($header) {
+        $header = (string) $header;
+        if (!preg_match('/[^\x20-\x7e]/', $header)) {
+            return $header;
+        }
         // determine the transfer encoding to be used
         $transferEncoding = ($this->encoding() === 'quoted-printable') ? 'Q' : 'B';
 
@@ -268,8 +398,7 @@ class CEmail_Driver_Smtp_Message {
         $return = '';
 
         $newline = $this->newline();
-        $attachments = carr::get($this->options, 'attachments');
-        foreach ($attachments as $attachment) {
+        foreach ($this->attachments as $attachment) {
             $return .= '--' . $boundary . $newline;
             $return .= 'Content-Type: ' . $attachment['mime'] . '; name="' . $attachment['file'][1] . '"' . $newline;
             $return .= 'Content-Transfer-Encoding: base64' . $newline;
@@ -286,7 +415,7 @@ class CEmail_Driver_Smtp_Message {
     }
 
     public function encoding() {
-        return carr::get($this->options, 'encoding', 'utf-8');
+        return carr::get($this->options, 'encoding', '8bit');
     }
 
     public function type() {
