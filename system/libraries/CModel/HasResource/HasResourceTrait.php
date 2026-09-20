@@ -267,7 +267,6 @@ trait CModel_HasResource_HasResourceTrait {
 
     /**
      * @param string $collectionName
-     * @param array  $filters
      *
      * @return null|CModel_Resource_ResourceInterface
      */
@@ -277,7 +276,6 @@ trait CModel_HasResource_HasResourceTrait {
 
     /**
      * @param string $collectionName
-     * @param array  $filters
      *
      * @return null|CModel_Resource_ResourceInterface
      */
@@ -286,9 +284,7 @@ trait CModel_HasResource_HasResourceTrait {
     }
 
     /**
-     * @param string         $collectionName
      * @param array|callable $filters
-     * @param string         $position
      *
      * @return CModel_Resource_ResourceInterface
      */
@@ -438,7 +434,7 @@ trait CModel_HasResource_HasResourceTrait {
     }
 
     public function getRegisteredResourceCollections() {
-        $this->registerResourceCollections();
+        $this->reregisterResourceCollections();
 
         return c::collect($this->resourceCollections);
     }
@@ -446,15 +442,29 @@ trait CModel_HasResource_HasResourceTrait {
     /**
      * Get the resource collection by its collectionName.
      *
-     * @param string $collectionName
-     *
      * @return null|CResources_ResourceCollection
      */
     public function getResourceCollection(string $collectionName = 'default') {
-        $this->registerResourceCollections();
+        $this->reregisterResourceCollections();
 
         return c::collect($this->resourceCollections)
             ->first(fn (CResources_ResourceCollection $collection) => $collection->name === $collectionName);
+    }
+
+    /**
+     * registerResourceCollections() is a model's override hook that (re)declares
+     * its full, current set of collections via addResourceCollection() - each
+     * call is meant to fully replace the set, not add to it. Every accessor
+     * above calls this on every access, so resetting first keeps a long-lived
+     * instance (a queue worker's memoized "current user", a daemon looping
+     * over many models) from growing $resourceCollections by one duplicate
+     * entry per call for the rest of the process's life.
+     *
+     * @return void
+     */
+    protected function reregisterResourceCollections() {
+        $this->resourceCollections = [];
+        $this->registerResourceCollections();
     }
 
     public function getFallbackResourceUrl(string $collectionName = 'default', string $conversionName = ''): string {
@@ -520,7 +530,6 @@ trait CModel_HasResource_HasResourceTrait {
     /**
      * Update a resource collection by deleting and inserting again with new values.
      *
-     * @param array  $newResourceArray
      * @param string $collectionName
      *
      * @throws \CResources_Exception_ResourceCannotBeUpdated
@@ -747,7 +756,7 @@ trait CModel_HasResource_HasResourceTrait {
     }
 
     public function registerAllResourceConversions(?CModel_Resource_ResourceInterface $resource = null) {
-        $this->registerResourceCollections();
+        $this->reregisterResourceCollections();
         c::collect($this->resourceCollections)->each(function (CResources_ResourceCollection $resourceCollection) use ($resource) {
             $actualResourceConversions = $this->resourceConversions;
             $this->resourceConversions = [];
