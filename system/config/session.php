@@ -88,4 +88,12 @@ return [
      * (e.g. a canvas/landing page embed on a customer's own domain).
      */
     'partitioned' => false,
+    /**
+     * Nyalakan CAuth_Middleware_AuthenticateSession: hash password user disimpan di sesi dan sesi
+     * dikeluarkan saat hash-nya berubah (ganti password / logoutOtherDevices). Sesi aktif yang
+     * belum menyimpan hash akan mengisinya pada request pertama, tidak dikeluarkan.
+     * `authenticate_redirect`: tujuan setelah dikeluarkan; kosong = URL yang sama (gerbang login app).
+     */
+    'authenticate' => false,
+    'authenticate_redirect' => null,
 ];
