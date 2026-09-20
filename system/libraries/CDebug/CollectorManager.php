@@ -58,10 +58,11 @@ class CDebug_CollectorManager {
 
     /**
      * @param string $message
+     * @param array  $context ['api', 'replacement', 'since'] — lihat CDebug_Collector_Deprecated::collect()
      *
-     * @return void
+     * @return null|array
      */
-    public function collectDeprecated($message = '') {
-        return $this->deprecated()->collect($message);
+    public function collectDeprecated($message = '', array $context = []) {
+        return $this->deprecated()->collect($message, $context);
     }
 }

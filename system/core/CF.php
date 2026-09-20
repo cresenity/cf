@@ -696,6 +696,23 @@ final class CF {
     }
 
     /**
+     * Catat pemakaian API yang sudah @deprecated ke kolektor (lihat `collector.deprecated`).
+     *
+     * @param string      $api         mis. 'CEmail::sender'
+     * @param null|string $replacement mis. 'CEmail::mailer()'
+     * @param null|string $since       versi yang men-deprecate, mis. '1.9'
+     * @param null|string $message     pesan tambahan; default dibangun dari api/replacement
+     *
+     * @return void
+     */
+    public static function deprecated($api, $replacement = null, $since = null, $message = null) {
+        if ($message === null) {
+            $message = $api . ' sudah deprecated' . ($since ? ' sejak ' . $since : '') . ($replacement ? ', pakai ' . $replacement : '');
+        }
+        CDebug::collector()->collectDeprecated($message, ['api' => $api, 'replacement' => $replacement, 'since' => $since]);
+    }
+
+    /**
      * Detect CF is running on console or not.
      *
      * @return bool

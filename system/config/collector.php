@@ -18,4 +18,15 @@ return [
     | devcloud.php) - supaya rahasia tidak ikut ke config file yang bisa saja ter-commit.
     */
     'exceptionPush' => false,
+
+    /*
+    | Kolektor pemakaian API @deprecated (CDebug::collector()->collectDeprecated() / CF::deprecated()).
+    | Default MATI; app menyalakannya di default/config/collector.php miliknya. `deprecatedPush` = URL
+    | endpoint devcloud (mis. 'https://devcloud.cresenity.com/v1/deprecations'), memakai key yang sama
+    | dengan exceptionPush (devcloud.phpExceptionCollector.key); tanpa URL entri ditulis ke
+    | temp/collector/deprecated untuk ditarik devcloud. `deprecatedLimit` = maksimal entri unik per proses.
+    */
+    'deprecated' => false,
+    'deprecatedPush' => false,
+    'deprecatedLimit' => 50,
 ];
