@@ -114,7 +114,6 @@ class CEmail_Driver_KirimEmailDriver extends CEmail_DriverAbstract {
 
         $response = $curl->exec()->response();
 
-        cdbg::dd($response);
 
         return $response;
     }
