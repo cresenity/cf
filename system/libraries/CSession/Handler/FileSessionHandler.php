@@ -6,7 +6,7 @@
 
 use Symfony\Component\Finder\Finder;
 
-class CSession_Handler_FileSessionHandler implements SessionHandlerInterface {
+class CSession_Handler_FileSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     /**
      * The filesystem instance.
      *
@@ -109,5 +109,37 @@ class CSession_Handler_FileSessionHandler implements SessionHandlerInterface {
         foreach ($files as $file) {
             $this->files->delete($file->getRealPath());
         }
+    }
+
+    /**
+     * Benar bila id sesi ini ada dan belum kedaluwarsa di penyimpanan.
+     *
+     * @param string $sessionId
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function validateId($sessionId) {
+        $path = $this->path . '/' . $sessionId;
+
+        return $this->files->isFile($path) && $this->files->lastModified($path) >= CCarbon::now()->subSeconds($this->seconds)->getTimestamp();
+    }
+
+    /**
+     * Perbarui waktu akses sesi tanpa mengubah datanya.
+     *
+     * @param string $sessionId
+     * @param string $data
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function updateTimestamp($sessionId, $data) {
+        $path = $this->path . '/' . $sessionId;
+        if ($this->files->isFile($path)) {
+            @touch($path);
+        }
+
+        return true;
     }
 }

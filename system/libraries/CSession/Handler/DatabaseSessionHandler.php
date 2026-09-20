@@ -3,7 +3,7 @@
 /**
  * Description of DatabaseSessionHandler.
  */
-class CSession_Handler_DatabaseSessionHandler implements SessionHandlerInterface {
+class CSession_Handler_DatabaseSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     use CTrait_Helper_InteractsWithTime;
 
     /**
@@ -268,5 +268,34 @@ class CSession_Handler_DatabaseSessionHandler implements SessionHandlerInterface
         $this->exists = $value;
 
         return $this;
+    }
+
+    /**
+     * Benar bila id sesi ini ada dan belum kedaluwarsa di penyimpanan.
+     *
+     * @param string $sessionId
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function validateId($sessionId) {
+        $session = (object) $this->getQuery()->where('key', '=', $sessionId)->first();
+
+        return isset($session->payload) && !$this->expired($session);
+    }
+
+    /**
+     * Perbarui waktu akses sesi tanpa mengubah datanya.
+     *
+     * @param string $sessionId
+     * @param string $data
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function updateTimestamp($sessionId, $data) {
+        $this->getQuery()->where('key', $sessionId)->update(['last_activity' => $this->currentTime()]);
+
+        return true;
     }
 }

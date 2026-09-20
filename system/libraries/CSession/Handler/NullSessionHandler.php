@@ -1,6 +1,6 @@
 <?php
 
-class CSession_Handler_NullSessionHandler implements SessionHandlerInterface {
+class CSession_Handler_NullSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     /**
      * @inheritdoc
      *
@@ -58,6 +58,31 @@ class CSession_Handler_NullSessionHandler implements SessionHandlerInterface {
      */
     #[\ReturnTypeWillChange]
     public function gc($lifetime) {
+        return true;
+    }
+
+    /**
+     * Benar bila id sesi ini ada dan belum kedaluwarsa di penyimpanan.
+     *
+     * @param string $sessionId
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function validateId($sessionId) {
+        return false;
+    }
+
+    /**
+     * Perbarui waktu akses sesi tanpa mengubah datanya.
+     *
+     * @param string $sessionId
+     * @param string $data
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function updateTimestamp($sessionId, $data) {
         return true;
     }
 }

@@ -3,7 +3,7 @@
 /**
  * Description of CacheBasedSessionHandler.
  */
-class CSession_Handler_CacheBasedSessionHandler implements SessionHandlerInterface {
+class CSession_Handler_CacheBasedSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     /**
      * The cache repository instance.
      *
@@ -86,5 +86,30 @@ class CSession_Handler_CacheBasedSessionHandler implements SessionHandlerInterfa
      */
     public function getCache() {
         return $this->cache;
+    }
+
+    /**
+     * Benar bila id sesi ini ada dan belum kedaluwarsa di penyimpanan.
+     *
+     * @param string $sessionId
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function validateId($sessionId) {
+        return $this->cache->has($sessionId);
+    }
+
+    /**
+     * Perbarui waktu akses sesi tanpa mengubah datanya.
+     *
+     * @param string $sessionId
+     * @param string $data
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function updateTimestamp($sessionId, $data) {
+        return $this->write($sessionId, $data);
     }
 }

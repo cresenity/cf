@@ -5,7 +5,7 @@
  */
 use Symfony\Component\HttpFoundation\Request;
 
-class CSession_Handler_CookieSessionHandler implements SessionHandlerInterface {
+class CSession_Handler_CookieSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     use CTrait_Helper_InteractsWithTime;
 
     /**
@@ -114,5 +114,30 @@ class CSession_Handler_CookieSessionHandler implements SessionHandlerInterface {
      */
     public function setRequest(Request $request) {
         $this->request = $request;
+    }
+
+    /**
+     * Benar bila id sesi ini ada dan belum kedaluwarsa di penyimpanan.
+     *
+     * @param string $sessionId
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function validateId($sessionId) {
+        return $this->read($sessionId) !== '';
+    }
+
+    /**
+     * Perbarui waktu akses sesi tanpa mengubah datanya.
+     *
+     * @param string $sessionId
+     * @param string $data
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function updateTimestamp($sessionId, $data) {
+        return $this->write($sessionId, $data);
     }
 }

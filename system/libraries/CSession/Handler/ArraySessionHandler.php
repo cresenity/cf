@@ -1,6 +1,6 @@
 <?php
 
-class CSession_Handler_ArraySessionHandler implements SessionHandlerInterface {
+class CSession_Handler_ArraySessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     use CTrait_Helper_InteractsWithTime;
 
     /**
@@ -126,5 +126,34 @@ class CSession_Handler_ArraySessionHandler implements SessionHandlerInterface {
      */
     protected function calculateExpiration($seconds) {
         return $this->currentTime() - $seconds;
+    }
+
+    /**
+     * Benar bila id sesi ini ada dan belum kedaluwarsa di penyimpanan.
+     *
+     * @param string $sessionId
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function validateId($sessionId) {
+        return isset($this->storage[$sessionId]) && $this->read($sessionId) !== '';
+    }
+
+    /**
+     * Perbarui waktu akses sesi tanpa mengubah datanya.
+     *
+     * @param string $sessionId
+     * @param string $data
+     *
+     * @return bool
+     */
+    #[\ReturnTypeWillChange]
+    public function updateTimestamp($sessionId, $data) {
+        if (isset($this->storage[$sessionId])) {
+            $this->storage[$sessionId]['time'] = $this->currentTime();
+        }
+
+        return true;
     }
 }
