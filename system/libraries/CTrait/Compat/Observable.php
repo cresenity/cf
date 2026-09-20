@@ -351,21 +351,6 @@ trait CTrait_Compat_Observable {
     }
 
     /**
-     * @deprecated 1.2
-     *
-     * @param string $id
-     *
-     * @return $this
-     */
-    public function add_span($id = '') {
-        CF::deprecated(__METHOD__, "addDiv()->addClass('span<n>')", '1.2', null, true);
-        $span = CSpan::factory($id);
-        $this->add($span);
-
-        return $span;
-    }
-
-    /**
      * Add Row.
      *
      * @param string $id

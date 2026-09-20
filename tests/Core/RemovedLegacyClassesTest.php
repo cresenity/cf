@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
  */
 class RemovedLegacyClassesTest extends TestCase {
     /** @var string[] */
-    const REMOVED = ['CPHPInfo', 'CSql', 'CTab', 'CTabStatic', 'CTabList', 'CTable', 'CTableColumn', 'CTableOptions', 'CTableRow'];
+    const REMOVED = ['CPHPInfo', 'CSpan', 'CSql', 'CTab', 'CTabStatic', 'CTabList', 'CTable', 'CTableColumn', 'CTableOptions', 'CTableRow'];
 
     public function testLegacyFormInputClassesAreGone() {
         $this->assertSame([], glob(SYSPATH . 'libraries' . DS . 'CFormInput*.php'));
@@ -23,6 +23,7 @@ class RemovedLegacyClassesTest extends TestCase {
             $this->assertTrue(class_exists($class), 'pengganti ' . $class . ' tetap ada');
         }
         $this->assertInstanceOf(CElement_Component_TableRow::class, (new CElement_Element_Div())->addRow(), 'addRow() kompat mengembalikan kelas modern');
+        $this->assertFalse(method_exists(CElement_Element_Div::class, 'add_span'), 'add_span() kompat dihapus bersama CSpan; pakai addDiv()->addClass(\'span<n>\')');
         $this->assertTrue(class_exists('CElement_FormInput_SelectSearch'));
     }
 
