@@ -28,15 +28,19 @@ class CExporter_DownloadProgress {
      * Queue a DataTable export (chunked writer, per-chunk progress, DONE only once the file exists on disk).
      *
      * @param CElement_Component_DataTable $table
-     * @param array                        $options filename, disk (default local-temp), writerType (default from filename), queueConnection, queue, expiration
+     * @param array                        $options filename (a bare name lands in export/<appCode>/<Ymd>/, a path is kept as is),
+     *                                              disk (default local-temp), writerType (default from filename), queueConnection, queue, expiration
      *
      * @return static
      */
     public static function queueDataTable(CElement_Component_DataTable $table, array $options = []) {
         $writerType = carr::get($options, 'writerType');
-        $filename = carr::get($options, 'filename');
-        if (strlen((string) $filename) == 0) {
+        $filename = (string) carr::get($options, 'filename');
+        if (strlen($filename) == 0) {
             $filename = CExporter::randomFilename($writerType ?: CExporter::XLSX);
+        }
+        if (basename($filename) === $filename) {
+            $filename = static::defaultFolder() . '/' . $filename;
         }
         $writerType = CExporter_FileTypeDetector::detectStrict($filename, $writerType);
         $disk = carr::get($options, 'disk', 'local-temp');
@@ -86,6 +90,15 @@ class CExporter_DownloadProgress {
         unset($pending);
 
         return new static($id);
+    }
+
+    /**
+     * Folder on the export disk for files queued without an explicit path: export/<appCode>/<Ymd>.
+     *
+     * @return string
+     */
+    public static function defaultFolder() {
+        return 'export/' . CF::appCode() . '/' . date('Ymd');
     }
 
     /**
