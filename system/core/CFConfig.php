@@ -142,8 +142,8 @@ class CFConfig {
     }
 
     /**
-     * Cache file for the composition this request resolves to. Keyed by domain
-     * as well as paths, because a config value may hold the domain itself.
+     * Cache file for the composition this request resolves to. Keyed by scheme and domain
+     * as well as paths, because a config value may hold the base url itself (curl::httpbase()).
      *
      * @return null|string
      */
@@ -152,7 +152,8 @@ class CFConfig {
             return null;
         }
 
-        $composition = CF::domain() . '|' . implode('|', CF::paths());
+        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
+        $composition = $scheme . '|' . CF::domain() . '|' . implode('|', CF::paths());
 
         return self::getCachedConfigPath(substr(md5($composition), 0, 12));
     }
