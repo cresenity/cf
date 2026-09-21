@@ -323,6 +323,10 @@ class CExporter_Sheet {
 
         if ($sheetExport instanceof CExporter_Concern_WithColumnFormatting) {
             foreach ($sheetExport->columnFormats() as $column => $format) {
+                // a column with no detected format keeps General; NumberFormat::setFormatCode() is string-typed since PhpSpreadsheet 1.30
+                if ($format === null || $format === '') {
+                    continue;
+                }
                 $this->formatColumn($column, $format);
             }
         }
