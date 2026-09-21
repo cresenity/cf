@@ -65,6 +65,24 @@ class CVendor_WhatsApp_Api {
     }
 
     /**
+     * Marks an incoming message as read and shows the "typing…" indicator
+     * on the customer's device (Meta Graph API feature, same endpoint as
+     * sendMessage()) until either ~25 seconds pass or a real reply is sent.
+     *
+     * @param string $messageId the WhatsApp-native id of the incoming message
+     *
+     * @return array
+     */
+    public function markMessageAsReadWithTyping($messageId) {
+        return $this->sendMessage([
+            'messaging_product' => 'whatsapp',
+            'status' => 'read',
+            'message_id' => $messageId,
+            'typing_indicator' => ['type' => 'text'],
+        ]);
+    }
+
+    /**
      * @param string $name
      *
      * @return array
