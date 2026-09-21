@@ -159,6 +159,11 @@ class CTesting_TestCase extends BaseTestCase {
         // survive into the next test.
         CSocialLogin::forgetFakes();
 
+        // CHTTP::client() is a process-wide singleton and fake() only ever appends:
+        // every stub registered so far runs on every request, first non-null answer
+        // wins, so an earlier test's fake silently answers a later test's requests.
+        CHTTP_Client::forgetFakes();
+
         // The session store is resolved once from the container and reused for
         // every simulated request (like everything else here), so a test that
         // performs a real login (writing the auth id into session, not just

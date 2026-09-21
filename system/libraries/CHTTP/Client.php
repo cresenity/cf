@@ -123,6 +123,15 @@ final class CHTTP_Client {
     }
 
     /**
+     * Discard the shared instance, dropping every fake, recorded request and stray-request setting registered on it.
+     *
+     * @return void
+     */
+    public static function forgetFakes() {
+        self::$instance = null;
+    }
+
+    /**
      * Create a new factory instance.
      *
      * @return void
