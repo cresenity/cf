@@ -9,6 +9,8 @@
  */
 namespace PHPUnit\Framework\Exception;
 
+use PHPUnit\Framework\IncompleteTest;
+
 /**
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
