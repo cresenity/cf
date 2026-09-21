@@ -58,6 +58,25 @@ class CVendor_Wago_Device {
         return $this->handleResponse($this->client->post('message/send', $request));
     }
 
+    /**
+     * Presence "sedang mengetik" berdiri sendiri, tanpa mengirim pesan apa
+     * pun - berguna untuk menunjukkan ke pelanggan bahwa balasan sedang
+     * disiapkan (mis. oleh AI agent) sebelum pesan sesungguhnya siap.
+     *
+     * @param string $phone
+     *
+     * @throws CVendor_Wago_Exception_ApiException
+     *
+     * @return array
+     */
+    public function sendTyping($phone) {
+        $request = [
+            'phone' => $phone,
+        ];
+
+        return $this->handleResponse($this->client->post('message/typing', $request));
+    }
+
     public function getInfo() {
         return $this->handleResponse($this->client->get('info'));
     }
