@@ -32,6 +32,16 @@ class CElement_Component_DataTable_TaskQueue_AfterExportProgress extends CQueue_
         $disk = CStorage::instance()->disk(carr::get($data, 'data.exporter.disk'));
         $isReady = $disk->exists($filename);
 
+        if (carr::get($data, 'data.state') === CExporter_DownloadProgress::STATE_CANCELED) {
+            // canceled after the rows were already appended: the file got stored anyway, drop it and keep CANCELED
+            if ($isReady) {
+                $disk->delete($filename);
+            }
+            $this->logDaemon('AfterExportProgress | canceled, downloadId:' . $downloadId);
+
+            return;
+        }
+
         if ($isReady) {
             $data['data']['progressValue'] = carr::get($data, 'data.progressMax');
             $data['data']['state'] = 'DONE';

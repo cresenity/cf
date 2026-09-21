@@ -12,6 +12,8 @@ class CExporter_DownloadProgress {
 
     const STATE_FAILED = 'FAILED';
 
+    const STATE_CANCELED = 'CANCELED';
+
     /**
      * @var string
      */
@@ -190,6 +192,50 @@ class CExporter_DownloadProgress {
     }
 
     /**
+     * @return bool
+     */
+    public function isCanceled() {
+        return $this->getState() === self::STATE_CANCELED;
+    }
+
+    /**
+     * Ask the running job to stop. Cooperative: the job has to check isCanceled() (or call
+     * checkCanceled()) between chunks; the DataTable export jobs do, a custom job must itself.
+     *
+     * @param null|string $message
+     *
+     * @return $this
+     */
+    public function cancel($message = null) {
+        return $this->write(function (array $data) use ($message) {
+            if (carr::get($data, 'state') === self::STATE_DONE) {
+                return $data;
+            }
+            $data['state'] = self::STATE_CANCELED;
+            $data['message'] = $message;
+
+            return $data;
+        });
+    }
+
+    /**
+     * For use inside a job's progress callback: throws once the export was canceled.
+     *
+     * @throws CExporter_Exception_CanceledException
+     *
+     * @return $this
+     */
+    public function checkCanceled() {
+        if ($this->isCanceled()) {
+            throw CExporter_Exception_CanceledException::forDownload($this->id);
+        }
+
+        return $this;
+    }
+
+    /**
+     * No-op once canceled, so a job that keeps reporting after cancel() cannot revive the record.
+     *
      * @param int|float $value
      * @param null|int  $max
      *
@@ -197,6 +243,9 @@ class CExporter_DownloadProgress {
      */
     public function update($value, $max = null) {
         return $this->write(function (array $data) use ($value, $max) {
+            if (carr::get($data, 'state') === self::STATE_CANCELED) {
+                return $data;
+            }
             $data['progressValue'] = $value;
             if ($max !== null) {
                 $data['progressMax'] = $max;
@@ -208,10 +257,15 @@ class CExporter_DownloadProgress {
     }
 
     /**
+     * No-op once canceled.
+     *
      * @return $this
      */
     public function done() {
         return $this->write(function (array $data) {
+            if (carr::get($data, 'state') === self::STATE_CANCELED) {
+                return $data;
+            }
             $data['state'] = self::STATE_DONE;
             $data['progressValue'] = carr::get($data, 'progressMax', 100);
 
@@ -220,12 +274,17 @@ class CExporter_DownloadProgress {
     }
 
     /**
+     * No-op once canceled (a job aborting because of the cancel is not a failure).
+     *
      * @param null|string $message
      *
      * @return $this
      */
     public function fail($message = null) {
         return $this->write(function (array $data) use ($message) {
+            if (carr::get($data, 'state') === self::STATE_CANCELED) {
+                return $data;
+            }
             $data['state'] = self::STATE_FAILED;
             $data['message'] = $message;
 

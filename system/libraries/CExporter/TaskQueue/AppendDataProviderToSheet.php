@@ -89,6 +89,9 @@ class CExporter_TaskQueue_AppendDataProviderToSheet extends CQueue_AbstractTask 
         if ($perPage >= 0) {
             $offset += $perPage;
             while ($offset < $total) {
+                if ($this->isCanceled($downloadId)) {
+                    return;
+                }
                 $page++;
                 $paginationResult = $this->dataProvider->paginate($perPage, ['*'], 'page', $page);
                 CDaemon::log('append row from data provider page:' . $page . ', perPage:' . $perPage . ' with total data:' . $paginationResult->total());
@@ -102,11 +105,33 @@ class CExporter_TaskQueue_AppendDataProviderToSheet extends CQueue_AbstractTask 
 
         CDaemon::log('end append row from data provider');
 
+        if ($this->isCanceled($downloadId)) {
+            return;
+        }
         CDaemon::log('write excel');
         $writer->write($this->sheetExport, $this->temporaryFile, $this->writerType);
         CDaemon::log('end write excel');
         CDaemon::log('Memory Usage:' . memory_get_usage());
         unset($writer, $this->sheetExport, $this->temporaryFile, $this->writerType);
+    }
+
+    /**
+     * Cooperative cancel: once the poller asked for it, drop the rest of the chain (CloseSheet,
+     * StoreQueuedExport, AfterExportProgress) and the temp file instead of finishing the file.
+     *
+     * @param null|string $downloadId
+     *
+     * @return bool
+     */
+    protected function isCanceled($downloadId) {
+        if (!$downloadId || !CExporter_DownloadProgress::find($downloadId)->isCanceled()) {
+            return false;
+        }
+        CDaemon::log('CExporter_TaskQueue_AppendDataProviderToSheet canceled, downloadId:' . $downloadId);
+        $this->chained = [];
+        $this->temporaryFile->delete();
+
+        return true;
     }
 
     protected function setProgress($downloadId, $offset, $total) {
