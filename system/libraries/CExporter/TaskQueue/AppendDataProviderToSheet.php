@@ -113,7 +113,8 @@ class CExporter_TaskQueue_AppendDataProviderToSheet extends CQueue_AbstractTask 
         if ($downloadId) {
             $data = CAjax::getData($downloadId);
 
-            $progressMax = carr::get($data, 'progressMax', 100);
+            // every writer nests progressMax under 'data'; the bare key is only kept for blobs written before that
+            $progressMax = carr::get($data, 'data.progressMax', carr::get($data, 'progressMax', 100));
             $progressValue = $total ? ($offset * $progressMax / $total) : 0;
             $data['data']['progressValue'] = $progressValue;
             // Reaching progressMax here only means every row has been appended to the

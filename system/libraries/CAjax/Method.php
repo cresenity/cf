@@ -168,19 +168,29 @@ class CAjax_Method implements Jsonable {
      * @return string
      */
     public function makeUrl($jsonOption = 0) {
-        //generate ajax_method
-        $json = $this->toJson($jsonOption);
+        $ajaxMethod = $this->store($jsonOption);
 
-        //save this object to file.
+        $base_url = curl::httpbase();
+
+        return $base_url . 'cresenity/ajax/' . $ajaxMethod;
+    }
+
+    /**
+     * Save this method to its temp file and return the generated id (the last segment of makeUrl()).
+     *
+     * @param int $jsonOption
+     *
+     * @return string
+     */
+    public function store($jsonOption = 0) {
+        $json = $this->toJson($jsonOption);
 
         $ajaxMethod = date('Ymd') . cutils::randmd5();
         $disk = CTemporary::disk();
         $file = CAjax::temporaryFile($ajaxMethod);
         $disk->put($file, $json);
 
-        $base_url = curl::httpbase();
-
-        return $base_url . 'cresenity/ajax/' . $ajaxMethod;
+        return $ajaxMethod;
     }
 
     public function toArray() {

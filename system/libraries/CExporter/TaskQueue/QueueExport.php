@@ -67,4 +67,15 @@ class CExporter_TaskQueue_QueueExport extends CQueue_AbstractTask {
 
         return $this;
     }
+
+    /**
+     * @param Throwable $e
+     *
+     * @return void
+     */
+    public function failed(Throwable $e) {
+        if (method_exists($this->export, 'failed')) {
+            $this->export->failed($e);
+        }
+    }
 }

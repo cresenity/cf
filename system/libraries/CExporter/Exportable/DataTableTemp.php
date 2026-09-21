@@ -23,4 +23,17 @@ class CExporter_Exportable_DataTableTemp extends CExporter_Exportable_DataTable 
     public function getDownloadId() {
         return $this->downloadId;
     }
+
+    /**
+     * Called by the export jobs (CExporter_Trait_ProxyFailures) when one of them fails, so the poller sees FAILED instead of PENDING forever.
+     *
+     * @param Throwable $e
+     *
+     * @return void
+     */
+    public function failed(Throwable $e) {
+        if ($this->downloadId) {
+            CExporter_DownloadProgress::find($this->downloadId)->fail($e->getMessage());
+        }
+    }
 }
