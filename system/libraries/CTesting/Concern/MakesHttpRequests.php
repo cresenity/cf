@@ -490,11 +490,24 @@ trait CTesting_Concern_MakesHttpRequests {
             array_replace($this->serverVariables, $server),
             $content
         );
-        $response = $kernel->handle(
-            $request = CHTTP_Request::createFromBase($symfonyRequest)
-        );
+        $request = CHTTP_Request::createFromBase($symfonyRequest);
 
-        $kernel->terminate($request, $response);
+        // Controllers that read $_POST/$_GET directly (CApp_Trait_BaseTrait::
+        // getRequestPost() and the like) would otherwise see the previous
+        // request's data, or nothing; the globals are put back afterwards so
+        // one simulated request never leaks into the next.
+        $previousPost = $_POST;
+        $previousGet = $_GET;
+        $_POST = $request->request->all();
+        $_GET = $request->query->all();
+
+        try {
+            $response = $kernel->handle($request);
+            $kernel->terminate($request, $response);
+        } finally {
+            $_POST = $previousPost;
+            $_GET = $previousGet;
+        }
 
         if ($this->followRedirects) {
             $response = $this->followRedirects($response);
