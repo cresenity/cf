@@ -69,7 +69,7 @@ class CApp_Log_Activity {
             'app_id' => $appId,
             'session_id' => c::session()->getId(),
             'remote_addr' => CHTTP::request()->ip(),
-            'user_agent' => CHTTP::request()->userAgent(),
+            'user_agent' => static::truncate(CHTTP::request()->userAgent(), 255),
             'browser' => CApp::browserName(),
             'browser_version' => CApp::browserVersion(),
             'platform' => CApp::platformName(),
@@ -94,6 +94,24 @@ class CApp_Log_Activity {
         $model->save();
 
         return $model;
+    }
+
+    /**
+     * Potong string sepanjang kolom `user_agent varchar(255)` - beberapa bot
+     * mengirim User-Agent yang lebih panjang (mis. header ganda/rusak), dan
+     * tanpa ini insert-nya gagal dengan "Data too long for column".
+     *
+     * @param null|string $value
+     * @param int         $length
+     *
+     * @return null|string
+     */
+    protected static function truncate($value, $length) {
+        if ($value === null) {
+            return null;
+        }
+
+        return cstr::limit((string) $value, $length, '');
     }
 
     /**
