@@ -82,8 +82,10 @@ function addSocketListener(socket, type, handler) {
 }
 function detach(term, socket) {
     var addonTerminal = term;
-    addonTerminal.__dataListener.dispose();
-    addonTerminal.__dataListener = undefined;
+    if (addonTerminal.__dataListener) {
+        addonTerminal.__dataListener.dispose();
+        addonTerminal.__dataListener = undefined;
+    }
     socket = (typeof socket === 'undefined') ? addonTerminal.__socket : socket;
     if (socket) {
         socket.removeEventListener('message', addonTerminal.__getMessage);
