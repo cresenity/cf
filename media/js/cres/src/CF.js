@@ -105,13 +105,27 @@ class CF {
         // property, not getAttribute) is what resolves a relative src/href to
         // an absolute URL for us.
         const target = new URL(url, this.document.baseURI).href.split('?')[0];
+        const targetBundle = this.compiledBundleKey(target);
         const elements = this.document.querySelectorAll(tagName + '[' + attr + ']');
         for (let i = 0; i < elements.length; i++) {
-            if (elements[i][attr].split('?')[0] === target) {
+            const present = elements[i][attr].split('?')[0];
+            if (present === target) {
+                return true;
+            }
+            if (targetBundle !== null && this.compiledBundleKey(present) === targetBundle) {
                 return true;
             }
         }
         return false;
+    }
+    compiledBundleKey(absoluteUrl) {
+        // `compiled/asset/<type>/<release>/<md5-of-file-list>.<ext>` (assets.*.compile): the md5
+        // names the SET of files, the release folder only changes per deploy. A tab opened before
+        // a deploy has already executed that same set, so a newer release of it must count as
+        // loaded - re-injecting it re-runs jQuery, every plugin and every top-level `class` on a
+        // live page ("Identifier ... has already been declared").
+        const match = absoluteUrl.match(/\/compiled\/asset\/(css|js)\/[^/]+\/([0-9a-f]{32}\.(?:css|js))$/);
+        return match ? match[1] + '/' + match[2] : null;
     }
     requireCssAsync(url) {
         return new Promise((resolve, reject)=> {
