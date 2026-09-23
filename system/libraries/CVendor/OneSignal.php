@@ -192,4 +192,15 @@ class CVendor_OneSignal {
     public function notifications() {
         return $this->api('notifications');
     }
+
+    /**
+     * Backs the `@property-read` services declared on this class.
+     *
+     * @param string $name
+     *
+     * @return CVendor_OneSignal_Apps|CVendor_OneSignal_Devices|CVendor_OneSignal_Notifications
+     */
+    public function __get($name) {
+        return $this->api($name);
+    }
 }
