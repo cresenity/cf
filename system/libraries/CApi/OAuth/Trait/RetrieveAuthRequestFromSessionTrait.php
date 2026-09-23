@@ -33,7 +33,21 @@ trait CApi_OAuth_Trait_RetrieveAuthRequestFromSessionTrait {
                 throw new Exception('Authorization request was not present in the session.');
             }
 
-            $authRequest->setUser(new CApi_OAuth_Bridge_User($request->user()->getAuthIdentifier()));
+            //sama seperti CApi_OAuth_Method_Authorize::execute() - $request->user()
+            //null untuk request API biasa (bukan token Bearer), user sungguhan
+            //ada di session guard karena inilah yang login lewat halaman
+            //authorization/login sebelumnya. Tanpa fallback ini,
+            //getAuthIdentifier() dipanggil di atas null tiap kali tombol
+            //Authorize/Cancel ditekan.
+            $user = $request->user();
+            if ($user === null && method_exists($this, 'getOAuth')) {
+                $user = $this->getOAuth()->createSessionGuard()->user();
+            }
+            if ($user === null) {
+                throw new Exception('No authenticated user found for this authorization request.');
+            }
+
+            $authRequest->setUser(new CApi_OAuth_Bridge_User($user->getAuthIdentifier()));
 
             $authRequest->setAuthorizationApproved(true);
         });
