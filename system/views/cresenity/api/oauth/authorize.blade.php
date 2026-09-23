@@ -59,7 +59,7 @@
 
                         <div class="buttons">
                             <!-- Authorize Button -->
-                            <form method="post" action="{{ c::url('api/app/auth/member/authorization/approve') }}">
+                            <form method="post" action="{{ $approveUri }}">
                                 @csrf
 
                                 <input type="hidden" name="state" value="{{ $request->state }}">
@@ -69,7 +69,7 @@
                             </form>
 
                             <!-- Cancel Button -->
-                            <form method="post" action="{{ c::url('api/app/auth/member/authorization/deny') }}">
+                            <form method="post" action="{{ $denyUri }}">
                                 @csrf
                                 @method('DELETE')
 

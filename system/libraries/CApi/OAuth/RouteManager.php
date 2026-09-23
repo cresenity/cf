@@ -72,6 +72,14 @@ class CApi_OAuth_RouteManager {
         return c::url($this->resolvePrefix() . '/authorization/login');
     }
 
+    public function getApproveUrl() {
+        return c::url($this->resolvePrefix() . '/authorization/approve');
+    }
+
+    public function getDenyUrl() {
+        return c::url($this->resolvePrefix() . '/authorization/deny');
+    }
+
     public function getSwaggerRedirectUrl() {
         return c::url($this->resolvePrefix() . '/swagger/redirect');
     }

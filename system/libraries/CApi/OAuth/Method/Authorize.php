@@ -50,6 +50,8 @@ class CApi_OAuth_Method_Authorize extends CApi_OAuth_MethodAbstract {
             $view = $oauth->viewManager()->getLoginView();
         }
         $loginUri = $oauth->routeManager()->getLoginUrl();
+        $approveUri = $oauth->routeManager()->getApproveUrl();
+        $denyUri = $oauth->routeManager()->getDenyUrl();
 
         return c::response()->view($view, [
             'client' => $client,
@@ -59,6 +61,8 @@ class CApi_OAuth_Method_Authorize extends CApi_OAuth_MethodAbstract {
             'authToken' => $authToken,
             'redirectUri' => $redirectUri,
             'loginUri' => $loginUri,
+            'approveUri' => $approveUri,
+            'denyUri' => $denyUri,
         ]);
     }
 
