@@ -249,7 +249,7 @@ class CApi_OAuth_ClientRepository {
      * @return void
      */
     public function delete(CApi_OAuth_Model_OAuthClient $client) {
-        $client->tokens()->update(['revoked' => true]);
+        $client->oauthAccessToken()->update(['revoked' => true]);
 
         $client->forceFill(['revoked' => true])->save();
     }

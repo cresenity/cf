@@ -140,8 +140,7 @@ class CApi_OAuth_TokenRepository {
         $query = $client->oauthAccessToken()
             ->where('revoked', 0)
             ->where('expires_at', '>', CCarbon::now())
-            ->latest('expires_at')
-            ->first();
+            ->latest('expires_at');
         if ($user) {
             $query->where('user_id', '=', c::optional($user)->getAuthIdentifier());
             if ($userType) {
