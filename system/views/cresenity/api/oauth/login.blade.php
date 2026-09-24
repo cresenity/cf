@@ -64,6 +64,10 @@
                                 <input type="hidden" name="client_id" value="{{ $client->oauth_client_id }}">
                                 <input type="hidden" name="redirect_uri" value="{{ $redirectUri }}">
                                 <input type="hidden" name="auth_token" value="{{ $authToken }}">
+                                @if($request->code_challenge)
+                                <input type="hidden" name="code_challenge" value="{{ $request->code_challenge }}">
+                                <input type="hidden" name="code_challenge_method" value="{{ $request->code_challenge_method }}">
+                                @endif
                                 <button type="submit" class="btn btn-success btn-signin w-100">Sign in</button>
                             </form>
 
