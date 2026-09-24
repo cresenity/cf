@@ -17,6 +17,24 @@ class CApi_OAuth_Method_Authorize extends CApi_OAuth_MethodAbstract {
         $redirectUri = $request->redirect_uri;
         $server = $oauth->authorizationServer();
         $psrRequest = $this->toServerRequestInterface($request);
+
+        // OAUTH-PKCE-DIAG (2026-09-24, devcloud client_id=6 only): Hery
+        // reported `devcloud login`/`devcloud agent install` consistently
+        // fails "Code challenge must be provided for public clients" on the
+        // first CLI run, succeeds on an immediate second run, with
+        // deterministic client-side code that always sends code_challenge -
+        // narrow, temporary log to see the two real requests side by side
+        // instead of guessing further. Check in with Hery once reproduced;
+        // remove this block either way, do not leave it running.
+        if ((string) $request->client_id === '6') {
+            c::logger()->info('OAUTH-PKCE-DIAG', [
+                'rawGet' => $_GET,
+                'requestAll' => $request->all(),
+                'psrQueryParams' => $psrRequest->getQueryParams(),
+                'userAgent' => $request->userAgent(),
+                'sessionId' => session_id(),
+            ]);
+        }
         $authRequest = $this->withErrorHandling(function () use ($psrRequest, $server) {
             return $server->validateAuthorizationRequest($psrRequest);
         });
