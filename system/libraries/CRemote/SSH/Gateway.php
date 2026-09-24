@@ -180,7 +180,16 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
     protected function openProxyJumpTunnel($targetHost, $targetPort) {
         $jump = $this->config->getProxyJump();
         $localPort = $this->findFreePort();
-        $command = $this->buildProxyJumpCommand($jump, $targetHost, $targetPort, $localPort);
+        // Diberi ke ssh sendiri (bukan cuma dipakai lewat deadline PHP di
+        // bawah) supaya ssh yang menyerah lebih dulu dan sungguh menulis
+        // pesan errornya ke stderr (mis. "Connection timed out") - sebelum
+        // ini ssh tidak diberi batas sama sekali, jadi kalau hop bastion-nya
+        // lambat, PHP membunuhnya paksa (SIGTERM) sebelum ssh sendiri sempat
+        // melapor apa-apa, dan exception timeout di bawah selalu kosong
+        // pesannya. -2 detik supaya ssh selalu menyerah SEBELUM deadline
+        // PHP, bukan bersamaan.
+        $connectTimeout = max(5, max($this->config->getTimeout(), 10) - 2);
+        $command = $this->buildProxyJumpCommand($jump, $targetHost, $targetPort, $localPort, $connectTimeout);
 
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
         $this->tunnelProcess = proc_open($command, $descriptors, $pipes);
@@ -210,9 +219,20 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
             usleep(100000);
         }
 
+        // Ditangkap SEBELUM closeTunnel() (yang mengirim SIGTERM) supaya apa
+        // pun yang sempat ditulis ssh ke stderr-nya sampai detik terakhir
+        // ikut terbawa ke exception - sebelumnya cabang timeout ini sama
+        // sekali tidak menyertakan stderr, jadi satu-satunya cara tahu
+        // sebabnya adalah mengulang seluruh perintah secara manual.
+        $stderr = trim((string) stream_get_contents($pipes[2]));
         $this->closeTunnel();
 
-        throw new \RuntimeException('Timed out waiting for SSH proxy jump tunnel to ' . $targetHost . ':' . $targetPort);
+        $message = 'Timed out waiting for SSH proxy jump tunnel to ' . $targetHost . ':' . $targetPort;
+        if ($stderr !== '') {
+            $message .= ' (' . $stderr . ')';
+        }
+
+        throw new \RuntimeException($message);
     }
 
     /**
@@ -233,12 +253,16 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
      * @param string $targetHost
      * @param int    $targetPort
      * @param int    $localPort
+     * @param int    $connectTimeout detik - dilewatkan ke ssh sendiri (-o ConnectTimeout)
+     *                                supaya ssh yang menyerah lebih dulu (dan melapor lewat
+     *                                stderr) daripada dibunuh paksa oleh deadline PHP di
+     *                                openProxyJumpTunnel() tanpa pesan apa pun
      *
      * @throws \RuntimeException
      *
      * @return string
      */
-    protected function buildProxyJumpCommand(CRemote_SSH_Config $jump, $targetHost, $targetPort, $localPort) {
+    protected function buildProxyJumpCommand(CRemote_SSH_Config $jump, $targetHost, $targetPort, $localPort, $connectTimeout = 8) {
         //`exec` lets the shell proc_open spawns replace itself with ssh instead
         //of forking a child - otherwise proc_terminate() only kills the shell
         //and the actual ssh tunnel is orphaned and keeps running.
@@ -248,6 +272,7 @@ class CRemote_SSH_Gateway implements CRemote_SSH_GatewayInterface {
             '-o', 'StrictHostKeyChecking=accept-new',
             '-o', 'ExitOnForwardFailure=yes',
             '-o', 'ServerAliveInterval=10',
+            '-o', 'ConnectTimeout=' . (int) $connectTimeout,
             '-p', escapeshellarg((string) $jump->getPort()),
             '-L', escapeshellarg('127.0.0.1:' . $localPort . ':' . $targetHost . ':' . $targetPort),
         ];
