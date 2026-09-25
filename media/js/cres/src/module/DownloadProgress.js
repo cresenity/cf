@@ -1,4 +1,5 @@
 import extend from '../core/extend';
+import { reportJsError } from '@cresenity/cresjs-error-collector';
 
 const POLL_INTERVAL = 3000;
 
@@ -174,6 +175,17 @@ export default class DownloadProgress {
             error: function (xhrError, ajaxOptions, thrownError) {
                 if (thrownError !== 'abort') {
                     cresenity.message('error', 'Error, please call administrator... (' + thrownError + ')');
+                    // Ditangani di sini (pesan sudah tampil ke user), jadi window.onerror/
+                    // unhandledrejection tidak pernah terpicu - laporkan manual supaya kegagalan
+                    // ajax awal DownloadProgress (mis. koneksi terputus sebelum progressUrl
+                    // didapat) tetap punya jejak. No-op otomatis kalau app ini belum
+                    // mengaktifkan cresjs collector (__CF_JS_COLLECTOR_CONFIG__ kosong).
+                    reportJsError({
+                        message: 'DownloadProgress ajax failed: status=' + (xhrError && xhrError.status) + ' thrown=' + thrownError + ' url=' + url,
+                        name: 'DownloadProgressAjaxError',
+                        url: window.location.href,
+                        type: 'download-progress-ajax'
+                    });
                 }
             },
             complete: function () {
