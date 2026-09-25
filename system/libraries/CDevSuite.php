@@ -81,7 +81,7 @@ class CDevSuite {
     }
 
     public static function homePath($path = '') {
-        $basePath = $_SERVER['HOME'] . DS . '.config' . DS . 'devsuite' . DS;
+        $basePath = static::homeDirectory() . DS . '.config' . DS . 'devsuite' . DS;
 
         $basePath = str_replace('\\', '/', $basePath);
 
@@ -89,9 +89,29 @@ class CDevSuite {
     }
 
     public static function legacyHomePath() {
-        $path = $_SERVER['HOME'] . DS . '.devsuite' . DS;
+        $path = static::homeDirectory() . DS . '.devsuite' . DS;
 
         return str_replace('\\', '/', $path);
+    }
+
+    /**
+     * `$_SERVER['HOME']` is only ever set by *nix shells - on Windows it's `USERPROFILE`
+     * instead, and `CDevSuite_Bootstrap_DevSuiteBootstrapper` (which backfills `HOME` from
+     * it) only runs for the `devsuite` command, not every command that ends up calling
+     * `homePath()` (e.g. `claude:install`) - callers on Windows PowerShell hit "Undefined
+     * array key HOME" without this fallback. Same normalization the bootstrapper does.
+     *
+     * @return string
+     */
+    protected static function homeDirectory() {
+        if (isset($_SERVER['HOME'])) {
+            return $_SERVER['HOME'];
+        }
+        if (isset($_SERVER['USERPROFILE'])) {
+            return $_SERVER['USERPROFILE'];
+        }
+
+        return '';
     }
 
     public static function binPath() {
