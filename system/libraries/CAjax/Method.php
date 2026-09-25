@@ -190,6 +190,21 @@ class CAjax_Method implements Jsonable {
         $file = CAjax::temporaryFile($ajaxMethod);
         $disk->put($file, $json);
 
+        if (!$disk->exists($file)) {
+            // Retry once - covers a transient write failure (e.g. a brief hiccup on an
+            // app whose temp disk is cloud-backed, like S3, rather than local filesystem).
+            // put()'s return value was never checked here, so a failed write previously
+            // meant makeUrl() handed back a token whose backing file never actually
+            // existed - cresenity/ajax/{token} then 404s the moment it's used, with
+            // nothing recorded anywhere to explain why (confirmed live, tribelio
+            // collector #14389: DownloadProgress export button clicked minutes after
+            // page load, 404 on a token whose store() had run fine with no error).
+            $disk->put($file, $json);
+            if (!$disk->exists($file)) {
+                CF::log(CLogger::WARNING, 'CAjax_Method::store() - gagal menulis payload ke temp disk setelah retry (file: ' . $file . ')');
+            }
+        }
+
         return $ajaxMethod;
     }
 

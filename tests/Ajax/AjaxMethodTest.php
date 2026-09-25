@@ -16,6 +16,49 @@ class UjiAjax_Callable {
 }
 
 /**
+ * Pembungkus disk temp asli - meneruskan exists()/get() apa adanya, tapi put() dibuat
+ * gagal diam-diam (tidak benar-benar menulis, tidak melempar) sejumlah kali tertentu
+ * sebelum akhirnya meneruskan ke disk asli. Mensimulasikan tulis-transient yang gagal
+ * (mis. hiccup S3 sesaat pada app yang disk temp-nya cloud-backed) tanpa mengganti
+ * seluruh disk config.
+ */
+class UjiAjax_FlakyDisk {
+    protected $inner;
+
+    protected $failuresLeft;
+
+    public $putCalls = 0;
+
+    public function __construct($inner, $failuresLeft) {
+        $this->inner = $inner;
+        $this->failuresLeft = $failuresLeft;
+    }
+
+    public function put($path, $contents, $options = []) {
+        $this->putCalls++;
+        if ($this->failuresLeft > 0) {
+            $this->failuresLeft--;
+
+            return false;
+        }
+
+        return $this->inner->put($path, $contents, $options);
+    }
+
+    public function exists($path) {
+        return $this->inner->exists($path);
+    }
+
+    public function get($path) {
+        return $this->inner->get($path);
+    }
+
+    public function delete($paths) {
+        return $this->inner->delete($paths);
+    }
+}
+
+/**
  * CAjax_Method: serialisasi bolak-balik, tipe dari nama kelas, makeUrl() menulis berkas temp per app
  * dengan URL cresenity/ajax/<id>, kedaluwarsa, auth, createEngine() + alias tipe, dan
  * CAjax::getData()/setData()/getDefaultExpiration()/info().
@@ -33,6 +76,10 @@ class AjaxMethodTest extends TestCase {
                 $disk->delete($file);
             }
         }
+        // buang UjiAjax_FlakyDisk kalau salah satu test menukarnya, supaya test
+        // lain di proses phpcf test yang sama (CStorage::instance() singleton
+        // seluruh proses) kembali memakai disk temp asli, bukan sisa tukaran ini.
+        CStorage::instance()->forgetDisk(CF::config('storage.temp'));
     }
 
     /**
@@ -127,6 +174,42 @@ class AjaxMethodTest extends TestCase {
         $b = $this->idFromUrl($method->makeUrl());
 
         $this->assertNotSame($a, $b);
+    }
+
+    /**
+     * store() sebelumnya tidak pernah mengecek hasil put() - satu kegagalan tulis yang
+     * transient (mis. hiccup S3 sesaat) membuat makeUrl() tetap mengembalikan token yang
+     * berkasnya tidak pernah benar-benar ada, dan cresenity/ajax/{token} baru 404 belakangan
+     * saat token itu dipakai, tanpa galat apa pun tercatat di titik penulisannya (tribelio
+     * collector #14389 - DownloadProgress export diklik menit setelah halaman dimuat, 404
+     * pada token yang store()-nya sempat berjalan tanpa keluhan).
+     */
+    public function testStoreRetriesOnceWhenTheFirstDiskWriteDoesNotActuallyPersist() {
+        $realDisk = CTemporary::disk();
+        $flaky = new UjiAjax_FlakyDisk($realDisk, 1);
+        CStorage::instance()->set(CF::config('storage.temp'), $flaky);
+
+        $method = CAjax::createMethod()->setType('Reload')->setData('json', ['halo' => 'dunia']);
+        $id = $this->idFromUrl($method->makeUrl());
+        $file = CAjax::temporaryFile($id);
+        $this->created[] = $file;
+
+        $this->assertSame(2, $flaky->putCalls, 'put() pertama gagal, retry sekali lagi berhasil');
+        $this->assertTrue($realDisk->exists($file), 'berkas benar-benar ada di disk asli setelah retry');
+        $this->assertSame(['halo' => 'dunia'], CAjax::getData($id)['data']['json']);
+    }
+
+    public function testStoreLogsAWarningWhenBothWritesFail() {
+        $realDisk = CTemporary::disk();
+        $flaky = new UjiAjax_FlakyDisk($realDisk, 2);
+        CStorage::instance()->set(CF::config('storage.temp'), $flaky);
+
+        $method = CAjax::createMethod()->setType('Reload');
+        $id = $this->idFromUrl($method->makeUrl());
+        $file = CAjax::temporaryFile($id);
+
+        $this->assertSame(2, $flaky->putCalls, 'dua percobaan tulis, keduanya gagal, tidak dicoba ketiga kalinya');
+        $this->assertFalse($realDisk->exists($file), 'berkas memang tidak pernah ada - inilah yang tadinya bikin 404 diam-diam');
     }
 
     public function testSetDataAndGetDataOnTheFacade() {
