@@ -38,6 +38,7 @@ class CAjax_Engine_DataTable_ExporterProcessor_Query extends CAjax_Engine_DataTa
 
                 $queueParams = [];
                 $queueParams['downloadId'] = $fileId;
+                $queueParams['appCode'] = CF::appCode();
                 $storeResult = $storeResult->chain([
                     new CElement_Component_DataTable_TaskQueue_AfterExportProgress($queueParams)
                 ]);

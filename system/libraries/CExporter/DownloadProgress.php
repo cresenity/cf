@@ -79,7 +79,7 @@ class CExporter_DownloadProgress {
             'diskName' => $disk,
             'diskOptions' => ['ContentType' => 'application/octet-stream'],
         ]);
-        $pending->chain([new CElement_Component_DataTable_TaskQueue_AfterExportProgress(['downloadId' => $id])]);
+        $pending->chain([new CElement_Component_DataTable_TaskQueue_AfterExportProgress(['downloadId' => $id, 'appCode' => CF::appCode()])]);
         $queueConnection = carr::get($options, 'queueConnection');
         if ($queueConnection) {
             $pending->allOnConnection($queueConnection);

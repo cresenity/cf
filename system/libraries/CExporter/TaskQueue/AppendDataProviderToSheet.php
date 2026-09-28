@@ -124,7 +124,13 @@ class CExporter_TaskQueue_AppendDataProviderToSheet extends CQueue_AbstractTask 
      * @return bool
      */
     protected function isCanceled($downloadId) {
-        if (!$downloadId || !CExporter_DownloadProgress::find($downloadId)->isCanceled()) {
+        if (!$downloadId) {
+            return false;
+        }
+        $canceled = $this->runAsExportAppCode(function () use ($downloadId) {
+            return CExporter_DownloadProgress::find($downloadId)->isCanceled();
+        });
+        if (!$canceled) {
             return false;
         }
         CDaemon::log('CExporter_TaskQueue_AppendDataProviderToSheet canceled, downloadId:' . $downloadId);
@@ -136,22 +142,42 @@ class CExporter_TaskQueue_AppendDataProviderToSheet extends CQueue_AbstractTask 
 
     protected function setProgress($downloadId, $offset, $total) {
         if ($downloadId) {
-            $data = CAjax::getData($downloadId);
+            $this->runAsExportAppCode(function () use ($downloadId, $offset, $total) {
+                $data = CAjax::getData($downloadId);
 
-            // every writer nests progressMax under 'data'; the bare key is only kept for blobs written before that
-            $progressMax = carr::get($data, 'data.progressMax', carr::get($data, 'progressMax', 100));
-            $progressValue = $total ? ($offset * $progressMax / $total) : 0;
-            $data['data']['progressValue'] = $progressValue;
-            // Reaching progressMax here only means every row has been appended to the
-            // in-memory sheet - the file still has to be closed and copied to its final
-            // path by the jobs chained after this one. Leave 'state' as PENDING even at
-            // 100%; only CElement_Component_DataTable_TaskQueue_AfterExportProgress (which
-            // verifies the file actually exists at its destination) may set it to DONE,
-            // otherwise a poller can be shown a download link before the file is there.
-            $data['data']['state'] = 'PENDING';
+                // every writer nests progressMax under 'data'; the bare key is only kept for blobs written before that
+                $progressMax = carr::get($data, 'data.progressMax', carr::get($data, 'progressMax', 100));
+                $progressValue = $total ? ($offset * $progressMax / $total) : 0;
+                $data['data']['progressValue'] = $progressValue;
+                // Reaching progressMax here only means every row has been appended to the
+                // in-memory sheet - the file still has to be closed and copied to its final
+                // path by the jobs chained after this one. Leave 'state' as PENDING even at
+                // 100%; only CElement_Component_DataTable_TaskQueue_AfterExportProgress (which
+                // verifies the file actually exists at its destination) may set it to DONE,
+                // otherwise a poller can be shown a download link before the file is there.
+                $data['data']['state'] = 'PENDING';
 
-            CAjax::setData($downloadId, $data);
-            CDaemon::log('set progress to ' . $progressValue);
+                CAjax::setData($downloadId, $data);
+                CDaemon::log('set progress to ' . $progressValue);
+            });
         }
+    }
+
+    /**
+     * CAjax's progress blob lives under the app that queued the export (CExporter_Exportable_DataTableTemp
+     * captures CF::appCode() at creation) - this daemon process itself may resolve a different,
+     * fixed appCode (e.g. it serves several apps' queues), so every CAjax read/write here must run
+     * under the export's own origin app, not the daemon's.
+     *
+     * @param callable $callback
+     *
+     * @return mixed
+     */
+    protected function runAsExportAppCode(callable $callback) {
+        if ($this->sheetExport instanceof CExporter_Exportable_DataTableTemp) {
+            return $this->sheetExport->runAsOriginAppCode($callback);
+        }
+
+        return $callback();
     }
 }
