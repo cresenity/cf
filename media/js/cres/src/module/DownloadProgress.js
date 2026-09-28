@@ -67,6 +67,10 @@ class DownloadProgressModal {
                 this.cresenity.handleJsonResponse(response, (data) => {
                     if (data.state === 'DONE') {
                         this.renderDone(data);
+                    } else if (data.state === 'FAILED') {
+                        this.renderFailed(data);
+                    } else if (data.state === 'CANCELED') {
+                        this.renderCanceled(data);
                     } else if (data.state === 'PENDING') {
                         this.renderPending(data);
                     }
@@ -94,6 +98,46 @@ class DownloadProgressModal {
         closeLink.click(() => this.cresenity.closeLastModal());
 
         this.statusEl.append($('<div>').append(label).append(downloadLink).append(closeLink));
+    }
+
+    // Backend sudah menandai FAILED/CANCELED lewat CExporter_DownloadProgress::fail()/
+    // cancel() sejak commit 4a71cc48b/2793f0b26 (2026-09-21) - tapi poll() di atas cuma
+    // pernah menangani DONE/PENDING, jadi kedua state ini diam-diam diabaikan dan modal
+    // "Please Wait..." terus berputar tanpa henti (setInterval tidak pernah di-clear
+    // selain oleh renderDone/cancel()). Ditemukan dari laporan customer tribelio yang sama
+    // dengan 9ee3ec4d0 (export smartlist 5.193 baris) - percobaan yang gagal dengan error
+    // "failed to get temporary file" di collector-nya kemungkinan sebenarnya SUDAH ditandai
+    // FAILED oleh backend, cuma tidak pernah terlihat oleh customer.
+    renderFailed(data) {
+        clearInterval(this.interval);
+
+        this.statusEl.empty();
+
+        const label = $('<label>', {class: 'mb-3 d-block text-danger'}).append(data.message || 'Export failed, please try again.');
+        const closeLink = $('<a>', {
+            href: 'javascript:;',
+            class: 'btn btn-primary'
+        }).append('Close');
+
+        closeLink.click(() => this.cresenity.closeLastModal());
+
+        this.statusEl.append($('<div>').append(label).append(closeLink));
+    }
+
+    renderCanceled(data) {
+        clearInterval(this.interval);
+
+        this.statusEl.empty();
+
+        const label = $('<label>', {class: 'mb-3 d-block'}).append(data.message || 'Export canceled.');
+        const closeLink = $('<a>', {
+            href: 'javascript:;',
+            class: 'btn btn-primary'
+        }).append('Close');
+
+        closeLink.click(() => this.cresenity.closeLastModal());
+
+        this.statusEl.append($('<div>').append(label).append(closeLink));
     }
 
     renderPending(data) {
