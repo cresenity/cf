@@ -14,9 +14,6 @@ class PsrStream implements Psr7StreamInterface
 {
     use StreamDecoratorTrait;
 
-    /** @var GuzzleStreamInterface */
-    private $stream;
-
     public function __construct(GuzzleStreamInterface $stream)
     {
         $this->stream = $stream;

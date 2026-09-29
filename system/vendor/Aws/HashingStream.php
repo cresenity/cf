@@ -11,9 +11,6 @@ class HashingStream implements StreamInterface
 {
     use StreamDecoratorTrait;
 
-    /** @var StreamInterface */
-    private $stream;
-
     /** @var HashInterface */
     private $hash;
 

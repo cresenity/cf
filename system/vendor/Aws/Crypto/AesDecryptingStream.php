@@ -31,11 +31,6 @@ class AesDecryptingStream implements AesStreamInterface
     private $key;
 
     /**
-     * @var StreamInterface
-     */
-    private $stream;
-
-    /**
      * @param StreamInterface $cipherText
      * @param string $key
      * @param CipherMethod $cipherMethod
