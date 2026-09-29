@@ -331,15 +331,6 @@ class CModel_Query {
 
             $this->query->addNestedWhereQuery($query->getQuery(), $boolean);
         } else {
-            // func_get_args(), bukan $column/$operator/$value/$boolean langsung - meneruskan
-            // 4 argumen literal selalu membuat func_num_args() di CDatabase_Query_Builder::where()
-            // bernilai 4, mematikan jalur pintasan where($column, $value) 2-argumen di sana
-            // (yang memutuskan lewat func_num_args() === 2). Akibatnya nilai user 2-argumen
-            // dibaca sebagai $operator, bukan $value - kalau nilainya kebetulan sama persis
-            // dengan salah satu kata kunci operator SQL (mis. "like", "regexp", ">"), pemanggil
-            // dapat InvalidArgumentException "Illegal operator and value combination." padahal
-            // pemanggilnya benar. Kena nyata di shortlink (#14356, 2026-09-29): SLModel_Link::
-            // where('shorturl', $shortUrl)->first() 500 saat $shortUrl == 'like'.
             $this->query->where(...func_get_args());
         }
 
