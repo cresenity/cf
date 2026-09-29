@@ -122,6 +122,7 @@ trait CElement_Component_DataTable_Trait_JavascriptTrait {
             }
 
             $js->appendln('var tableStyled_' . $this->id . ' = false;')->br()
+                ->appendln('if ($.fn.DataTable.isDataTable(' . $varName . ')) { ' . $varName . '.DataTable().destroy(); }')->br()
                 ->appendln('window.' . $varNameOTable . ' = ' . $varName . '.dataTable({')->br()->incIndent();
 
             //   $js->appendln("responsive: {
