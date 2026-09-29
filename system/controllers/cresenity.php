@@ -110,10 +110,10 @@ class Controller_Cresenity extends CController {
         //Create the image resource
         $width = (int) $width;
         $height = (int) $height;
-        if ($width === 0) {
+        if ($width <= 0) {
             $width = 1;
         }
-        if ($height === 0) {
+        if ($height <= 0) {
             $height = 1;
         }
         $image = imagecreate($width, $height);
