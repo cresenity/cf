@@ -22,9 +22,7 @@ class CElement_Component_DataTable_TaskQueue_AfterExportProgress extends CQueue_
         $params = $this->params;
 
         $downloadId = carr::get($params, 'downloadId');
-        // Set by the request that queued this export (CF::appCode() there) - this task can run in
-        // a queue worker whose own appCode differs (e.g. it serves several apps), so the CAjax
-        // progress blob has to be read/written under the export's origin app, not the worker's.
+        // appCode of the request that queued this export, so a differently-scoped worker still reads/writes the right CAjax blob.
         $appCode = carr::get($params, 'appCode');
 
         $run = function () use ($downloadId) {

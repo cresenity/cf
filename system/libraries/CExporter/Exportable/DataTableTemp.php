@@ -6,10 +6,8 @@ class CExporter_Exportable_DataTableTemp extends CExporter_Exportable_DataTable 
     protected $downloadId;
 
     /**
-     * CF::appCode() at construction time (the request that queued the export), kept so the
-     * queue worker - a long-running process whose own CF::appCode() can be a different app
-     * sharing the same daemon - reads/writes the CAjax progress blob under the app that
-     * actually created it, not whichever app started the daemon.
+     * CF::appCode() at construction time, so a queue worker with a different ambient appCode
+     * can still read/write this export's CAjax blob under the app that actually created it.
      *
      * @var null|string
      */

@@ -95,11 +95,8 @@ class CDevSuite {
     }
 
     /**
-     * `$_SERVER['HOME']` is only ever set by *nix shells - on Windows it's `USERPROFILE`
-     * instead, and `CDevSuite_Bootstrap_DevSuiteBootstrapper` (which backfills `HOME` from
-     * it) only runs for the `devsuite` command, not every command that ends up calling
-     * `homePath()` (e.g. `claude:install`) - callers on Windows PowerShell hit "Undefined
-     * array key HOME" without this fallback. Same normalization the bootstrapper does.
+     * `HOME` is *nix-only - Windows uses `USERPROFILE` instead, and not every caller of
+     * `homePath()` goes through the bootstrapper that backfills it.
      *
      * @return string
      */

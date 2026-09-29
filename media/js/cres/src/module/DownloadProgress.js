@@ -100,14 +100,6 @@ class DownloadProgressModal {
         this.statusEl.append($('<div>').append(label).append(downloadLink).append(closeLink));
     }
 
-    // Backend sudah menandai FAILED/CANCELED lewat CExporter_DownloadProgress::fail()/
-    // cancel() sejak commit 4a71cc48b/2793f0b26 (2026-09-21) - tapi poll() di atas cuma
-    // pernah menangani DONE/PENDING, jadi kedua state ini diam-diam diabaikan dan modal
-    // "Please Wait..." terus berputar tanpa henti (setInterval tidak pernah di-clear
-    // selain oleh renderDone/cancel()). Ditemukan dari laporan customer tribelio yang sama
-    // dengan 9ee3ec4d0 (export smartlist 5.193 baris) - percobaan yang gagal dengan error
-    // "failed to get temporary file" di collector-nya kemungkinan sebenarnya SUDAH ditandai
-    // FAILED oleh backend, cuma tidak pernah terlihat oleh customer.
     renderFailed(data) {
         clearInterval(this.interval);
 
@@ -219,11 +211,7 @@ export default class DownloadProgress {
             error: function (xhrError, ajaxOptions, thrownError) {
                 if (thrownError !== 'abort') {
                     cresenity.message('error', 'Error, please call administrator... (' + thrownError + ')');
-                    // Ditangani di sini (pesan sudah tampil ke user), jadi window.onerror/
-                    // unhandledrejection tidak pernah terpicu - laporkan manual supaya kegagalan
-                    // ajax awal DownloadProgress (mis. koneksi terputus sebelum progressUrl
-                    // didapat) tetap punya jejak. No-op otomatis kalau app ini belum
-                    // mengaktifkan cresjs collector (__CF_JS_COLLECTOR_CONFIG__ kosong).
+                    // Sudah ditangani di sini, jadi window.onerror tidak akan terpicu - lapor manual.
                     reportJsError({
                         message: 'DownloadProgress ajax failed: status=' + (xhrError && xhrError.status) + ' thrown=' + thrownError + ' url=' + url,
                         name: 'DownloadProgressAjaxError',

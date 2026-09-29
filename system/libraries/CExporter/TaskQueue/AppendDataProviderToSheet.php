@@ -164,10 +164,7 @@ class CExporter_TaskQueue_AppendDataProviderToSheet extends CQueue_AbstractTask 
     }
 
     /**
-     * CAjax's progress blob lives under the app that queued the export (CExporter_Exportable_DataTableTemp
-     * captures CF::appCode() at creation) - this daemon process itself may resolve a different,
-     * fixed appCode (e.g. it serves several apps' queues), so every CAjax read/write here must run
-     * under the export's own origin app, not the daemon's.
+     * Runs the callback under the export's own origin appCode, not this worker's ambient one.
      *
      * @param callable $callback
      *
