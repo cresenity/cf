@@ -37,8 +37,11 @@ class CApi_Session_Driver_FileDriver extends CApi_Session_DriverAbstract {
     public function write($id, $data) {
         $path = $this->getFilePath($id);
         $dir = dirname($path);
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+        // is_dir() lalu mkdir() adalah check-then-act: dua request bersamaan bisa lolos
+        // pengecekan is_dir() yang sama lalu berebut mkdir(), salah satu gagal diam-diam (@).
+        // Cek ulang is_dir() setelah mkdir() gagal - request lain mungkin sudah membuatnya duluan.
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            return;
         }
         CFile::put($path, json_encode($data), true);
         //CFile::putPhpValue($path, $data);
