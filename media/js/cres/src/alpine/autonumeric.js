@@ -33,7 +33,13 @@ const setValue = (el, value) => {
         console.warn('x-autonumeric: nilai bukan angka diabaikan', value, el);
         return;
     }
-    $(el).autoNumeric('set', value);
+    // autoNumeric memanggil String.prototype.toString; kalau prototype itu dirusak script
+    // luar (mis. extension browser), throw-nya mematikan antrean effect Alpine lainnya
+    try {
+        $(el).autoNumeric('set', value);
+    } catch (e) {
+        console.warn('x-autonumeric: gagal set nilai', value, el, e);
+    }
 };
 
 export default function (Alpine) {
