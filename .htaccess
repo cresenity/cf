@@ -51,7 +51,9 @@ RewriteRule ^application/[^/]+/default/data/(vendor|key)/ - [R=404,L]
 # menyajikan aset dari sana, mis. `MXPreset_Theme::baseUrl()` mengembalikan
 # `application/maxpage/default/data/preset/` sebagai URL publik. Yang diblokir
 # hanya direktori docs dan berkas markdown, yang tidak pernah menjadi aset.
-RewriteRule ^application/[^/]+/(docs|default/data/docs)/ - [R=404,L]
+# `tools/` ikut diblokir: itu perkakas pembangun (skrip capture, node_modules,
+# naskah, tangkapan layar aplikasi) yang tidak pernah menjadi aset yang disajikan.
+RewriteRule ^application/[^/]+/(docs|tools|default/data/docs)/ - [R=404,L]
 RewriteRule ^application/[^/]+/default/data/.*\.md$ - [R=404,L]
 # Catatan kerja di akar framework (`docs/`, `papers/`, `notes/`) juga gitignored, tetapi
 # mesin yang membuatnya (dev, workstation) tetap menyajikannya bila tidak diblokir.
