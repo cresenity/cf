@@ -32,6 +32,15 @@ class CAI_Manager {
         return new CAI_Service_HuggingFace($options);
     }
 
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_Fal
+     */
+    public function createFal($options = []) {
+        return new CAI_Service_Fal($options);
+    }
+
     public function createOllamaService() {
     }
 
