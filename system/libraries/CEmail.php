@@ -9,6 +9,27 @@ class CEmail {
     }
 
     /**
+     * Kerangka email bersama; kelas dari `email.template.class` (bawaan CEmail_Builder_Template_DefaultTemplate).
+     *
+     * @param array $options menimpa config email.template
+     *
+     * @throws CEmail_Builder_Exception
+     *
+     * @return CEmail_Builder_Template
+     */
+    public static function template(array $options = []) {
+        $class = isset($options['class']) ? $options['class'] : CF::config('email.template.class');
+        if (strlen((string) $class) == 0) {
+            $class = CEmail_Builder_Template_DefaultTemplate::class;
+        }
+        if (!is_a($class, CEmail_Builder_Template::class, true)) {
+            throw new CEmail_Builder_Exception('email.template.class harus turunan CEmail_Builder_Template: ' . $class);
+        }
+
+        return new $class($options);
+    }
+
+    /**
      * @param array $config
      *
      * @return CEmail_Sender

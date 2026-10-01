@@ -115,6 +115,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email Template (CEmail::template())
+    |--------------------------------------------------------------------------
+    |
+    | Kerangka email bersama: header (logo atau nama app), area isi, footer.
+    | class: turunan CEmail_Builder_Template (kosong = DefaultTemplate).
+    | footer_text: HTML, {year} dan {app_name} diganti. app_name kosong =
+    | app.name. Satu app yang mendefinisikan kunci 'template' mengganti seluruh
+    | blok ini; nilai yang tidak diisi memakai bawaan kode.
+    |
+    */
+
+    'template' => [
+        'class' => null,
+        'logo_url' => null,
+        'app_name' => null,
+        'primary_color' => '#1a347b',
+        'background_color' => '#c4c4c4',
+        'text_color' => '#555555',
+        'font_family' => 'Arial, sans-serif',
+        'width' => '650px',
+        'footer_text' => null,
+        'show_header' => true,
+        'show_footer' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Markdown Mail Settings
     |--------------------------------------------------------------------------
     |
