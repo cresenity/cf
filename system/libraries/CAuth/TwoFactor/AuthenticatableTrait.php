@@ -24,7 +24,13 @@ trait CAuth_TwoFactor_AuthenticatableTrait {
      * @return array
      */
     public function recoveryCodes() {
-        return json_decode(c::decrypt($this->two_factor_recovery_codes), true);
+        if (c::blank($this->two_factor_recovery_codes)) {
+            return [];
+        }
+
+        $codes = json_decode(c::decrypt($this->two_factor_recovery_codes), true);
+
+        return is_array($codes) ? $codes : [];
     }
 
     /**

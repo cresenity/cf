@@ -67,11 +67,12 @@ class CApp_Auth_Action_RedirectIfTwoFactorAuthenticatable {
             });
         }
 
-        $user = $this->guard->getProvider()->retrieveByCredentials(
+        $provider = $this->guard->getProvider();
+        $user = $provider->retrieveByCredentials(
             $request->only(CApp_Auth::username(), 'password')
         );
 
-        if (!$user) {
+        if (!$user || !$provider->validateCredentials($user, $request->only('password'))) {
             $this->fireFailedEvent($request, $user);
 
             $this->throwFailedAuthenticationException($request);
@@ -125,6 +126,6 @@ class CApp_Auth_Action_RedirectIfTwoFactorAuthenticatable {
 
         return $request->wantsJson()
             ? c::response()->json(['two_factor' => true])
-            : c::redirect()->setTargetUrl('login/twofactor');
+            : c::redirect('login/twofactor');
     }
 }
