@@ -7,7 +7,7 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
      *
      * @var string
      */
-    protected $signature = 'model:update {table}';
+    protected $signature = 'model:update {table? : Nama tabel} {--all : Perbarui semua model aplikasi}';
 
     /**
      * The console command description.
@@ -16,12 +16,90 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
      */
     protected $description = 'Update model properties';
 
+    /**
+     * @var string
+     */
+    private $currentTable;
+
+    /**
+     * @var string
+     */
+    private $currentModel;
+
     public function handle() {
-        $model = Helper::getModel($this->getTable());
+        if ($this->option('all')) {
+            return $this->updateAll();
+        }
+
+        $table = (string) $this->argument('table');
+        if ($table === '') {
+            $this->error('Isi nama tabel, atau pakai --all untuk semua model.');
+
+            return CConsole::FAILURE_EXIT;
+        }
+
+        $table = Helper::getTable($table);
+
+        return $this->updateModel(Helper::getModel($table), $table);
+    }
+
+    /**
+     * Perbarui semua model aplikasi; nama tabel dibaca dari model, bukan ditebak dari nama berkas.
+     *
+     * @return int
+     */
+    private function updateAll() {
+        $modelPath = c::fixPath(CF::appDir()) . 'default' . DS . 'libraries' . DS . $this->prefix . 'Model' . DS;
+        $files = CFile::isDirectory($modelPath) ? glob($modelPath . '*' . EXT) : [];
+        sort($files);
+
+        $updated = 0;
+        $skipped = [];
+        $failed = [];
+        foreach ($files as $file) {
+            $model = basename($file, EXT);
+            $class = $this->prefix . 'Model_' . $model;
+            try {
+                if (!class_exists($class) || !(new ReflectionClass($class))->isInstantiable()) {
+                    $skipped[] = $model;
+
+                    continue;
+                }
+                $table = (new $class())->getTable();
+                if ($this->updateModel($model, $table) === CConsole::FAILURE_EXIT) {
+                    $failed[] = $model;
+
+                    continue;
+                }
+                $updated++;
+            } catch (Throwable $e) {
+                $failed[] = $model . ' (' . $e->getMessage() . ')';
+            }
+        }
+
+        $this->info($updated . ' model diperbarui, ' . count($skipped) . ' dilewati, ' . count($failed) . ' gagal.');
+        foreach ($skipped as $model) {
+            $this->line('dilewati: ' . $model);
+        }
+        foreach ($failed as $model) {
+            $this->error('gagal: ' . $model);
+        }
+
+        return count($failed) > 0 ? CConsole::FAILURE_EXIT : 0;
+    }
+
+    /**
+     * @param string $model nama model tanpa prefiks, mis. ItemCart
+     * @param string $table
+     *
+     * @return int
+     */
+    private function updateModel($model, $table) {
+        $this->currentModel = $model;
+        $this->currentTable = $table;
         $this->info('Updating ' . $model . ' model...');
 
         $modelPath = c::fixPath(CF::appDir()) . 'default' . DS . 'libraries' . DS . $this->prefix . 'Model' . DS;
-        $modelClass = $this->prefix . 'Model';
         if (!CFile::isDirectory($modelPath)) {
             CFile::makeDirectory($modelPath);
         }
@@ -34,58 +112,41 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
             return CConsole::FAILURE_EXIT;
         }
 
-        $modelClass .= '_' . $model;
-
         $content = CFile::get($modelFile);
-        $hasProperties = preg_match('/@property/', $content) === 1;
+        $updated = Helper::applyPropertiesToDocblock($content, $this->getUpdatedProperties());
+        if ($updated === null) {
+            $this->warn('Model ' . $model . ' tidak punya deklarasi class pada ' . $modelFile);
 
-        if ($hasProperties) {
-            $content = preg_replace('/.*@property.*/', '{properties}', $content);
-            $content = preg_replace('/{properties}/', $this->getUpdatedProperties(), $content, 1);
-            $content = str_replace("{properties}\n", '', $content);
-        } else {
-            $updatedProperties = $this->getUpdatedProperties();
-            $docBlock = "/**\n" . $updatedProperties . "\n */\n";
-            $hasDocBlock = preg_match('#/\*\*.*?\*/\s*\nclass\s#s', $content) === 1;
-            if ($hasDocBlock) {
-                $content = preg_replace('#/\*\*.*?\*/\s*\n(class\s)#s', $docBlock . '$1', $content);
-            } else {
-                $content = preg_replace('/(class\s)/', $docBlock . '$1', $content, 1);
-            }
+            return CConsole::FAILURE_EXIT;
         }
 
-        CFile::put($modelFile, $content);
+        if ($updated !== $content) {
+            CFile::put($modelFile, $updated);
+        }
 
         $this->info($model . 'Model updated on ' . $modelFile);
+
+        return 0;
     }
 
     private function getTable() {
-        $table = $this->argument('table');
-
-        return Helper::getTable($table);
+        return $this->currentTable;
     }
 
     private function getCurrentProperties() {
         $modelPath = c::fixPath(CF::appDir()) . 'default' . DS . 'libraries' . DS . $this->prefix . 'Model' . DS;
-        $modelFile = $modelPath . Helper::getModel($this->getTable()) . EXT;
+        $modelFile = $modelPath . $this->currentModel . EXT;
         $content = CFile::get($modelFile);
-        preg_match_all('/@property.*/', $content, $matches);
-        $props = c::get($matches, 0);
+        preg_match_all('/^\s*\*\s*(@property(?:-read|-write)?\s.*)$/m', $content, $matches);
         $result = [];
-        foreach ($props as $prop) {
-            $prop = preg_replace('/\s+/', ' ', $prop);
-            $temp = explode(' ', $prop);
-            $var = carr::get($temp, 2);
-            $desc = carr::get($temp, 3);
-            if ($desc) {
-                $desc = implode(' ', array_slice($temp, 3));
-            }
+        foreach (c::get($matches, 1, []) as $line) {
+            list($tag, $type, $var, $desc) = Helper::parsePropertyLine($line);
             $result[] = [
-                'prop' => c::get($temp, 0),
-                'type' => c::get($temp, 1),
+                'prop' => $tag,
+                'type' => $type,
                 'var' => $var,
                 'field' => str_replace('$', '', $var),
-                'desc' => $desc
+                'desc' => $desc,
             ];
         }
 
@@ -98,7 +159,7 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
      * @return array
      */
     public function updateFieldProperties($properties) {
-        $fields = Helper::getFields($this->getTable(), $this->prefix);
+        $fields = Helper::getFields($this->getTable(), $this->prefix, $this->currentModel);
         $currentPropertyFields = array_column($properties, 'field');
         foreach ($fields as $field => $fieldProperty) {
             $type = Helper::getGenericTypeForFieldProperty($fieldProperty);
@@ -138,8 +199,8 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
      * @return int|false
      */
     private function getMissingPropertyIndex($properties) {
-        $fieldsKey = c::collect(Helper::getFields($this->getTable(), $this->prefix))->keys()->toArray();
-        $classMethods = get_class_methods($this->prefix . 'Model_' . Helper::getModel($this->getTable()));
+        $fieldsKey = c::collect(Helper::getFields($this->getTable(), $this->prefix, $this->currentModel))->keys()->toArray();
+        $classMethods = get_class_methods($this->prefix . 'Model_' . $this->currentModel);
         foreach ($properties as $index => $property) {
             $field = carr::get($property, 'field');
             $i = array_search($field, $fieldsKey);
@@ -161,7 +222,7 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
     public function updateFieldRelation($properties) {
         $compared = [];
 
-        $methods = Helper::getRelationMethods(Helper::getModelClass($this->prefix, $this->getTable()));
+        $methods = Helper::getRelationMethods($this->prefix . 'Model_' . $this->currentModel);
         $fields = carr::pluck($methods, 'method');
         $currentPropertyFields = array_column($properties, 'field');
 
@@ -196,6 +257,12 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
         $currentProperties = $this->getCurrentProperties();
         $currentProperties = $this->updateFieldProperties($currentProperties);
         $currentProperties = $this->updateFieldRelation($currentProperties);
+        //`CModel_Collection|__FUNCTION__[]` adalah sisa generator lama untuk morphTo; tipe yang benar model atau null
+        foreach ($currentProperties as $index => $property) {
+            if (strpos((string) carr::get($property, 'type'), '__FUNCTION__') !== false) {
+                $currentProperties[$index]['type'] = 'null|CModel';
+            }
+        }
 
         $propLength = 0;
         $typeLength = 0;

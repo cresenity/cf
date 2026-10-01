@@ -30,7 +30,7 @@ class CModel_Console_PropertiesHelper {
             'smallint' => 'int',
             'mediumint' => 'int',
             'bigint' => 'int',
-            'decimal' => 'int',
+            'decimal' => 'string',
             'float' => 'float',
             'double' => 'double',
             'double unsigned' => 'double',
@@ -203,7 +203,7 @@ class CModel_Console_PropertiesHelper {
         return implode(PHP_EOL, $code);
     }
 
-    public static function getFields($table, $prefix = '') {
+    public static function getFields($table, $prefix = '', $model = null) {
         $excludedFields = ['created', 'createdby', 'updated', 'updatedby', 'status'];
         $db = c::db();
         $result = $db->getSchemaManager()->listTableColumns($table);
@@ -212,7 +212,7 @@ class CModel_Console_PropertiesHelper {
             throw new Exception('table ' . $table . ' not found');
         }
         $properties = [];
-        $modelInstance = static::getModelInstance($prefix, $table);
+        $modelInstance = $model !== null ? static::getModelInstanceByName($prefix, $model) : static::getModelInstance($prefix, $table);
 
         foreach ($result as $key => $column) {
             /** @var CDatabase_Schema_Column $column */
@@ -227,6 +227,12 @@ class CModel_Console_PropertiesHelper {
                 $casts = $modelInstance->getCasts();
             }
             $casts = static::sanitizeCastType($casts);
+            $isCast = array_key_exists($field, $casts);
+            $dates = $modelInstance ? $modelInstance->getDates() : [];
+            if (!$isCast && in_array($type, ['date', 'datetime'], true) && !in_array($field, $dates, true)) {
+                //di luar $dates/casts CF mengembalikan string mentah dari database, bukan Carbon
+                $type = 'string';
+            }
             $type = carr::get($casts, $field, $type);
             $type = static::getType($type);
             $notnull = $column->getNotnull();
@@ -299,16 +305,127 @@ class CModel_Console_PropertiesHelper {
             return null;
         }
 
-        if (preg_match('/@return\s+(\S+)/', $docComment, $matches) !== 1) {
+        if (preg_match('/@return\s+(.+)/', $docComment, $matches) !== 1) {
             return null;
         }
 
-        $type = trim($matches[1]);
+        $type = static::firstTypeToken($matches[1]);
         if (strlen($type) == 0 || in_array($type, ['mixed', 'void', '$this'])) {
             return null;
         }
 
         return $type;
+    }
+
+    /**
+     * Token pertama dari teks berformat `tipe sisa`, dengan spasi di dalam <>, () atau {} tetap bagian dari tipe
+     * (`array<string, mixed> $x` -> `array<string, mixed>`).
+     *
+     * @param string $text
+     *
+     * @return string
+     */
+    public static function firstTypeToken($text) {
+        $text = ltrim($text);
+        $depth = 0;
+        $length = strlen($text);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $text[$i];
+            if ($char === '<' || $char === '(' || $char === '{') {
+                $depth++;
+            } elseif ($char === '>' || $char === ')' || $char === '}') {
+                $depth = max(0, $depth - 1);
+            } elseif ($depth === 0 && ctype_space($char)) {
+                return substr($text, 0, $i);
+            }
+        }
+
+        return rtrim($text);
+    }
+
+    /**
+     * Tulis blok properti ke docblock kelas model: baris `@property*` yang ada diganti di tempat baris pertamanya,
+     * teks lain di docblock tetap, docblock tanpa `@property` ditambahi sebelum penutupnya, dan kelas tanpa docblock
+     * mendapat docblock baru. Mengembalikan null bila tidak ada deklarasi kelas.
+     *
+     * @param string $content         isi berkas model
+     * @param string $propertiesBlock baris ` * @property ...` dipisah "\n", kosong berarti hanya menghapus yang lama
+     *
+     * @return null|string
+     */
+    public static function applyPropertiesToDocblock($content, $propertiesBlock) {
+        if (preg_match('/^(?:abstract\s+|final\s+)?class\s+\w+/mi', $content, $classMatch, PREG_OFFSET_CAPTURE) !== 1) {
+            return null;
+        }
+
+        $newline = strpos($content, "\r\n") !== false ? "\r\n" : "\n";
+        $propertyLines = $propertiesBlock === '' ? [] : explode("\n", $propertiesBlock);
+        $classOffset = $classMatch[0][1];
+        $before = substr($content, 0, $classOffset);
+        $rest = substr($content, $classOffset);
+
+        if (preg_match('#/\*\*(?:(?!\*/).)*\*/\s*\z#s', $before, $docMatch, PREG_OFFSET_CAPTURE) !== 1) {
+            if (count($propertyLines) === 0) {
+                return $content;
+            }
+
+            return $before . '/**' . $newline . implode($newline, $propertyLines) . $newline . ' */' . $newline . $rest;
+        }
+
+        $docRaw = $docMatch[0][0];
+        $prefix = substr($before, 0, $docMatch[0][1]);
+        $docTrimmed = rtrim($docRaw);
+        $trailing = substr($docRaw, strlen($docTrimmed));
+
+        $lines = preg_split('/\r?\n/', $docTrimmed);
+        if (count($lines) === 1) {
+            $inner = trim(substr($docTrimmed, 3, -2));
+            $lines = ['/**'];
+            if ($inner !== '') {
+                $lines[] = ' * ' . $inner;
+            }
+            $lines[] = ' */';
+        }
+
+        $out = [];
+        $inserted = false;
+        foreach ($lines as $line) {
+            if (preg_match('/^\s*\*\s*@property(?:-read|-write)?\s/', $line) === 1) {
+                if (!$inserted) {
+                    $out = array_merge($out, $propertyLines);
+                    $inserted = true;
+                }
+
+                continue;
+            }
+            $out[] = $line;
+        }
+        if (!$inserted && count($propertyLines) > 0) {
+            $closing = array_pop($out);
+            $out = array_merge($out, $propertyLines, [$closing]);
+        }
+
+        return $prefix . implode($newline, $out) . $trailing . $rest;
+    }
+
+    /**
+     * Pecah baris `@property tipe $var deskripsi` menjadi bagian-bagiannya; spasi di dalam <>, () atau {} tetap
+     * bagian dari tipe.
+     *
+     * @param string $line
+     *
+     * @return array [tag, type, var, desc]
+     */
+    public static function parsePropertyLine($line) {
+        $line = trim(preg_replace('/\s+/', ' ', $line));
+        $tag = static::firstTypeToken($line);
+        $rest = ltrim(substr($line, strlen($tag)));
+        $type = static::firstTypeToken($rest);
+        $rest = ltrim(substr($rest, strlen($type)));
+        $var = static::firstTypeToken($rest);
+        $desc = ltrim(substr($rest, strlen($var)));
+
+        return [$tag, $type, $var, $desc];
     }
 
     public static function getModel($table) {
@@ -357,6 +474,18 @@ class CModel_Console_PropertiesHelper {
         }
 
         return new $modelClass();
+    }
+
+    /**
+     * @param string $prefix
+     * @param string $model  nama model tanpa prefiks
+     *
+     * @return null|CModel
+     */
+    public static function getModelInstanceByName($prefix, $model) {
+        $modelClass = $prefix . 'Model_' . $model;
+
+        return class_exists($modelClass) ? new $modelClass() : null;
     }
 
     public static function getModelClass($prefix, $table) {
