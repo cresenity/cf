@@ -137,9 +137,8 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
         $modelPath = c::fixPath(CF::appDir()) . 'default' . DS . 'libraries' . DS . $this->prefix . 'Model' . DS;
         $modelFile = $modelPath . $this->currentModel . EXT;
         $content = CFile::get($modelFile);
-        preg_match_all('/^\s*\*\s*(@property(?:-read|-write)?\s.*)$/m', $content, $matches);
         $result = [];
-        foreach (c::get($matches, 1, []) as $line) {
+        foreach (Helper::classDocblockPropertyLines($content) as $line) {
             list($tag, $type, $var, $desc) = Helper::parsePropertyLine($line);
             $result[] = [
                 'prop' => $tag,
@@ -254,7 +253,7 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
     public function getUpdatedProperties() {
         $properties = [];
 
-        $currentProperties = $this->getCurrentProperties();
+        $currentProperties = Helper::uniqueByVariable($this->getCurrentProperties());
         $currentProperties = $this->updateFieldProperties($currentProperties);
         $currentProperties = $this->updateFieldRelation($currentProperties);
         //`CModel_Collection|__FUNCTION__[]` adalah sisa generator lama untuk morphTo; tipe yang benar model atau null

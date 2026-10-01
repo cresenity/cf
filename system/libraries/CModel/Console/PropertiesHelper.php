@@ -204,7 +204,6 @@ class CModel_Console_PropertiesHelper {
     }
 
     public static function getFields($table, $prefix = '', $model = null) {
-        $excludedFields = ['created', 'createdby', 'updated', 'updatedby', 'status'];
         $db = c::db();
         $result = $db->getSchemaManager()->listTableColumns($table);
 
@@ -213,6 +212,7 @@ class CModel_Console_PropertiesHelper {
         }
         $properties = [];
         $modelInstance = $model !== null ? static::getModelInstanceByName($prefix, $model) : static::getModelInstance($prefix, $table);
+        $excludedFields = static::getInheritedAuditFields($modelInstance);
 
         foreach ($result as $key => $column) {
             /** @var CDatabase_Schema_Column $column */
@@ -261,6 +261,35 @@ class CModel_Console_PropertiesHelper {
         }
 
         return $properties;
+    }
+
+    /**
+     * Kolom audit yang sudah dideklarasikan `@property` oleh kelas induk model (mis. docblock TBModel) tidak perlu
+     * diulang di tiap model; model yang kelas induknya tidak mendeklarasikannya tetap mendapat anotasinya.
+     *
+     * @param null|CModel $modelInstance
+     *
+     * @return string[]
+     */
+    public static function getInheritedAuditFields($modelInstance) {
+        $auditFields = ['created', 'createdby', 'updated', 'updatedby', 'status'];
+        if ($modelInstance == null) {
+            return $auditFields;
+        }
+
+        $declared = [];
+        $parent = (new ReflectionClass($modelInstance))->getParentClass();
+        while ($parent) {
+            $docComment = (string) $parent->getDocComment();
+            foreach ($auditFields as $field) {
+                if (preg_match('/@property(?:-read|-write)?\s+\S+\s+\$' . $field . '\b/', $docComment) === 1) {
+                    $declared[$field] = true;
+                }
+            }
+            $parent = $parent->getParentClass();
+        }
+
+        return array_keys($declared);
     }
 
     /**
@@ -353,7 +382,49 @@ class CModel_Console_PropertiesHelper {
      *
      * @return null|string
      */
+    public static function classDocblock($content) {
+        if (preg_match('/^(?:abstract\s+|final\s+)?class\s+\w+/mi', $content, $classMatch, PREG_OFFSET_CAPTURE) !== 1) {
+            return null;
+        }
+
+        $before = substr($content, 0, $classMatch[0][1]);
+        if (preg_match('#/\*\*(?:(?!\*/).)*\*/\s*\z#s', $before, $docMatch) !== 1) {
+            return null;
+        }
+
+        return rtrim($docMatch[0]);
+    }
+
+    /**
+     * Baris `@property*` (tanpa awalan ` * `) pada docblock kelas saja; docblock lain di berkas diabaikan.
+     *
+     * @param string $content isi berkas model
+     *
+     * @return string[]
+     */
+    public static function classDocblockPropertyLines($content) {
+        $docblock = static::classDocblock($content);
+        if ($docblock === null) {
+            return [];
+        }
+        preg_match_all('/^\s*\*\s*(@property(?:-read|-write)?\s.*)$/m', $docblock, $matches);
+
+        return $matches[1];
+    }
+
+    /**
+     * Tulis blok properti ke docblock kelas model (lihat applyPropertiesToDocblockInner).
+     *
+     * @param string $content
+     * @param string $propertiesBlock
+     *
+     * @return null|string
+     */
     public static function applyPropertiesToDocblock($content, $propertiesBlock) {
+        return static::applyPropertiesToClassDocblock($content, $propertiesBlock);
+    }
+
+    protected static function applyPropertiesToClassDocblock($content, $propertiesBlock) {
         if (preg_match('/^(?:abstract\s+|final\s+)?class\s+\w+/mi', $content, $classMatch, PREG_OFFSET_CAPTURE) !== 1) {
             return null;
         }
@@ -426,6 +497,28 @@ class CModel_Console_PropertiesHelper {
         $desc = ltrim(substr($rest, strlen($var)));
 
         return [$tag, $type, $var, $desc];
+    }
+
+    /**
+     * Satu anotasi per variabel; yang pertama menang. Docblock yang sudah terlanjur menggandakan properti sembuh sendiri.
+     *
+     * @param array $properties daftar ['var' => '$nama', ...]
+     *
+     * @return array
+     */
+    public static function uniqueByVariable(array $properties) {
+        $seen = [];
+        $result = [];
+        foreach ($properties as $property) {
+            $var = carr::get($property, 'var');
+            if ($var !== null && $var !== '' && isset($seen[$var])) {
+                continue;
+            }
+            $seen[$var] = true;
+            $result[] = $property;
+        }
+
+        return $result;
     }
 
     public static function getModel($table) {
