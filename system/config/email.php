@@ -91,6 +91,23 @@ return [
     ],
     /*
     |--------------------------------------------------------------------------
+    | Non-production Recipient
+    |--------------------------------------------------------------------------
+    |
+    | Bila address terisi dan CF tidak berjalan di produksi (IN_PRODUCTION
+    | atau ENVIRONMENT=production), semua email dikirim hanya ke alamat ini
+    | dan cc/bcc dibuang. Kosong = tidak ada pengalihan. Kunci `to` biasa
+    | (tanpa pengecekan lingkungan) tetap berlaku dan menang atas ini.
+    |
+    */
+
+    'non_production_to' => [
+        'address' => c::env('MAIL_NON_PRODUCTION_TO_ADDRESS'),
+        'name' => c::env('MAIL_NON_PRODUCTION_TO_NAME'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Email Builder (CEmail::builder())
     |--------------------------------------------------------------------------
     |

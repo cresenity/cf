@@ -54,6 +54,35 @@ class CEmail {
     }
 
     /**
+     * Mulai kirim Mailable ke penerima: CEmail::to($users)->send($mailable).
+     *
+     * @param mixed $users
+     *
+     * @return CEmail_PendingMail
+     */
+    public static function to($users) {
+        return static::mailer()->to($users);
+    }
+
+    /**
+     * @param mixed $users
+     *
+     * @return CEmail_PendingMail
+     */
+    public static function cc($users) {
+        return static::mailer()->cc($users);
+    }
+
+    /**
+     * @param mixed $users
+     *
+     * @return CEmail_PendingMail
+     */
+    public static function bcc($users) {
+        return static::mailer()->bcc($users);
+    }
+
+    /**
      * @param string $name
      *
      * @return CEmail_Mailer

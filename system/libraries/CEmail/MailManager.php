@@ -467,6 +467,10 @@ class CEmail_MailManager implements CEmail_Contract_FactoryInterface {
     protected function setGlobalAddress($mailer, array $config, string $type) {
         $address = carr::get($config, $type, CF::config('email.' . $type));
 
+        if ($address === null && $type === 'to' && !CF::isProduction()) {
+            $address = CF::config('email.non_production_to');
+        }
+
         if (is_array($address) && isset($address['address'])) {
             $mailer->{'always' . cstr::studly($type)}($address['address'], $address['name']);
         }
