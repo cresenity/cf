@@ -5,6 +5,41 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class CExporter {
     use CExporter_Trait_RegistersCustomConcernsTrait;
 
+    /**
+     * Ganti CExporter dan CImporter dengan pencatat untuk test; lihat CExporter_Fake untuk assertion-nya.
+     *
+     * @return CExporter_Fake
+     */
+    public static function fake() {
+        return static::$fake = new CExporter_Fake();
+    }
+
+    /**
+     * @return void
+     */
+    public static function forgetFake() {
+        static::$fake = null;
+    }
+
+    /**
+     * @return null|CExporter_Fake
+     */
+    public static function getFake() {
+        return static::$fake;
+    }
+
+    /**
+     * @return bool
+     */
+    public static function hasFake() {
+        return static::$fake !== null;
+    }
+
+    /**
+     * @var null|CExporter_Fake
+     */
+    protected static $fake;
+
     const ACTION_STORE = 'store';
 
     const ACTION_DOWNLOAD = 'download';
@@ -83,6 +118,10 @@ class CExporter {
      * @return bool|PendingDispatch
      */
     public static function store($export, $filePath, $options = []) {
+        if (static::$fake !== null) {
+            return static::$fake->store($export, $filePath, $options);
+        }
+
         $diskName = carr::get($options, 'diskName');
         $writerType = carr::get($options, 'writerType');
         $queued = carr::get($options, 'queued', false);
@@ -120,6 +159,10 @@ class CExporter {
      * @return void
      */
     public static function forceDownload($export, $fileName, $writerType = null, array $headers = []) {
+        if (static::$fake !== null) {
+            return static::$fake->forceDownload($export, $fileName, $writerType, $headers);
+        }
+
         $localPath = static::export($export, $fileName, $writerType)->getLocalPath();
         cdownload::force($localPath, null, $fileName);
         unlink($localPath);
@@ -137,6 +180,10 @@ class CExporter {
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public static function download($export, $fileName, $writerType = null, array $headers = []) {
+        if (static::$fake !== null) {
+            return static::$fake->download($export, $fileName, $writerType, $headers);
+        }
+
         return c::response()->download(
             static::export($export, $fileName, $writerType)->getLocalPath(),
             $fileName,
@@ -235,6 +282,10 @@ class CExporter {
      * @return string
      */
     public static function raw($export, $writerType) {
+        if (static::$fake !== null) {
+            return static::$fake->raw($export, $writerType);
+        }
+
         $temporaryFile = static::writer()->export($export, $writerType);
 
         $contents = $temporaryFile->contents();
@@ -253,6 +304,10 @@ class CExporter {
      * @return CQueue_PendingDispatch
      */
     public static function queue($export, $filePath, $disk = null, $writerType = null, $diskOptions = []) {
+        if (static::$fake !== null) {
+            return static::$fake->queue($export, $filePath, $disk, $writerType, $diskOptions);
+        }
+
         $writerType = CExporter_FileTypeDetector::detectStrict($filePath, $writerType);
         $export = CExporter_ExportableDetector::toExportable($export);
 
@@ -266,6 +321,10 @@ class CExporter {
     }
 
     public static function queueAjax($ajaxMethod, $filePath, $disk = null, $writerType = null, $diskOptions = []) {
+        if (static::$fake !== null) {
+            return static::$fake->queueAjax($ajaxMethod, $filePath, $disk, $writerType, $diskOptions);
+        }
+
         $file = CAjax::temporaryFile($ajaxMethod);
         $disk = CTemporary::disk();
         if (!$disk->exists($file)) {

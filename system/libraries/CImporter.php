@@ -44,6 +44,10 @@ class CImporter {
      * @return CExporter_Reader|CQueue_PendingDispatch
      */
     public static function import($import, $filePath, string $disk = null, string $readerType = null) {
+        if (CExporter::getFake() !== null) {
+            return CExporter::getFake()->import($import, $filePath, $disk, $readerType);
+        }
+
         $readerType = CExporter_FileTypeDetector::detectStrict($filePath, $readerType);
         $response = static::reader()->read($import, $filePath, $readerType, $disk);
 
@@ -74,6 +78,10 @@ class CImporter {
      * @return array
      */
     public static function toArray($import, $filePath, string $disk = null, string $readerType = null) {
+        if (CExporter::getFake() !== null) {
+            return CExporter::getFake()->toArray($import, $filePath, $disk, $readerType);
+        }
+
         $readerType = CExporter_FileTypeDetector::detectStrict($filePath, $readerType);
 
         return static::reader()->toArray($import, $filePath, $readerType, $disk);
@@ -88,6 +96,10 @@ class CImporter {
      * @return Collection
      */
     public static function toCollection($import, $filePath, string $disk = null, string $readerType = null) {
+        if (CExporter::getFake() !== null) {
+            return CExporter::getFake()->toCollection($import, $filePath, $disk, $readerType);
+        }
+
         $readerType = CExporter_FileTypeDetector::detectStrict($filePath, $readerType);
 
         return static::reader()->toCollection($import, $filePath, $readerType, $disk);
