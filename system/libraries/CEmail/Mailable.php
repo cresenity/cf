@@ -177,6 +177,182 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
     protected $connection = null;
 
     /**
+     * Apakah envelope()/content()/headers()/attachments() sudah dipindahkan ke properti mailable.
+     *
+     * @var bool
+     */
+    protected $definitionsHydrated = false;
+
+    /**
+     * Jalankan build() bila ada, lalu pindahkan envelope()/content()/headers()/attachments() ke mailable.
+     *
+     * @throws \ReflectionException
+     *
+     * @return void
+     */
+    protected function prepareMailableForDelivery() {
+        if (method_exists($this, 'build')) {
+            CContainer::getInstance()->call([$this, 'build']);
+        }
+
+        $this->hydrateDefinitions();
+    }
+
+    /**
+     * Sekali per instance, aman dipanggil berulang (assertion, render, send).
+     *
+     * @return void
+     */
+    protected function hydrateDefinitions() {
+        if ($this->definitionsHydrated) {
+            return;
+        }
+        $this->definitionsHydrated = true;
+
+        $this->ensureHeadersAreHydrated();
+        $this->ensureEnvelopeIsHydrated();
+        $this->ensureContentIsHydrated();
+        $this->ensureAttachmentsAreHydrated();
+    }
+
+    /**
+     * @return void
+     */
+    protected function ensureHeadersAreHydrated() {
+        if (!method_exists($this, 'headers')) {
+            return;
+        }
+        $headers = $this->headers();
+        if (!$headers instanceof CEmail_Mailable_Headers) {
+            return;
+        }
+
+        $this->withSymfonyMessage(function ($message) use ($headers) {
+            $symfonyHeaders = $message->getHeaders();
+
+            if (strlen((string) $headers->messageId) > 0) {
+                $symfonyHeaders->remove('Message-ID');
+                $symfonyHeaders->addIdHeader('Message-ID', trim($headers->messageId, '<>'));
+            }
+            if (count($headers->references) > 0) {
+                $symfonyHeaders->remove('References');
+                $symfonyHeaders->addIdHeader('References', array_map(function ($id) {
+                    return trim((string) $id, '<>');
+                }, $headers->references));
+            }
+            foreach ($headers->text as $name => $value) {
+                $symfonyHeaders->addTextHeader($name, $value);
+            }
+        });
+    }
+
+    /**
+     * @return void
+     */
+    protected function ensureEnvelopeIsHydrated() {
+        if (!method_exists($this, 'envelope')) {
+            return;
+        }
+        $envelope = $this->envelope();
+        if (!$envelope instanceof CEmail_Mailable_Envelope) {
+            return;
+        }
+
+        if ($envelope->from !== null) {
+            $this->from($envelope->from->address, $envelope->from->name);
+        }
+        foreach (['to', 'cc', 'bcc', 'replyTo'] as $type) {
+            foreach ($envelope->{$type} as $address) {
+                $this->{$type}($address->address, $address->name);
+            }
+        }
+        if (strlen((string) $envelope->subject) > 0) {
+            $this->subject($envelope->subject);
+        }
+        foreach ($envelope->tags as $tag) {
+            $this->tag($tag);
+        }
+        foreach ($envelope->metadata as $key => $value) {
+            $this->metadata($key, $value);
+        }
+        foreach ($envelope->using as $callback) {
+            $this->withSymfonyMessage($callback);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    protected function ensureContentIsHydrated() {
+        if (!method_exists($this, 'content')) {
+            return;
+        }
+        $content = $this->content();
+        if (!$content instanceof CEmail_Mailable_Content) {
+            return;
+        }
+
+        if ($content->view) {
+            $this->view($content->view);
+        }
+        if ($content->html) {
+            $this->view($content->html);
+        }
+        if ($content->text) {
+            $this->text($content->text);
+        }
+        if ($content->markdown) {
+            $this->markdown($content->markdown);
+        }
+        if ($content->htmlString) {
+            $this->html($content->htmlString);
+        }
+        foreach ($content->with as $key => $value) {
+            $this->with($key, $value);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    protected function ensureAttachmentsAreHydrated() {
+        if (!method_exists($this, 'attachments')) {
+            return;
+        }
+        $attachments = $this->attachments();
+        if (!is_array($attachments) && !$attachments instanceof Traversable) {
+            return;
+        }
+
+        foreach ($attachments as $file => $options) {
+            if (is_int($file)) {
+                $this->attach($options);
+            } else {
+                $this->attach($file, (array) $options);
+            }
+        }
+    }
+
+    /**
+     * Lampirkan banyak berkas: daftar path/Attachment, atau path => opsi.
+     *
+     * @param iterable $files
+     *
+     * @return $this
+     */
+    public function attachMany($files) {
+        foreach ($files as $file => $options) {
+            if (is_int($file)) {
+                $this->attach($options);
+            } else {
+                $this->attach($file, (array) $options);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Send the message using the given mailer.
      *
      * @param \CEmail_Contract_FactoryInterface|\Illuminate\Contracts\Mail\Mailer $mailer
@@ -185,7 +361,7 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
      */
     public function send($mailer) {
         return $this->withLocale($this->locale, function () use ($mailer) {
-            CContainer::getInstance()->call([$this, 'build']);
+            $this->prepareMailableForDelivery();
 
             $mailer = $mailer instanceof CEmail_Contract_FactoryInterface
                             ? $mailer->mailer($this->mailer)
@@ -267,7 +443,7 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
      */
     public function render() {
         return $this->withLocale($this->locale, function () {
-            CContainer::getInstance()->call([$this, 'build']);
+            $this->prepareMailableForDelivery();
 
             return CEmail::mailer()->render(
                 $this->buildView(),
@@ -741,6 +917,8 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
      * @return bool
      */
     protected function hasRecipient($address, $name = null, $property = 'to') {
+        $this->hydrateDefinitions();
+
         if (empty($address)) {
             return false;
         }
@@ -784,6 +962,8 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
      * @return bool
      */
     public function hasSubject($subject) {
+        $this->hydrateDefinitions();
+
         return $this->subject === $subject;
     }
 
@@ -1085,7 +1265,7 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
         }
 
         return $this->assertionableRenderStrings = $this->withLocale($this->locale, function () {
-            CContainer::getInstance()->call([$this, 'build']);
+            $this->prepareMailableForDelivery();
 
             $html = CEmail::mailer()->render(
                 $view = $this->buildView(),
@@ -1107,6 +1287,302 @@ class CEmail_Mailable implements CEmail_Contract_MailableInterface, Renderable {
 
             return [(string) $html, (string) $text];
         });
+    }
+
+    /**
+     * @param string $tag
+     *
+     * @return bool
+     */
+    public function hasTag($tag) {
+        $this->hydrateDefinitions();
+
+        return in_array($tag, $this->tags, true);
+    }
+
+    /**
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return bool
+     */
+    public function hasMetadata($key, $value) {
+        $this->hydrateDefinitions();
+
+        return isset($this->metadata[$key]) && $this->metadata[$key] === $value;
+    }
+
+    /**
+     * @param CEmail_Attachment|CEmail_Contract_AttachableInterface|string $file
+     * @param array                                                        $options
+     *
+     * @return bool
+     */
+    public function hasAttachment($file, array $options = []) {
+        $this->hydrateDefinitions();
+
+        if ($file instanceof CEmail_Contract_AttachableInterface) {
+            $file = $file->toMailAttachment();
+        }
+
+        if ($file instanceof CEmail_Attachment) {
+            return (bool) $file->attachWith(
+                function ($path) use ($file) {
+                    return $this->hasAttachment($path, ['as' => $file->as, 'mime' => $file->mime]);
+                },
+                function ($data) use ($file) {
+                    return $this->hasAttachedData($data(), $file->as, ['mime' => $file->mime]);
+                }
+            );
+        }
+
+        return c::collect($this->attachments)->contains(function ($attachment) use ($file, $options) {
+            return $attachment['file'] === $file
+                && array_filter($attachment['options']) === array_filter($options);
+        });
+    }
+
+    /**
+     * @param string $data
+     * @param string $name
+     * @param array  $options
+     *
+     * @return bool
+     */
+    public function hasAttachedData($data, $name, array $options = []) {
+        $this->hydrateDefinitions();
+
+        return c::collect($this->rawAttachments)->contains(function ($attachment) use ($data, $name, $options) {
+            return $attachment['data'] === $data
+                && $attachment['name'] === $name
+                && array_filter($attachment['options']) === array_filter($options);
+        });
+    }
+
+    /**
+     * @param string      $path
+     * @param null|string $name
+     * @param array       $options
+     *
+     * @return bool
+     */
+    public function hasAttachmentFromStorage($path, $name = null, array $options = []) {
+        return $this->hasAttachmentFromStorageDisk(null, $path, $name, $options);
+    }
+
+    /**
+     * @param null|string $disk
+     * @param string      $path
+     * @param null|string $name
+     * @param array       $options
+     *
+     * @return bool
+     */
+    public function hasAttachmentFromStorageDisk($disk, $path, $name = null, array $options = []) {
+        $this->hydrateDefinitions();
+
+        return c::collect($this->diskAttachments)->contains(function ($attachment) use ($disk, $path, $name, $options) {
+            return $attachment['disk'] === $disk
+                && $attachment['path'] === $path
+                && $attachment['name'] === ($name ?? basename($path))
+                && array_filter($attachment['options']) === array_filter($options);
+        });
+    }
+
+    /**
+     * @param mixed       $address
+     * @param null|string $name
+     *
+     * @return string
+     */
+    protected function formatAssertionRecipient($address, $name = null) {
+        if (!is_string($address)) {
+            return 'unknown';
+        }
+
+        return is_string($name) ? $name . ' <' . $address . '>' : $address;
+    }
+
+    /**
+     * @param string      $address
+     * @param null|string $name
+     *
+     * @return $this
+     */
+    public function assertFrom($address, $name = null) {
+        PHPUnit::assertTrue(
+            $this->hasFrom($address, $name),
+            'Email was not from expected address [' . $this->formatAssertionRecipient($address, $name) . '].'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string      $address
+     * @param null|string $name
+     *
+     * @return $this
+     */
+    public function assertHasTo($address, $name = null) {
+        PHPUnit::assertTrue(
+            $this->hasTo($address, $name),
+            'Did not see expected recipient [' . $this->formatAssertionRecipient($address, $name) . "] in email 'to' recipients."
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string      $address
+     * @param null|string $name
+     *
+     * @return $this
+     */
+    public function assertHasCc($address, $name = null) {
+        PHPUnit::assertTrue(
+            $this->hasCc($address, $name),
+            'Did not see expected recipient [' . $this->formatAssertionRecipient($address, $name) . "] in email 'cc' recipients."
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string      $address
+     * @param null|string $name
+     *
+     * @return $this
+     */
+    public function assertHasBcc($address, $name = null) {
+        PHPUnit::assertTrue(
+            $this->hasBcc($address, $name),
+            'Did not see expected recipient [' . $this->formatAssertionRecipient($address, $name) . "] in email 'bcc' recipients."
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string      $address
+     * @param null|string $name
+     *
+     * @return $this
+     */
+    public function assertHasReplyTo($address, $name = null) {
+        PHPUnit::assertTrue(
+            $this->hasReplyTo($address, $name),
+            'Did not see expected address [' . $this->formatAssertionRecipient($address, $name) . '] as email reply-to.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string $subject
+     *
+     * @return $this
+     */
+    public function assertHasSubject($subject) {
+        PHPUnit::assertTrue(
+            $this->hasSubject($subject),
+            "Did not see expected subject [{$subject}] in email subject."
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string $tag
+     *
+     * @return $this
+     */
+    public function assertHasTag($tag) {
+        PHPUnit::assertTrue(
+            $this->hasTag($tag),
+            "Did not see expected tag [{$tag}] in email tags."
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return $this
+     */
+    public function assertHasMetadata($key, $value) {
+        PHPUnit::assertTrue(
+            $this->hasMetadata($key, $value),
+            "Did not see expected key [{$key}] and value [" . (is_scalar($value) ? $value : gettype($value)) . '] in email metadata.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param CEmail_Attachment|CEmail_Contract_AttachableInterface|string $file
+     * @param array                                                        $options
+     *
+     * @return $this
+     */
+    public function assertHasAttachment($file, array $options = []) {
+        PHPUnit::assertTrue(
+            $this->hasAttachment($file, $options),
+            'Did not find the expected attachment.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string $data
+     * @param string $name
+     * @param array  $options
+     *
+     * @return $this
+     */
+    public function assertHasAttachedData($data, $name, array $options = []) {
+        PHPUnit::assertTrue(
+            $this->hasAttachedData($data, $name, $options),
+            'Did not find the expected attachment.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string      $path
+     * @param null|string $name
+     * @param array       $options
+     *
+     * @return $this
+     */
+    public function assertHasAttachmentFromStorage($path, $name = null, array $options = []) {
+        PHPUnit::assertTrue(
+            $this->hasAttachmentFromStorage($path, $name, $options),
+            'Did not find the expected attachment.'
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param null|string $disk
+     * @param string      $path
+     * @param null|string $name
+     * @param array       $options
+     *
+     * @return $this
+     */
+    public function assertHasAttachmentFromStorageDisk($disk, $path, $name = null, array $options = []) {
+        PHPUnit::assertTrue(
+            $this->hasAttachmentFromStorageDisk($disk, $path, $name, $options),
+            'Did not find the expected attachment.'
+        );
+
+        return $this;
     }
 
     /**
