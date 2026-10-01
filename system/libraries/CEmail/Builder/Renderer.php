@@ -3,12 +3,25 @@
 class CEmail_Builder_Renderer {
     protected $content;
 
-    public function __construct($content, $options) {
+    /**
+     * @var null|CEmail_Builder_GlobalData
+     */
+    protected $globalData;
+
+    /**
+     * @param string                         $content
+     * @param array                          $options
+     * @param null|CEmail_Builder_GlobalData $globalData
+     */
+    public function __construct($content, $options, CEmail_Builder_GlobalData $globalData = null) {
         $this->content = $content;
+        $this->globalData = $globalData;
     }
 
     public function get($key, $defaultValue = null) {
-        return CEmail::Builder()->globalData()->get($key, $defaultValue);
+        $globalData = $this->globalData ?: CEmail::Builder()->globalData();
+
+        return $globalData->get($key, $defaultValue);
     }
 
     /**

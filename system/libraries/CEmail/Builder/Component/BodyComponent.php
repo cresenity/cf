@@ -131,7 +131,7 @@ class CEmail_Builder_Component_BodyComponent extends CEmail_Builder_Component {
         foreach ($childrens as $children) {
             $component = $children;
             if ($children instanceof CEmail_Builder_Node) {
-                $globalData = CEmail::builder()->globalData();
+                $globalData = $this->context instanceof CEmail_Builder_Context ? $this->context->globalData() : CEmail::builder()->globalData();
                 $globalAttributes = array_merge(
                     $globalData->get('defaultAttributes.c-all', []),
                     $globalData->get('defaultAttributes.' . $children->getTagName(), [])

@@ -7,9 +7,9 @@ class CEmail_Builder_Parser {
     protected $node;
 
     /**
-     * @var array
+     * @var CEmail_Builder_GlobalData
      */
-    protected $globalData = [];
+    protected $globalData;
 
     protected $errors = [];
 
@@ -20,8 +20,8 @@ class CEmail_Builder_Parser {
     public function __construct($cml, $options = []) {
         $this->content = '';
         $this->errors = [];
-        $globalData = CEmail::Builder()->globalData();
-        $globalData->reset();
+        $globalData = CEmail_Builder_GlobalData::create();
+        $this->globalData = $globalData;
 
         $defaultFonts = [];
         $defaultFonts['Open Sans'] = 'https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,700';
@@ -66,21 +66,25 @@ class CEmail_Builder_Parser {
         $globalData->set('forceOWADesktop', c::get($this->node, 'attributes.owa', 'mobile') === 'desktop');
         $globalData->set('lang', c::get($this->node, 'attributes.lang'));
 
-        $this->context = new CEmail_Builder_Context();
+        $this->context = new CEmail_Builder_Context([], $globalData);
     }
 
     /**
      * @return string
      */
     public function parse() {
-        //$this->globalDatas['headRaw'] = $this->processing($cHead, $headHelpers);
-        CEmail::Builder()->globalData()->set('headRaw', $this->getHead());
-        $content = $this->getContent();
-        $options = $this->globalData;
+        CEmail_Builder_GlobalData::activate($this->globalData);
 
-        $renderer = new CEmail_Builder_Renderer($content, $options);
+        try {
+            $this->globalData->set('headRaw', $this->getHead());
+            $content = $this->getContent();
 
-        return trim($renderer->render());
+            $renderer = new CEmail_Builder_Renderer($content, [], $this->globalData);
+
+            return trim($renderer->render());
+        } finally {
+            CEmail_Builder_GlobalData::deactivate();
+        }
     }
 
     protected function getHead() {

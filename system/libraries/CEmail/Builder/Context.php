@@ -3,20 +3,54 @@
 class CEmail_Builder_Context {
     protected $data = [];
 
-    public function __construct($initialData = []) {
+    /**
+     * @var null|CEmail_Builder_GlobalData
+     */
+    protected $globalData;
+
+    /**
+     * @param array                          $initialData
+     * @param null|CEmail_Builder_GlobalData $globalData
+     */
+    public function __construct($initialData = [], CEmail_Builder_GlobalData $globalData = null) {
         $this->data = $initialData;
+        $this->globalData = $globalData;
+    }
+
+    /**
+     * Data global milik render ini; tanpa data eksplisit memakai yang sedang aktif.
+     *
+     * @return CEmail_Builder_GlobalData
+     */
+    public function globalData() {
+        return $this->globalData ?: CEmail::builder()->globalData();
     }
 
     public function setBackgroundColor($color) {
-        $globalData = CEmail::builder()->globalData();
+        $globalData = $this->globalData();
         $globalData->set('backgroundColor', $color);
 
         return $this;
     }
 
     public function addHeadStyle($identifier, $headStyle) {
-        $globalData = CEmail::builder()->globalData();
+        $globalData = $this->globalData();
         $globalData->set('headStyle.' . $identifier, $headStyle);
+    }
+
+    /**
+     * @param string $name
+     * @param string $href
+     *
+     * @return $this
+     */
+    public function addFont($name, $href) {
+        $globalData = $this->globalData();
+        $fonts = $globalData->get('fonts', []);
+        $fonts[$name] = $href;
+        $globalData->set('fonts', $fonts);
+
+        return $this;
     }
 
     public function addComponentHeadStyle($identifier, $headStyle = null) {
@@ -24,7 +58,7 @@ class CEmail_Builder_Context {
             $headStyle = $identifier;
             $identifier = null;
         }
-        $globalData = CEmail::builder()->globalData();
+        $globalData = $this->globalData();
         if ($identifier === null) {
             $globalData->push('componentHeadStyle', [$headStyle]);
         } else {
@@ -33,7 +67,7 @@ class CEmail_Builder_Context {
     }
 
     public function getBackgroundColor($color = null) {
-        $globalData = CEmail::builder()->globalData();
+        $globalData = $this->globalData();
 
         return $globalData->get('backgroundColor');
     }
@@ -57,7 +91,7 @@ class CEmail_Builder_Context {
     public function addMediaQuery($className, $options) {
         $parsedWidth = carr::get($options, 'parsedWidth');
         $unit = carr::get($options, 'unit');
-        $globalData = CEmail::builder()->globalData();
+        $globalData = $this->globalData();
 
         $globalData->set('mediaQueries.' . $className, '{ width:' . $parsedWidth . $unit . ' !important; max-width:' . $parsedWidth . $unit . '; }');
     }
@@ -69,8 +103,11 @@ class CEmail_Builder_Context {
         if (count($args) > 1) {
             $params = array_slice($args, 1);
         }
-        $globalData = CEmail::builder()->globalData();
-        $attrToPush = ['inlineStyle', 'componentsHeadStyle', 'headRaw', 'style'];
+        $globalData = $this->globalData();
+        if ($attr === 'componentsHeadStyle') {
+            $attr = 'componentHeadStyle';
+        }
+        $attrToPush = ['inlineStyle', 'componentHeadStyle', 'headRaw', 'style'];
         if (in_array($attr, $attrToPush)) {
             $globalData->push($attr, $params);
         } elseif ($globalData->exists($attr)) {
