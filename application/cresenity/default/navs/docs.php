@@ -78,6 +78,11 @@ return [
                 'label' => c::__('Email Builder'),
                 'uri' => 'docs/email/builder',
             ],
+            [
+                'name' => 'email.template',
+                'label' => c::__('Email Template'),
+                'uri' => 'docs/email/template',
+            ],
         ]
     ],
     [
