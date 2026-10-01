@@ -85,6 +85,66 @@ class CEmail_Config {
         'smtp-relay.sendinblue.com' => 'brevo',
     ];
 
+    /**
+     * Provider yang ditebak dari host SMTP, null bila host tidak dikenali.
+     *
+     * @param string $host
+     *
+     * @return null|string
+     */
+    public static function driverForSmtpHost($host) {
+        return carr::get(static::$smtpHostToDriverMap, $host);
+    }
+
+    /**
+     * Konflik yang sudah dilaporkan di proses ini.
+     *
+     * @var array
+     */
+    protected static $reportedConflicts = [];
+
+    /**
+     * Pesan bila provider yang ditebak dari smtp_host berbeda dari MAIL_MAILER yang diisi eksplisit di env
+     * (CEmail::sender() tidak membaca MAIL_MAILER), selain itu null.
+     *
+     * @param string       $driver
+     * @param string       $host
+     * @param false|string $mailer nilai MAIL_MAILER; false membaca dari env
+     *
+     * @return null|string
+     */
+    public static function mailerEnvConflict($driver, $host, $mailer = false) {
+        if ($mailer === false) {
+            $mailer = c::env('MAIL_MAILER');
+        }
+        if (c::blank($mailer)) {
+            return null;
+        }
+        $mailerTransport = CF::config('email.mailers.' . $mailer . '.transport', $mailer);
+        if (static::transportForDriver($driver) === static::transportForDriver($mailerTransport)) {
+            return null;
+        }
+
+        return "provider '" . $driver . "' ditebak dari smtp_host '" . $host . "', tetapi MAIL_MAILER='" . $mailer
+            . "'. CEmail::sender() tidak membaca MAIL_MAILER; isi 'driver' pada config pengirim atau samakan app.smtp_host.";
+    }
+
+    /**
+     * Catat peringatan konflik sekali per proses; tidak mengubah provider yang dipakai.
+     *
+     * @param string $driver
+     * @param string $host
+     *
+     * @return void
+     */
+    protected static function reportMailerEnvConflict($driver, $host) {
+        $message = static::mailerEnvConflict($driver, $host);
+        if ($message !== null && !isset(static::$reportedConflicts[$message])) {
+            static::$reportedConflicts[$message] = true;
+            CLogger::warning('CEmail_Config: ' . $message);
+        }
+    }
+
     public function __construct($options = []) {
         $options = $this->reformatOptions($options);
         $this->options = $options;
@@ -114,6 +174,7 @@ class CEmail_Config {
             }
 
             $driver = carr::get(static::$smtpHostToDriverMap, $smtpHost, 'smtp');
+            static::reportMailerEnvConflict($driver, $smtpHost);
 
             $newConfig = [];
             $newConfig['driver'] = $driver;

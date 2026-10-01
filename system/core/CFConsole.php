@@ -48,6 +48,7 @@ class CFConsole {
         CConsole_Command_Queue_ListFailedCommand::class,
         CConsole_Command_Queue_PruneBatchesCommand::class,
         CConsole_Command_Translation_Check::class,
+        CConsole_Command_Email_CheckCommand::class,
         CConsole_Command_DevSuite_DevSuiteInstallCommand::class,
         CConsole_Command_DevSuite_DevSuiteStartCommand::class,
         CConsole_Command_DevSuite_DevSuiteUninstallCommand::class,
