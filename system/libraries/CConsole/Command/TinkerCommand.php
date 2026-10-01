@@ -66,6 +66,13 @@ class CConsole_Command_TinkerCommand extends CConsole_Command {
             try {
                 $shell->setOutput($this->output);
                 $shell->execute($code);
+            } catch (\InvalidArgumentException $e) {
+                // kode dari --execute tidak lengkap (kurung/kutip tidak seimbang) - PsySH
+                // melempar ini sebagai InvalidArgumentException biasa, bukan syntax error
+                // PHP, jadi tampilkan sebagai kesalahan pemakaian daripada uncaught exception
+                $this->error($e->getMessage());
+
+                return 1;
             } finally {
                 //$loader->unregister();
             }
