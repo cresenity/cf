@@ -250,7 +250,9 @@ trait CElement_Component_DataTable_Trait_JavascriptTrait {
             }
         }
     },")->br()->appendln('fnInitComplete: function() {
-        this.fnAdjustColumnSizing(true);
+        try {
+            this.fnAdjustColumnSizing(true);
+        } catch (e) {}
     },')->br();
             }
 
