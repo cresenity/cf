@@ -378,14 +378,31 @@ class CML {
         return $rules;
     }
 
+    /**
+     * Cosine similarity (0-1, higher = more similar) between $text and each
+     * of $candidates, via TF-IDF vectors (word-overlap based, not semantic -
+     * catches reworded/reordered near-duplicates, misses true paraphrases
+     * that share few words). Case-insensitive: both $text and every
+     * candidate are lowercased before vectorizing.
+     *
+     * @param string $text
+     * @param array<int|string, string> $candidates
+     *
+     * @return float[] same keys as $candidates
+     */
     public static function textSimilarity($text, array $candidates) {
         if (empty($candidates)) {
             return [];
         }
 
         $keys = array_keys($candidates);
+        // WordCountVectorizer's default tokenizer (Rubix\ML\Tokenizers\Word)
+        // does not normalize case, so "Distributor" and "distributor" count
+        // as unrelated words and silently zero out the cosine score instead
+        // of raising an error - lowercase here so natural-language inputs
+        // compare on word identity, not byte identity.
         $samples = array_map(function ($value) {
-            return [(string) $value];
+            return [mb_strtolower((string) $value)];
         }, array_merge([$text], array_values($candidates)));
 
         $dataset = Rubix\ML\Datasets\Unlabeled::build($samples);
