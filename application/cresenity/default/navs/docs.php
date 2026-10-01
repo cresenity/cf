@@ -70,6 +70,17 @@ return [
         'subnav' => include dirname(__FILE__) . '/docs/phpcf.php',
     ],
     [
+        'name' => 'email',
+        'label' => c::__('Email'),
+        'subnav' => [
+            [
+                'name' => 'email.builder',
+                'label' => c::__('Email Builder'),
+                'uri' => 'docs/email/builder',
+            ],
+        ]
+    ],
+    [
         'name' => 'other',
         'label' => c::__('Other'),
         'subnav' => [

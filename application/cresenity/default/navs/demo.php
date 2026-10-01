@@ -68,6 +68,13 @@ return [
         'subnav' => include dirname(__FILE__) . '/demo/module.php',
     ],
     [
+        'name' => 'email',
+        'label' => c::__('Email'),
+        'icon' => 'ti-mail',
+        'subnav' => include dirname(__FILE__) . '/demo/email.php',
+        'badge' => 'new',
+    ],
+    [
         'name' => 'utils',
         'label' => c::__('Utils'),
         'icon' => 'ti-settings',
