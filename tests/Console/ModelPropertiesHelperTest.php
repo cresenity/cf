@@ -57,7 +57,7 @@ class UjiProps_Post extends CModel {
 class ModelPropertiesHelperTest extends TestCase {
     public function testGetTypeMapsDatabaseTypesToPhpDocTypes() {
         $this->assertSame('int', CModel_Console_PropertiesHelper::getType('bigint'));
-        $this->assertSame('int', CModel_Console_PropertiesHelper::getType('decimal'), 'decimal dipetakan ke int (konvensi generator)');
+        $this->assertSame('string', CModel_Console_PropertiesHelper::getType('decimal'), 'PDO mengembalikan decimal sebagai string numerik');
         $this->assertSame('string', CModel_Console_PropertiesHelper::getType('varchar'));
         $this->assertSame('CCarbon|\Carbon\Carbon', CModel_Console_PropertiesHelper::getType('datetime'));
         $this->assertSame('string', CModel_Console_PropertiesHelper::getType('timestamp'));
@@ -130,5 +130,104 @@ class ModelPropertiesHelperTest extends TestCase {
         $this->assertStringContainsString('public function author()', $snippet);
         $this->assertStringContainsString("belongsTo('UjiProps_Author'", $snippet);
         $this->assertSame([], CModel_Console_PropertiesHelper::getCodeSnippet(__FILE__, 10, 5), 'rentang terbalik → kosong');
+    }
+
+    public function testFirstTypeTokenKeepsSpacesInsideGenerics() {
+        $this->assertSame('int', CModel_Console_PropertiesHelper::firstTypeToken('int $x'));
+        $this->assertSame('array<string, mixed>', CModel_Console_PropertiesHelper::firstTypeToken('array<string, mixed> $x desc'));
+        $this->assertSame('array{a: int, b: string}', CModel_Console_PropertiesHelper::firstTypeToken("  array{a: int, b: string} \$x"));
+        $this->assertSame('callable(int, int)', CModel_Console_PropertiesHelper::firstTypeToken('callable(int, int) ok'));
+        $this->assertSame('null|CModel_Collection<int, Foo>', CModel_Console_PropertiesHelper::firstTypeToken('null|CModel_Collection<int, Foo> $foos'));
+        $this->assertSame('string', CModel_Console_PropertiesHelper::firstTypeToken('string'), 'tanpa spasi: seluruh teks');
+    }
+
+    public function testParsePropertyLine() {
+        $this->assertSame(['@property', 'int', '$id', ''], CModel_Console_PropertiesHelper::parsePropertyLine('@property int $id'));
+        $this->assertSame(['@property-read', 'null|Foo', '$foo', 'relasi ke foo'], CModel_Console_PropertiesHelper::parsePropertyLine('@property-read    null|Foo      $foo   relasi ke foo'));
+        $this->assertSame(['@property', 'array<string, mixed>', '$meta', 'data tambahan'], CModel_Console_PropertiesHelper::parsePropertyLine('@property array<string, mixed> $meta data tambahan'), 'generik dengan spasi tidak terpecah');
+    }
+
+    public function testApplyPropertiesCreatesDocblockWhenMissing() {
+        $content = "<?php\n\nclass TBModel_Foo extends TBModel {\n}\n";
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, " * @property int \$id\n * @property string \$name");
+
+        $this->assertSame("<?php\n\n/**\n * @property int \$id\n * @property string \$name\n */\nclass TBModel_Foo extends TBModel {\n}\n", $result);
+    }
+
+    public function testApplyPropertiesReplacesOldPropertyLinesInPlaceAndKeepsOtherText() {
+        $content = "<?php\n\n/**\n * Deskripsi model.\n *\n * @mixin Bar\n * @property int \$old\n * @property-read Foo \$gone\n * @method static x()\n */\nclass TBModel_Foo extends TBModel {\n}\n";
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, " * @property int \$id");
+
+        $this->assertSame("<?php\n\n/**\n * Deskripsi model.\n *\n * @mixin Bar\n * @property int \$id\n * @method static x()\n */\nclass TBModel_Foo extends TBModel {\n}\n", $result);
+    }
+
+    public function testApplyPropertiesAddsToADocblockThatHasNoPropertiesWithoutLosingItsText() {
+        $content = "<?php\n\n/**\n * Deskripsi penting.\n *\n * @mixin Bar\n */\nclass TBModel_Foo extends TBModel {\n}\n";
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, " * @property int \$id");
+
+        $this->assertSame("<?php\n\n/**\n * Deskripsi penting.\n *\n * @mixin Bar\n * @property int \$id\n */\nclass TBModel_Foo extends TBModel {\n}\n", $result);
+    }
+
+    public function testApplyPropertiesExpandsAOneLineDocblock() {
+        $content = "<?php\n/** Model foo. */\nclass TBModel_Foo extends TBModel {\n}\n";
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, " * @property int \$id");
+
+        $this->assertSame("<?php\n/**\n * Model foo.\n * @property int \$id\n */\nclass TBModel_Foo extends TBModel {\n}\n", $result);
+    }
+
+    public function testApplyPropertiesHandlesAbstractAndFinalClasses() {
+        foreach (['abstract class', 'final class'] as $declaration) {
+            $content = "<?php\n\n" . $declaration . " TBModel_Foo extends TBModel {\n}\n";
+            $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
+
+            $this->assertSame("<?php\n\n/**\n * @property int \$id\n */\n" . $declaration . " TBModel_Foo extends TBModel {\n}\n", $result, $declaration . ' mendapat docblock tepat di atas deklarasinya');
+        }
+    }
+
+    public function testApplyPropertiesDoesNotTouchEarlierDocblocksOrCodeBetween() {
+        $content = "<?php\n\n/** Berkas ini. */\n\nuse Foo\\Bar;\n\n/**\n * @property int \$old\n */\nclass TBModel_Foo extends TBModel {\n    /**\n     * @property int \$dalamMetode\n     */\n    public function a() {\n    }\n}\n";
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
+
+        $this->assertStringContainsString("/** Berkas ini. */\n\nuse Foo\\Bar;\n", $result, 'docblock dan kode sebelum docblock kelas utuh');
+        $this->assertStringContainsString('@property int $dalamMetode', $result, 'docblock method tidak disentuh');
+        $this->assertStringNotContainsString('$old', $result);
+        $this->assertSame(1, substr_count($result, '@property int $id'));
+    }
+
+    public function testApplyPropertiesIsLiteralForDollarDigitsAndBackslashes() {
+        $content = "<?php\n\nclass TBModel_Foo extends TBModel {\n}\n";
+        $block = ' * @property null|\\Carbon\\Carbon $3d_secure' . "\n" . ' * @property string $1x';
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, $block);
+
+        $this->assertStringContainsString(' * @property null|\\Carbon\\Carbon $3d_secure', $result, '$3 bukan referensi balik');
+        $this->assertStringContainsString(' * @property string $1x', $result);
+    }
+
+    public function testApplyPropertiesKeepsCrlfAndIsIdempotent() {
+        $content = "<?php\r\n\r\n/**\r\n * @property int \$old\r\n */\r\nclass TBModel_Foo extends TBModel {\r\n}\r\n";
+        $once = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
+
+        $this->assertStringNotContainsString("\r\r", $once);
+        $this->assertSame(substr_count($once, "\r\n"), substr_count($once, "\n"), 'semua baris tetap CRLF');
+        $this->assertSame($once, CModel_Console_PropertiesHelper::applyPropertiesToDocblock($once, ' * @property int $id'), 'dijalankan dua kali tidak berubah');
+    }
+
+    public function testApplyPropertiesReturnsNullWithoutAClass() {
+        $this->assertNull(CModel_Console_PropertiesHelper::applyPropertiesToDocblock("<?php\n// kosong\n", ' * @property int $id'));
+    }
+
+    public function testEmptyPropertiesBlockOnlyRemovesOldLines() {
+        $content = "<?php\n\n/**\n * Teks.\n * @property int \$old\n */\nclass TBModel_Foo extends TBModel {\n}\n";
+
+        $this->assertSame("<?php\n\n/**\n * Teks.\n */\nclass TBModel_Foo extends TBModel {\n}\n", CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ''));
+        $noDoc = "<?php\n\nclass TBModel_Foo extends TBModel {\n}\n";
+        $this->assertSame($noDoc, CModel_Console_PropertiesHelper::applyPropertiesToDocblock($noDoc, ''), 'tanpa docblock dan tanpa properti: tidak ada yang dibuat');
+    }
+
+    public function testApplyPropertiesKeepsBlankLinesAroundTheDocblock() {
+        $content = "<?php\n\ndefined('SYSPATH') or die('x');\n\n/**\n * @property int \$old\n */\n\n\nclass TBModel_Foo extends TBModel {\n}\n";
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
+
+        $this->assertSame("<?php\n\ndefined('SYSPATH') or die('x');\n\n/**\n * @property int \$id\n */\n\n\nclass TBModel_Foo extends TBModel {\n}\n", $result, 'baris kosong antara docblock dan class tidak berubah');
     }
 }
