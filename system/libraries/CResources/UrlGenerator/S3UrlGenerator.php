@@ -18,9 +18,6 @@ class CResources_UrlGenerator_S3UrlGenerator extends CResources_UrlGeneratorAbst
      */
     public function getUrl() {
         $url = $this->getPathRelativeToRoot();
-        if ($root = CF::config('storage.disks.' . $this->resource->disk . '.root')) {
-            $url = $root . '/' . $url;
-        }
         // $url = $this->rawUrlEncodeFilename($url);
         $url = $this->versionUrl($url);
 
