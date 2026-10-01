@@ -172,6 +172,8 @@ class CEmail_Builder_Component {
     }
 
     /**
+     * @deprecated 1.9 pohon komponen tanpa context tidak bisa dirender; pakai CEmail::builder()->createRuntimeBuilder()
+     *
      * @return CEmail_Builder_Component_BodyComponent_Body
      */
     public function addBody() {
@@ -182,6 +184,8 @@ class CEmail_Builder_Component {
     }
 
     /**
+     * @deprecated 1.9 pohon komponen tanpa context tidak bisa dirender; pakai CEmail::builder()->createRuntimeBuilder()
+     *
      * @return CEmail_Builder_Component_BodyComponent_Section
      */
     public function addSection() {
@@ -192,6 +196,8 @@ class CEmail_Builder_Component {
     }
 
     /**
+     * @deprecated 1.9 pohon komponen tanpa context tidak bisa dirender; pakai CEmail::builder()->createRuntimeBuilder()
+     *
      * @return CEmail_Builder_Component_BodyComponent_Column
      */
     public function addColumn() {
@@ -202,6 +208,8 @@ class CEmail_Builder_Component {
     }
 
     /**
+     * @deprecated 1.9 pohon komponen tanpa context tidak bisa dirender; pakai CEmail::builder()->createRuntimeBuilder()
+     *
      * @return CEmail_Builder_Component_BodyComponent_Image
      */
     public function addImage() {
