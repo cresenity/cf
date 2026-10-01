@@ -17,6 +17,11 @@ class CEmail_Builder_Parser {
 
     protected $context = null;
 
+    /**
+     * @var string
+     */
+    protected $validationLevel = 'soft';
+
     public function __construct($cml, $options = []) {
         $this->content = '';
         $this->errors = [];
@@ -32,11 +37,12 @@ class CEmail_Builder_Parser {
 
         $this->node = $cml;
         $beautify = carr::get($options, 'beautify', false);
-        $fonts = carr::get($options, 'fonts', $defaultFonts);
+        $fonts = carr::get($options, 'fonts', CF::config('email.builder.fonts', $defaultFonts));
         $keepComments = carr::get($options, 'keepComments', false);
         $minify = carr::get($options, 'minify', false);
         $minifyOptions = carr::get($options, 'minifyOptions', []);
-        $validationLevel = carr::get($options, 'validationLevel', 'soft');
+        $validationLevel = carr::get($options, 'validationLevel', CF::config('email.builder.validation_level', 'soft'));
+        $this->validationLevel = $validationLevel;
         $filePath = carr::get($options, 'filePath', '.');
 
         if (is_string($this->node)) {
@@ -76,6 +82,10 @@ class CEmail_Builder_Parser {
         CEmail_Builder_GlobalData::activate($this->globalData);
 
         try {
+            if ($this->node instanceof CEmail_Builder_Node) {
+                $validator = new CEmail_Builder_Validator($this->node, ['level' => $this->validationLevel]);
+                $validator->enforce();
+            }
             $this->globalData->set('headRaw', $this->getHead());
             $content = $this->getContent();
 
