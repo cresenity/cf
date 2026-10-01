@@ -176,6 +176,11 @@ class curl {
             return false;
         }
 
+        // Cegah header injection kalau $uri berasal dari input request.
+        $uri = is_array($uri) ? array_map(function ($u) {
+            return str_replace(["\r", "\n"], '', $u);
+        }, $uri) : str_replace(["\r", "\n"], '', $uri);
+
         $codes = [
             'refresh' => 'Refresh',
             '300' => 'Multiple Choices',
