@@ -341,6 +341,29 @@ class CExporter_Sheet {
             }
         }
 
+        if ($sheetExport instanceof CExporter_Concern_WithFreezePane) {
+            $this->worksheet->freezePane($sheetExport->freezePane());
+        }
+
+        if ($sheetExport instanceof CExporter_Concern_WithTabColor) {
+            $tabColor = $sheetExport->tabColor();
+            $this->worksheet->getTabColor()->setARGB($tabColor instanceof PhpOffice\PhpSpreadsheet\Style\Color ? $tabColor->getARGB() : $tabColor);
+        }
+
+        if ($sheetExport instanceof CExporter_Concern_WithPrintArea) {
+            $this->worksheet->getPageSetup()->setPrintArea($sheetExport->printArea());
+        }
+
+        if ($sheetExport instanceof CExporter_Concern_WithPageBreaks) {
+            foreach ($sheetExport->pageBreaks() as $cell) {
+                $this->worksheet->setBreak($cell, Worksheet::BREAK_ROW);
+            }
+        }
+
+        if ($sheetExport instanceof CExporter_Concern_WithSheetProtection) {
+            $this->protectSheet($sheetExport->sheetProtection());
+        }
+
         if ($sheetExport instanceof CExporter_Concern_WithStyles) {
             $styles = $sheetExport->styles($this->worksheet);
             if (is_array($styles)) {
@@ -354,6 +377,26 @@ class CExporter_Sheet {
             }
         }
         $this->raise(new CExporter_Event_AfterSheet($this, $this->exportable));
+    }
+
+    /**
+     * @param array $options kunci = nama setter Protection tanpa "set" (password, sort, formatCells, ...)
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return void
+     */
+    protected function protectSheet(array $options) {
+        $protection = $this->worksheet->getProtection();
+        $protection->setSheet(true);
+
+        foreach ($options as $option => $value) {
+            $setter = 'set' . ucfirst((string) $option);
+            if ($option === 'sheet' || !method_exists($protection, $setter)) {
+                throw new InvalidArgumentException('Opsi sheetProtection tidak dikenal: ' . $option);
+            }
+            $protection->{$setter}($value);
+        }
     }
 
     /**
