@@ -79,6 +79,11 @@ return [
                 'uri' => 'docs/email/builder',
             ],
             [
+                'name' => 'email.mailable',
+                'label' => c::__('Mailable'),
+                'uri' => 'docs/email/mailable',
+            ],
+            [
                 'name' => 'email.template',
                 'label' => c::__('Email Template'),
                 'uri' => 'docs/email/template',
