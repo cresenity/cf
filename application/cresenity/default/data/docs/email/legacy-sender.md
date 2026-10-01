@@ -21,6 +21,22 @@ Mailer dibangun sekali per konfigurasi pengirim dan dipakai ulang.
 
 ---
 
+### Memilih provider (dan kenapa `MAIL_MAILER` tidak berlaku)
+
+`CEmail::sender()` memilih provider dengan urutan ini, dan **tidak pernah membaca `email.default` atau `MAIL_MAILER`**:
+
+1. `driver` eksplisit pada config pengirim (`CEmail::sender(['driver' => 'brevo', ...])`).
+2. Ditebak dari `smtp_host`: `smtp.sendgrid.net` → SendGrid, `smtp-relay.brevo.com` → Brevo, `smtp.mailgun.org` → Mailgun, dst; host lain → SMTP biasa.
+
+Hanya `CEmail::mailer()` yang memakai `MAIL_MAILER`. Akibatnya app yang mengisi `MAIL_MAILER=brevo` tetapi masih punya `app.smtp_host = 'smtp.sendgrid.net'` (misalnya sisa salinan dari app lain) tetap mengirim lewat SendGrid. Cara memperbaikinya: isi `driver` secara eksplisit pada config pengirim, atau hapus `smtp_*` yang basi dari `default/config/app.php`.
+
+Dua alat bantu mendeteksinya:
+
+- Saat provider ditebak dari `smtp_host` dan `MAIL_MAILER` diisi eksplisit dengan transport berbeda, framework menulis satu peringatan log per proses. Provider yang dipakai tidak berubah.
+- `phpcf email:check` (dari folder app) memeriksa konfigurasi app saat ini dan tidak mengubah apa pun. Temuan `warning` (konflik `MAIL_MAILER`, `smtp_password` kosong untuk provider API) membuat exit code 1; temuan `notice` (domain `smtp_from` berbeda dari domain app, jumlah berkas yang memanggil `CEmail::sender()`) hanya informasi. `--json` menghasilkan keluaran mesin.
+
+---
+
 ### Pemetaan opsi lama
 
 | Opsi `send()` | Pada pesan |
