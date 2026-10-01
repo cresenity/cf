@@ -159,6 +159,9 @@ class CTesting_TestCase extends BaseTestCase {
         // survive into the next test.
         CSocialLogin::forgetFakes();
 
+        // CEmail::fake() swaps the process-wide mail manager; it must not outlive its test.
+        CEmail::forgetFake();
+
         // CHTTP::client() is a process-wide singleton and fake() only ever appends:
         // every stub registered so far runs on every request, first non-null answer
         // wins, so an earlier test's fake silently answers a later test's requests.
