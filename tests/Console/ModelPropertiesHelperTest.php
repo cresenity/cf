@@ -54,6 +54,19 @@ class UjiProps_Post extends CModel {
 /**
  * CModel_Console_PropertiesHelper: bagian murni generator docblock model:update.
  */
+/**
+ * @property string $createdby
+ * @property int    $status
+ */
+class UjiProps_AuditBase extends CModel {
+}
+
+class UjiProps_AuditChild extends UjiProps_AuditBase {
+}
+
+class UjiProps_NoAuditChild extends CModel {
+}
+
 class ModelPropertiesHelperTest extends TestCase {
     public function testGetTypeMapsDatabaseTypesToPhpDocTypes() {
         $this->assertSame('int', CModel_Console_PropertiesHelper::getType('bigint'));
@@ -229,5 +242,47 @@ class ModelPropertiesHelperTest extends TestCase {
         $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
 
         $this->assertSame("<?php\n\ndefined('SYSPATH') or die('x');\n\n/**\n * @property int \$id\n */\n\n\nclass TBModel_Foo extends TBModel {\n}\n", $result, 'baris kosong antara docblock dan class tidak berubah');
+    }
+
+    public function testAuditFieldsAreExcludedOnlyWhenAParentDeclaresThem() {
+        $this->assertEqualsCanonicalizing(['createdby', 'status'], CModel_Console_PropertiesHelper::getInheritedAuditFields(new UjiProps_AuditChild()), 'dideklarasikan induk: tidak diulang');
+        $this->assertSame([], CModel_Console_PropertiesHelper::getInheritedAuditFields(new UjiProps_NoAuditChild()), 'induk tidak mendeklarasikan: tetap dianotasi di model');
+        $this->assertSame(['created', 'createdby', 'updated', 'updatedby', 'status'], CModel_Console_PropertiesHelper::getInheritedAuditFields(null), 'tanpa instans model: perilaku lama');
+    }
+
+    public function testClassDocblockPropertyLinesIgnoreOtherDocblocksInTheFile() {
+        $content = "<?php\n\n/**\n * Model lama.\n * @property int \$lama\n */\n\n/**\n * Docblock kelas.\n * @property string \$nama desc\n * @property-read null|Foo \$foo\n */\nclass TBModel_Foo extends TBModel {\n    /**\n     * @property int \$dalamMetode\n     */\n    public function a() {\n    }\n}\n";
+
+        $this->assertSame(['@property string $nama desc', '@property-read null|Foo $foo'], CModel_Console_PropertiesHelper::classDocblockPropertyLines($content));
+        $this->assertSame([], CModel_Console_PropertiesHelper::classDocblockPropertyLines("<?php\nclass TBModel_Foo extends TBModel {\n}\n"), 'tanpa docblock');
+        $this->assertSame([], CModel_Console_PropertiesHelper::classDocblockPropertyLines("<?php\n// tanpa class\n"));
+    }
+
+    public function testApplyingTwiceOnAFileWithTwoDocblocksDoesNotDuplicate() {
+        $content = "<?php\n\n/**\n * @property int \$lama\n */\n\n/**\n * Docblock kelas.\n */\nclass TBModel_Foo extends TBModel {\n}\n";
+        $block = " * @property int \$id\n * @property string \$nama";
+
+        $once = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, $block);
+        $twice = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($once, implode("\n", array_map(function ($line) {
+            return ' * ' . $line;
+        }, CModel_Console_PropertiesHelper::classDocblockPropertyLines($once))));
+
+        $this->assertSame($once, $twice, 'membaca lalu menulis ulang properti docblock kelas tidak mengubah apa pun');
+        $this->assertSame(1, substr_count($once, '$id'));
+        $this->assertStringContainsString('@property int $lama', $once, 'docblock file-level tidak disentuh');
+    }
+
+    public function testUniqueByVariableKeepsTheFirstAnnotationOfEachVariable() {
+        $result = CModel_Console_PropertiesHelper::uniqueByVariable([
+            ['var' => '$id', 'type' => 'int'],
+            ['var' => '$type', 'type' => 'null|string'],
+            ['var' => '$type', 'type' => 'string'],
+            ['var' => '$id', 'type' => 'int'],
+            ['var' => '$name', 'type' => 'string'],
+        ]);
+
+        $this->assertSame(['$id', '$type', '$name'], array_column($result, 'var'));
+        $this->assertSame('null|string', $result[1]['type'], 'yang pertama menang');
+        $this->assertSame([], CModel_Console_PropertiesHelper::uniqueByVariable([]));
     }
 }
