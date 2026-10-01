@@ -20,6 +20,18 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
     protected $jobsToFake;
 
     /**
+     * Command (kelas atau Closure penguji) yang tetap dikirim ke dispatcher asli.
+     *
+     * @var array
+     */
+    protected $jobsToDispatch = [];
+
+    /**
+     * @var bool
+     */
+    protected $serializeAndRestore = false;
+
+    /**
      * The commands that have been dispatched.
      *
      * @var array
@@ -534,7 +546,7 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
      */
     public function dispatch($command) {
         if ($this->shouldFakeJob($command)) {
-            $this->commands[get_class($command)][] = $command;
+            $this->commands[get_class($command)][] = $this->serializeAndRestoreCommand($command);
         } else {
             return $this->dispatcher->dispatch($command);
         }
@@ -552,7 +564,7 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
      */
     public function dispatchSync($command, $handler = null) {
         if ($this->shouldFakeJob($command)) {
-            $this->commandsSync[get_class($command)][] = $command;
+            $this->commandsSync[get_class($command)][] = $this->serializeAndRestoreCommand($command);
         } else {
             return $this->dispatcher->dispatchSync($command, $handler);
         }
@@ -568,7 +580,7 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
      */
     public function dispatchNow($command, $handler = null) {
         if ($this->shouldFakeJob($command)) {
-            $this->commands[get_class($command)][] = $command;
+            $this->commands[get_class($command)][] = $this->serializeAndRestoreCommand($command);
         } else {
             return $this->dispatcher->dispatchNow($command, $handler);
         }
@@ -583,7 +595,7 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
      */
     public function dispatchToQueue($command) {
         if ($this->shouldFakeJob($command)) {
-            $this->commands[get_class($command)][] = $command;
+            $this->commands[get_class($command)][] = $this->serializeAndRestoreCommand($command);
         } else {
             return $this->dispatcher->dispatchToQueue($command);
         }
@@ -598,7 +610,7 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
      */
     public function dispatchAfterResponse($command) {
         if ($this->shouldFakeJob($command)) {
-            $this->commandsAfterResponse[get_class($command)][] = $command;
+            $this->commandsAfterResponse[get_class($command)][] = $this->serializeAndRestoreCommand($command);
         } else {
             return $this->dispatcher->dispatch($command);
         }
@@ -659,6 +671,10 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
      * @return bool
      */
     protected function shouldFakeJob($command) {
+        if ($this->shouldDispatchCommand($command)) {
+            return false;
+        }
+
         if (empty($this->jobsToFake)) {
             return true;
         }
@@ -678,6 +694,116 @@ class CTesting_Fake_Base_BusFake implements CQueue_QueueingDispatcherInterface {
      *
      * @return $this
      */
+    /**
+     * Teruskan command tertentu ke dispatcher asli (kelas, atau Closure yang menerima command); sisanya dicatat.
+     *
+     * @param array|Closure|string $jobsToDispatch
+     *
+     * @return $this
+     */
+    public function except($jobsToDispatch) {
+        $this->jobsToDispatch = array_merge($this->jobsToDispatch, carr::wrap($jobsToDispatch));
+
+        return $this;
+    }
+
+    /**
+     * Catat salinan hasil serialize/unserialize, seperti yang akan dilihat worker.
+     *
+     * @param bool $serializeAndRestore
+     *
+     * @return $this
+     */
+    public function serializeAndRestore($serializeAndRestore = true) {
+        $this->serializeAndRestore = $serializeAndRestore;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $command
+     *
+     * @return mixed
+     */
+    protected function serializeAndRestoreCommand($command) {
+        return $this->serializeAndRestore ? unserialize(serialize($command)) : $command;
+    }
+
+    /**
+     * @param mixed $command
+     *
+     * @return bool
+     */
+    protected function shouldDispatchCommand($command) {
+        foreach ($this->jobsToDispatch as $candidate) {
+            if ($candidate instanceof Closure ? $candidate($command) : $candidate === get_class($command)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param string|Closure $command
+     * @param null|callable  $callback
+     *
+     * @return void
+     */
+    public function assertDispatchedOnce($command, $callback = null) {
+        if ($command instanceof Closure) {
+            list($command, $callback) = [$this->firstClosureParameterType($command), $command];
+        }
+
+        $count = $this->dispatched($command, $callback)->count();
+
+        PHPUnit::assertSame(1, $count, "The expected [{$command}] job was dispatched {$count} times instead of 1 times.");
+    }
+
+    /**
+     * @param int $count
+     *
+     * @return void
+     */
+    public function assertBatchCount($count) {
+        $actual = count($this->batches);
+
+        PHPUnit::assertCount($count, $this->batches, "Expected {$count} batches to be dispatched, but found {$actual} instead.");
+    }
+
+    /**
+     * @return void
+     */
+    public function assertNothingBatched() {
+        $jobNames = c::collect($this->batches)->map(function ($batch) {
+            return c::collect($batch->jobs)->map(function ($job) {
+                return is_object($job) ? get_class($job) : (string) $job;
+            });
+        })->flatten()->implode("\n- ");
+
+        PHPUnit::assertEmpty($this->batches, "The following batched jobs were dispatched unexpectedly:\n\n- " . $jobNames . "\n");
+    }
+
+    /**
+     * Tidak ada command terkirim yang membawa chain.
+     *
+     * @return void
+     */
+    public function assertNothingChained() {
+        $chained = [];
+        foreach ([$this->commands, $this->commandsSync, $this->commandsAfterResponse] as $recorded) {
+            foreach ($recorded as $class => $commands) {
+                foreach ($commands as $command) {
+                    if (!empty($command->chained)) {
+                        $chained[] = $class;
+                    }
+                }
+            }
+        }
+
+        PHPUnit::assertEmpty($chained, "The following jobs were chained unexpectedly:\n\n- " . implode("\n- ", array_unique($chained)) . "\n");
+    }
+
     public function pipeThrough(array $pipes) {
         $this->dispatcher->pipeThrough($pipes);
 

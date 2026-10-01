@@ -13,6 +13,23 @@ class CTesting_Fake_Queue_QueueManagerFake extends CQueue_Manager implements CQu
     protected $jobs = [];
 
     /**
+     * Jobs (kelas atau Closure penguji) yang diteruskan ke antrean sungguhan, bukan dicatat.
+     *
+     * @var array
+     */
+    protected $jobsToBeQueued = [];
+
+    /**
+     * @var bool
+     */
+    protected $serializeAndRestore = false;
+
+    /**
+     * @var null|CQueue_QueueInterface|CQueue_Manager
+     */
+    protected $realQueue;
+
+    /**
      * Assert if a job was pushed based on a truth-test callback.
      *
      * @param string|\Closure   $job
@@ -273,10 +290,137 @@ class CTesting_Fake_Queue_QueueManagerFake extends CQueue_Manager implements CQu
      * @return mixed
      */
     public function push($job, $data = '', $queue = null) {
+        if ($this->shouldPassThrough($job)) {
+            return $this->realQueue()->push($job, $data, $queue);
+        }
+
+        if ($job instanceof Closure) {
+            $job = CQueue_CallQueuedClosure::create($job);
+        }
+
         $this->jobs[is_object($job) ? get_class($job) : $job][] = [
-            'job' => $job,
+            'job' => $this->serializeAndRestore ? $this->serializeAndRestoreJob($job) : $job,
             'queue' => $queue,
         ];
+    }
+
+    /**
+     * Teruskan job tertentu ke antrean sungguhan (kelas, atau Closure yang menerima job); sisanya tetap dicatat.
+     *
+     * @param array|Closure|string $jobsToBeQueued
+     *
+     * @return $this
+     */
+    public function except($jobsToBeQueued) {
+        $this->jobsToBeQueued = array_merge($this->jobsToBeQueued, carr::wrap($jobsToBeQueued));
+
+        return $this;
+    }
+
+    /**
+     * Antrean sungguhan untuk job pada except(); bawaan CQueue::queuer().
+     *
+     * @param CQueue_QueueInterface|CQueue_Manager $queue
+     *
+     * @return $this
+     */
+    public function passThroughTo($queue) {
+        $this->realQueue = $queue;
+
+        return $this;
+    }
+
+    /**
+     * Catat salinan hasil serialize/unserialize, seperti yang akan dilihat worker.
+     *
+     * @param bool $serializeAndRestore
+     *
+     * @return $this
+     */
+    public function serializeAndRestore($serializeAndRestore = true) {
+        $this->serializeAndRestore = $serializeAndRestore;
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $job
+     *
+     * @return mixed
+     */
+    protected function serializeAndRestoreJob($job) {
+        return is_object($job) ? unserialize(serialize($job)) : $job;
+    }
+
+    /**
+     * @param mixed $job
+     *
+     * @return bool
+     */
+    protected function shouldPassThrough($job) {
+        foreach ($this->jobsToBeQueued as $candidate) {
+            if ($candidate instanceof Closure ? $candidate($job) : (is_object($job) && $candidate === get_class($job))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return CQueue_QueueInterface|CQueue_Manager
+     */
+    protected function realQueue() {
+        return $this->realQueue ?: CQueue::queuer();
+    }
+
+    /**
+     * @param int $expectedCount
+     *
+     * @return void
+     */
+    public function assertCount($expectedCount) {
+        $actual = c::collect($this->jobs)->flatten(1)->count();
+
+        PHPUnit::assertSame(
+            $expectedCount,
+            $actual,
+            "Expected {$expectedCount} jobs to be pushed, but found {$actual} instead."
+        );
+    }
+
+    /**
+     * @param string|Closure $job
+     * @param null|callable  $callback
+     *
+     * @return void
+     */
+    public function assertPushedOnce($job, $callback = null) {
+        if ($job instanceof Closure) {
+            list($job, $callback) = [$this->firstClosureParameterType($job), $job];
+        }
+
+        $count = $this->pushed($job, $callback)->count();
+
+        PHPUnit::assertSame(1, $count, "The expected [{$job}] job was pushed {$count} times instead of 1 times.");
+    }
+
+    /**
+     * @param null|callable $callback
+     *
+     * @return void
+     */
+    public function assertClosurePushed($callback = null) {
+        $this->assertPushed(CQueue_CallQueuedClosure::class, $callback);
+    }
+
+    /**
+     * @param null|callable $callback
+     *
+     * @return void
+     */
+    public function assertClosureNotPushed($callback = null) {
+        $this->assertNotPushed(CQueue_CallQueuedClosure::class, $callback);
     }
 
     /**
