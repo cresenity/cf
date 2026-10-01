@@ -7,6 +7,8 @@ class CF {
     constructor() {
         this.required = typeof this.required === 'undefined' ? [] : this.required;
         this.cssRequired = typeof this.cssRequired === 'undefined' ? [] : this.cssRequired;
+        this.jsLoadingPromises = new Map();
+        this.cssLoadingPromises = new Map();
 
         this.window = window;
         this.document = window.document;
@@ -127,95 +129,137 @@ class CF {
         const match = absoluteUrl.match(/\/compiled\/asset\/(css|js)\/[^/]+\/([0-9a-f]{32}\.(?:css|js))$/);
         return match ? match[1] + '/' + match[2] : null;
     }
+    resolveAssetKey(url) {
+        // Same normalization as isAssetTagPresent's comparison, exposed so callers can
+        // share one in-flight promise per effective resource instead of per raw url string.
+        const target = new URL(url, this.document.baseURI).href.split('?')[0];
+        const bundleKey = this.compiledBundleKey(target);
+        return bundleKey !== null ? bundleKey : target;
+    }
+    waitForExistingAssetTag(resolve) {
+        // A tag already in the DOM isn't necessarily done downloading/executing yet --
+        // isAssetTagPresent only proves presence, not completion. If the whole document has
+        // already finished loading, every subresource (including this tag) is guaranteed done.
+        // Otherwise, window's `load` event is a safe coarse fallback: it fires once, only after
+        // every subresource is done, so attaching it now can never miss an already-fired event
+        // (readyState can't be 'complete' yet) and can never resolve early.
+        if (this.document.readyState === 'complete') {
+            resolve();
+        } else {
+            this.window.addEventListener('load', () => resolve(), { once: true });
+        }
+    }
     requireCssAsync(url) {
-        return new Promise((resolve, reject)=> {
-            let loaded = ~this.cssRequired.indexOf(url);
-            if(!loaded) {
-                loaded = this.isAssetTagPresent('link', 'href', url);
-            }
-            if (!loaded) {
-                this.cssRequired.push(url);
-
-                let string = '<link rel=\'stylesheet\' type=\'text/css\' href=\'' + url + '\' />';
-
-                // if(this.config.debug) {
-                //     console.log('Css Require:' + url + ', readyState:' + document.readyState);
-                // }
-                if ((document.readyState === 'loading' /* || mwd.readyState === 'interactive'*/) && !!window.CanvasRenderingContext2D && self === parent) {
-                    document.write(string);
-                    resolve(url);
-                } else {
-                    let el;
-                    el = this.document.createElement('link');
-                    el.rel = 'stylesheet';
-                    el.type = 'text/css';
-                    el.href = url;
-                    // IE 6 & 7
-                    el.addEventListener('load', ()=> {
-                        dispatchWindowEvent('cresenity:css:loaded', {
-                            url: url
-                        });
-                        // if(this.config.debug) {
-                        //     console.log('Css Loaded:' + url + '');
-                        // }
-                        resolve(url);
-                    });
-
-
-                    this.head.appendChild(el);
-                }
-            } else {
+        const assetKey = this.resolveAssetKey(url);
+        if (this.cssLoadingPromises.has(assetKey)) {
+            return this.cssLoadingPromises.get(assetKey);
+        }
+        const promise = new Promise((resolve, reject)=> {
+            // Already tracked by this loader (including the config-provided jsUrl/cssUrl list,
+            // which the server only ever lists for tags it rendered synchronously before this
+            // module ran) -- that's a real guarantee, so resolve immediately as before.
+            if (~this.cssRequired.indexOf(url)) {
                 resolve(url);
+                return;
+            }
+            // A tag matching this url already in the DOM is NOT the same guarantee -- it only
+            // proves presence, not that the browser finished downloading/executing it. Wait for
+            // real completion instead of resolving just because the tag exists.
+            if (this.isAssetTagPresent('link', 'href', url)) {
+                this.waitForExistingAssetTag(() => resolve(url));
+                return;
+            }
+            this.cssRequired.push(url);
+
+            let string = '<link rel=\'stylesheet\' type=\'text/css\' href=\'' + url + '\' />';
+
+            // if(this.config.debug) {
+            //     console.log('Css Require:' + url + ', readyState:' + document.readyState);
+            // }
+            if ((document.readyState === 'loading' /* || mwd.readyState === 'interactive'*/) && !!window.CanvasRenderingContext2D && self === parent) {
+                document.write(string);
+                resolve(url);
+            } else {
+                let el;
+                el = this.document.createElement('link');
+                el.rel = 'stylesheet';
+                el.type = 'text/css';
+                el.href = url;
+                // IE 6 & 7
+                el.addEventListener('load', ()=> {
+                    dispatchWindowEvent('cresenity:css:loaded', {
+                        url: url
+                    });
+                    // if(this.config.debug) {
+                    //     console.log('Css Loaded:' + url + '');
+                    // }
+                    resolve(url);
+                });
+
+
+                this.head.appendChild(el);
             }
         });
+        this.cssLoadingPromises.set(assetKey, promise);
+        return promise;
     }
     requireCss(url, callback) {
         this.requireCssAsync(url).then(callback);
     }
     requireJsAsync(url) {
-        return new Promise((resolve, reject)=> {
-            let loaded = ~this.required.indexOf(url);
-            if(!loaded) {
-                loaded = this.isAssetTagPresent('link', 'href', url) || this.isAssetTagPresent('script', 'src', url);
+        const assetKey = this.resolveAssetKey(url);
+        if (this.jsLoadingPromises.has(assetKey)) {
+            return this.jsLoadingPromises.get(assetKey);
+        }
+        const promise = new Promise((resolve, reject)=> {
+            // Already tracked by this loader (including the config-provided jsUrl/cssUrl list,
+            // which the server only ever lists for tags it rendered synchronously before this
+            // module ran) -- that's a real guarantee, so resolve immediately as before.
+            if (~this.required.indexOf(url)) {
+                resolve(url);
+                return;
             }
-            if (!loaded) {
-                this.required.push(url);
-                let string = '<script type=\'text/javascript\'  src=\'' + url + '\'></script>';
-                // if(this.config.debug) {
-                //     console.log('JS Require:' + url + ', readyState:' + document.readyState);
-                // }
+            // A tag matching this url already in the DOM is NOT the same guarantee -- it only
+            // proves presence, not that the browser finished downloading/executing it. Wait for
+            // real completion instead of resolving just because the tag exists.
+            if (this.isAssetTagPresent('link', 'href', url) || this.isAssetTagPresent('script', 'src', url)) {
+                this.waitForExistingAssetTag(() => resolve(url));
+                return;
+            }
+            this.required.push(url);
+            let string = '<script type=\'text/javascript\'  src=\'' + url + '\'></script>';
+            // if(this.config.debug) {
+            //     console.log('JS Require:' + url + ', readyState:' + document.readyState);
+            // }
 
-                if ((document.readyState === 'loading' /* || mwd.readyState === 'interactive'*/) && !!window.CanvasRenderingContext2D && self === parent) {
-                    document.write(string);
-                    if(this.config.debug) {
-                        console.log('JS Loaded:' + url + '');
-                    }
-                    resolve(url);
-                } else {
-                    let el;
-                    el = this.document.createElement('script');
-                    el.src = url;
-                    el.setAttribute('type', 'text/javascript');
-                    // IE 6 & 7
-
-                    el.addEventListener('load', ()=> {
-                        dispatchWindowEvent('cresenity:js:loaded', {
-                            url: url
-                        });
-                        // if(this.config.debug) {
-                        //     console.log('JS Loaded:' + url + '');
-                        // }
-                        resolve(url);
-                    });
-
-                    this.document.body.appendChild(el);
+            if ((document.readyState === 'loading' /* || mwd.readyState === 'interactive'*/) && !!window.CanvasRenderingContext2D && self === parent) {
+                document.write(string);
+                if(this.config.debug) {
+                    console.log('JS Loaded:' + url + '');
                 }
+                resolve(url);
             } else {
-                resolve(url)
+                let el;
+                el = this.document.createElement('script');
+                el.src = url;
+                el.setAttribute('type', 'text/javascript');
+                // IE 6 & 7
+
+                el.addEventListener('load', ()=> {
+                    dispatchWindowEvent('cresenity:js:loaded', {
+                        url: url
+                    });
+                    // if(this.config.debug) {
+                    //     console.log('JS Loaded:' + url + '');
+                    // }
+                    resolve(url);
+                });
+
+                this.document.body.appendChild(el);
             }
-
-
         });
+        this.jsLoadingPromises.set(assetKey, promise);
+        return promise;
     }
     requireJs(url, callback) {
         this.requireJsAsync(url).then(callback);
