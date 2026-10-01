@@ -180,37 +180,17 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
                 }
             }
         }
-        while (true) {
-            $missingIndex = $this->getMissingPropertyIndex($properties);
-            if ($missingIndex !== false) {
-                unset($properties[$missingIndex]);
-            } else {
-                break;
-            }
-        }
-
-        return $properties;
-    }
-
-    /**
-     * @param array $properties
-     *
-     * @return int|false
-     */
-    private function getMissingPropertyIndex($properties) {
-        $fieldsKey = c::collect(Helper::getFields($this->getTable(), $this->prefix, $this->currentModel))->keys()->toArray();
+        $fieldsKey = array_keys($fields);
         $classMethods = get_class_methods($this->prefix . 'Model_' . $this->currentModel);
-        foreach ($properties as $index => $property) {
-            $field = carr::get($property, 'field');
-            $i = array_search($field, $fieldsKey);
-            if ($i === false && !in_array($field, $classMethods)) {
-                if (!cstr::endsWith($field, '_count')) {
-                    return $index;
-                }
-            }
-        }
 
-        return false;
+        //diindeks ulang: updateFieldRelation() mencari posisi lewat array_column() dan menulis ke kunci yang sama
+        return Helper::withoutProperties($properties, function ($property) use ($fieldsKey, $classMethods) {
+            $field = carr::get($property, 'field');
+
+            return array_search($field, $fieldsKey) === false
+                && !in_array($field, (array) $classMethods)
+                && !cstr::endsWith($field, '_count');
+        });
     }
 
     /**

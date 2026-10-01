@@ -285,4 +285,27 @@ class ModelPropertiesHelperTest extends TestCase {
         $this->assertSame('null|string', $result[1]['type'], 'yang pertama menang');
         $this->assertSame([], CModel_Console_PropertiesHelper::uniqueByVariable([]));
     }
+
+    public function testWithoutPropertiesReindexesSoPositionsMatchArrayColumn() {
+        $properties = [
+            ['field' => 'id', 'type' => 'int'],
+            ['field' => 'seq', 'type' => 'int'],
+            ['field' => 'productCustomUrl', 'type' => 'X'],
+            ['field' => 'product', 'type' => 'Y'],
+        ];
+
+        $result = CModel_Console_PropertiesHelper::withoutProperties($properties, function ($property) {
+            return $property['field'] === 'seq';
+        });
+
+        $this->assertSame([0, 1, 2], array_keys($result), 'tanpa lubang pada kunci');
+        $fields = array_column($result, 'field');
+        $i = array_search('product', $fields);
+        $this->assertSame('Y', $result[$i]['type'], 'posisi dari array_column menunjuk elemen yang sama setelah ada yang dibuang');
+        $result[array_search('productCustomUrl', $fields)]['type'] = 'BENAR';
+        $this->assertSame(['int', 'BENAR', 'Y'], array_column($result, 'type'));
+        $this->assertSame([], CModel_Console_PropertiesHelper::withoutProperties([], function () {
+            return true;
+        }));
+    }
 }

@@ -521,6 +521,20 @@ class CModel_Console_PropertiesHelper {
         return $result;
     }
 
+    /**
+     * Buang properti yang `$isMissing`-nya true dan indeks ulang hasilnya supaya posisi array sama dengan array_column().
+     *
+     * @param array    $properties
+     * @param callable $isMissing  menerima satu properti, true bila harus dibuang
+     *
+     * @return array
+     */
+    public static function withoutProperties(array $properties, callable $isMissing) {
+        return array_values(array_filter($properties, function ($property) use ($isMissing) {
+            return !$isMissing($property);
+        }));
+    }
+
     public static function getModel($table) {
         $model = $table;
         switch ($table) {
