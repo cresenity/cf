@@ -7,6 +7,13 @@ class CApp_Auth_Features {
     protected static $features;
 
     /**
+     * Options given when a feature is enabled, keyed by feature.
+     *
+     * @var array
+     */
+    protected static $options = [];
+
+    /**
      * Set the list of enabled features.
      *
      * @param array $features
@@ -65,11 +72,13 @@ class CApp_Auth_Features {
     /**
      * Enable the two factor authentication feature.
      *
-     * @param array $options
-     *
      * @return string
      */
     public static function twoFactorAuthentication(array $options = []) {
+        if (!empty($options)) {
+            static::$options['two-factor-authentication'] = $options;
+        }
+
         return 'two-factor-authentication';
     }
 
@@ -100,5 +109,17 @@ class CApp_Auth_Features {
      */
     public static function enabled($feature) {
         return in_array($feature, static::$features);
+    }
+
+    /**
+     * Determine if the given option of an enabled feature is switched on.
+     *
+     * @param string $feature
+     * @param string $option
+     *
+     * @return bool
+     */
+    public static function optionEnabled($feature, $option) {
+        return static::enabled($feature) && !empty(static::$options[$feature][$option]);
     }
 }

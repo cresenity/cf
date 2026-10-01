@@ -22,6 +22,11 @@ return [
         'uri' => 'docs/app/auth',
     ],
     [
+        'name' => 'app.two-factor',
+        'label' => c::__('Two Factor Authentication'),
+        'uri' => 'docs/app/two-factor',
+    ],
+    [
         'name' => 'app.theme',
         'label' => c::__('Theme'),
         'uri' => 'docs/app/theme',

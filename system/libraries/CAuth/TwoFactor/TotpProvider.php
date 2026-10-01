@@ -94,6 +94,6 @@ class CAuth_TwoFactor_TotpProvider implements CAuth_TwoFactor_ProviderInterface 
      * @return CCache_Repository
      */
     protected function cache() {
-        return $this->cache ?: c::cache();
+        return $this->cache ?: c::cache()->store();
     }
 }
