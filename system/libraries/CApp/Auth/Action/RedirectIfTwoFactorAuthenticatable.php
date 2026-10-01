@@ -39,8 +39,9 @@ class CApp_Auth_Action_RedirectIfTwoFactorAuthenticatable {
     public function handle($request, $next) {
         $user = $this->validateCredentials($request);
 
-        if (c::optional($user)->two_factor_secret
-            && in_array(CApp_Auth_TwoFactor_TwoFactorAuthenticatableTrait::class, c::classUsesRecursive($user))
+        if ($user
+            && in_array(CAuth_TwoFactor_AuthenticatableTrait::class, c::classUsesRecursive($user))
+            && CAuth_TwoFactor_Manager::instance()->isEnabled($user)
         ) {
             return $this->twoFactorChallengeResponse($request, $user);
         }
