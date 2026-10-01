@@ -138,7 +138,13 @@ class CEmail_Builder_Component_BodyComponent extends CEmail_Builder_Component {
                 );
                 $options = [];
                 $options['children'] = $children->getChildren();
-                $options['attributes'] = array_merge($attributes, $globalAttributes, $children->getAttributes());
+                $classAttributes = [];
+                foreach (preg_split('/\s+/', trim((string) carr::get($children->getAttributes(), 'c-class', ''))) as $className) {
+                    if ($className !== '') {
+                        $classAttributes = array_merge($classAttributes, $globalData->get('classes.' . $className, []));
+                    }
+                }
+                $options['attributes'] = array_merge($attributes, $globalAttributes, $classAttributes, $children->getAttributes());
                 $options['context'] = $this->getChildContext();
                 $options['name'] = $children->getComponentName();
                 $options['content'] = $children->getContent();

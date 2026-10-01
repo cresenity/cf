@@ -12,7 +12,9 @@ class CEmail_Builder_Component_HeadComponent_Attributes extends CEmail_Builder_C
             if ($tagName === 'c-class') {
                 $this->context->addHead('classes', carr::get($attributes, 'name'), carr::except($attributes, ['name']));
                 $classesDefaultParam = carr::reduce($children, function ($acc, $child) {
-                    return $acc[$child->getTagName()] = $child->getAttributes();
+                    $acc[$child->getTagName()] = $child->getAttributes();
+
+                    return $acc;
                 }, []);
                 $this->context->addHead('classesDefault', carr::get($attributes, 'name'), $classesDefaultParam);
             } else {

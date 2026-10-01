@@ -84,6 +84,17 @@ class CEmail_Builder_Node {
     }
 
     /**
+     * Pakai satu atau lebih kelas atribut (spasi sebagai pemisah) yang didefinisikan lewat addClass().
+     *
+     * @param string $names
+     *
+     * @return $this
+     */
+    public function useClass($names) {
+        return $this->setAttr('c-class', $names);
+    }
+
+    /**
      * @param CEmail_Builder_Node|string $node
      *
      * @return $this

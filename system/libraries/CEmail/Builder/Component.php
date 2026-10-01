@@ -120,6 +120,13 @@ class CEmail_Builder_Component {
     /**
      * @return null|CEmail_Builder_Context
      */
+    public function getContext() {
+        return $this->context;
+    }
+
+    /**
+     * @return null|CEmail_Builder_Context
+     */
     public function getChildContext() {
         return $this->context;
     }

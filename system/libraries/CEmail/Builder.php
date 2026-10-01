@@ -23,9 +23,15 @@ class CEmail_Builder {
         $this->registerComponent(CEmail_Builder_Component_BodyComponent_SocialElement::class);
         $this->registerComponent(CEmail_Builder_Component_BodyComponent_Divider::class);
         $this->registerComponent(CEmail_Builder_Component_BodyComponent_Group::class);
+        $this->registerComponent(CEmail_Builder_Component_BodyComponent_Spacer::class);
+        $this->registerComponent(CEmail_Builder_Component_BodyComponent_Wrapper::class);
         $this->registerComponent(CEmail_Builder_Component_HeadComponent_Head::class);
         $this->registerComponent(CEmail_Builder_Component_HeadComponent_Attributes::class);
         $this->registerComponent(CEmail_Builder_Component_HeadComponent_Style::class);
+        $this->registerComponent(CEmail_Builder_Component_HeadComponent_Title::class);
+        $this->registerComponent(CEmail_Builder_Component_HeadComponent_Preview::class);
+        $this->registerComponent(CEmail_Builder_Component_HeadComponent_Font::class);
+        $this->registerComponent(CEmail_Builder_Component_HeadComponent_Breakpoint::class);
     }
 
     public function registerComponent($componentClass) {
@@ -38,10 +44,10 @@ class CEmail_Builder {
         if ($componentClass) {
             $component = new $componentClass($options);
             if ($component->hasHeadStyle()) {
-                $component->context->addHeadStyle($name, $component->getHeadStyle());
+                $component->getContext()->addHeadStyle($name, $component->getHeadStyle());
             }
             if ($component->hasComponentHeadStyle()) {
-                $component->context->addComponentHeadStyle($name, $component->getComponentHeadStyle());
+                $component->getContext()->addComponentHeadStyle($name, $component->getComponentHeadStyle());
             }
             return $component;
         }
