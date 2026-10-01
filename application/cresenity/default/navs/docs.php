@@ -88,6 +88,16 @@ return [
                 'label' => c::__('Email Template'),
                 'uri' => 'docs/email/template',
             ],
+            [
+                'name' => 'email.testing',
+                'label' => c::__('Testing Email'),
+                'uri' => 'docs/email/testing',
+            ],
+            [
+                'name' => 'email.legacy-sender',
+                'label' => c::__('Legacy Sender'),
+                'uri' => 'docs/email/legacy-sender',
+            ],
         ]
     ],
     [
