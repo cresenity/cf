@@ -74,7 +74,13 @@ class CBootstrap_HandleExceptionBootstrapper extends CBootstrap_BootstrapperAbst
         }
 
         if (CF::isCli()) {
-            $this->renderForConsole($e);
+            try {
+                $this->renderForConsole($e);
+            } catch (Throwable $renderException) {
+                // stdout already closed (daemon worker killed/detached mid-render) - $e was
+                // already reported above, so losing the render must not mask it behind a
+                // second, uninformative "Unable to write output" exception.
+            }
         } else {
             $this->renderHttpResponse($e);
         }

@@ -1,5 +1,16 @@
 <?php
 use Symfony\Component\Console\Output\BufferedOutput;
+use Symfony\Component\Console\Output\Output;
+
+/**
+ * Output yang selalu gagal menulis - meniru stdout yang sudah tertutup (worker daemon
+ * yang dimatikan/di-detach di tengah proses render exception).
+ */
+class ConsoleKernelTest_BrokenOutput extends Output {
+    protected function doWrite($message, $newline) {
+        throw new \Symfony\Component\Console\Exception\RuntimeException('Unable to write output.');
+    }
+}
 
 /**
  * CFConsole registry, CConsole_Kernel/Application, dan harness CTesting `$this->cf()`.
@@ -154,6 +165,25 @@ class ConsoleKernelTest extends CTesting_TestCase {
         $application->setContainerCommandLoader();
         $this->assertSame(0, $application->call(CConsole_Command_VersionCommand::class));
         $this->assertStringContainsString(CF::version(), $application->output());
+    }
+
+    /**
+     * devcloud Exception Collector #11878: ketika output konsol sudah rusak (mis. worker
+     * daemon mati/terlepas di tengah proses), `renderException()` sendiri melempar exception
+     * baru ("Unable to write output.") yang menimpa exception asli - menutupi penyebab
+     * sebenarnya dari setiap kegagalan sejak saat itu.
+     */
+    public function testHandleSwallowsRenderFailureInsteadOfMaskingTheOriginalException() {
+        $kernel = new CConsole_Kernel();
+        $kernel->command('uji:meledak', function () {
+            throw new \RuntimeException('boom asli');
+        });
+        $output = new ConsoleKernelTest_BrokenOutput();
+        $input = new Symfony\Component\Console\Input\StringInput('uji:meledak');
+
+        $exitCode = $kernel->handle($input, $output);
+
+        $this->assertSame(1, $exitCode, 'handle() harus tetap kembali normal walau render ke output gagal');
     }
 
     public function testCommandEventsAreDispatchedAroundRun() {

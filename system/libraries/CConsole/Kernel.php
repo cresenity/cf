@@ -130,13 +130,21 @@ class CConsole_Kernel implements CConsole_KernelInterface {
         } catch (Throwable $e) {
             $this->reportException($e);
 
-            $this->renderException($output, $e);
+            try {
+                $this->renderException($output, $e);
+            } catch (Throwable $renderException) {
+                // broken console output must not mask $e, already reported above.
+            }
 
             return 1;
         } catch (Exception $e) {
             $this->reportException($e);
 
-            $this->renderException($output, $e);
+            try {
+                $this->renderException($output, $e);
+            } catch (Throwable $renderException) {
+                // broken console output must not mask $e, already reported above.
+            }
 
             return 1;
         }
