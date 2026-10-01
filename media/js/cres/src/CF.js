@@ -100,6 +100,9 @@ class CF {
         return this.getConfig().CFVersion;
     }
     isAssetTagPresent(tagName, attr, url) {
+        return this.findAssetTags(tagName, attr, url).length > 0;
+    }
+    findAssetTags(tagName, attr, url) {
         // Compares by resolved absolute path only -- a script/link already on
         // the page under a different cache-busting query string (e.g. `?v=...`)
         // or written as a relative path must still count as loaded, or callers
@@ -109,16 +112,16 @@ class CF {
         const target = new URL(url, this.document.baseURI).href.split('?')[0];
         const targetBundle = this.compiledBundleKey(target);
         const elements = this.document.querySelectorAll(tagName + '[' + attr + ']');
+        const matches = [];
         for (let i = 0; i < elements.length; i++) {
             const present = elements[i][attr].split('?')[0];
-            if (present === target) {
-                return true;
-            }
-            if (targetBundle !== null && this.compiledBundleKey(present) === targetBundle) {
-                return true;
+            if (present === target || (targetBundle !== null && this.compiledBundleKey(present) === targetBundle)) {
+                // el.src/el.href on the match is the browser-resolved absolute url --
+                // waitForExistingAssetTag checks/listens on this pair directly.
+                matches.push({ el: elements[i], url: elements[i][attr] });
             }
         }
-        return false;
+        return matches;
     }
     compiledBundleKey(absoluteUrl) {
         // `compiled/asset/<type>/<release>/<md5-of-file-list>.<ext>` (assets.*.compile): the md5
@@ -136,18 +139,45 @@ class CF {
         const bundleKey = this.compiledBundleKey(target);
         return bundleKey !== null ? bundleKey : target;
     }
-    waitForExistingAssetTag(resolve) {
-        // A tag already in the DOM isn't necessarily done downloading/executing yet --
-        // isAssetTagPresent only proves presence, not completion. If the whole document has
-        // already finished loading, every subresource (including this tag) is guaranteed done.
-        // Otherwise, window's `load` event is a safe coarse fallback: it fires once, only after
-        // every subresource is done, so attaching it now can never miss an already-fired event
-        // (readyState can't be 'complete' yet) and can never resolve early.
-        if (this.document.readyState === 'complete') {
-            resolve();
-        } else {
-            this.window.addEventListener('load', () => resolve(), { once: true });
+    isResourceFetchComplete(absoluteUrl) {
+        // ResourceTiming proves the browser already finished fetching this exact url,
+        // independent of when in the page's life that happened -- unlike `document.readyState`,
+        // which only ever describes the INITIAL document load and tells us nothing about a tag
+        // some other code inserted afterwards (the actual shape of this race: it always
+        // surfaces well after the page is already 'complete'). Cross-origin entries without a
+        // `Timing-Allow-Origin` response header report zeroed timings, so this can false-negative
+        // for third-party urls -- callers fall back to a live listener in that case, see below.
+        if (typeof this.window.performance === 'undefined' || typeof this.window.performance.getEntriesByName !== 'function') {
+            return false;
         }
+        const entries = this.window.performance.getEntriesByName(absoluteUrl);
+        return entries.length > 0 && entries[entries.length - 1].responseEnd > 0;
+    }
+    waitForExistingAssetTag(resolve, taggedElements) {
+        // Check each matched element's own resolved url, not the originally-requested one --
+        // a compiled-bundle match (compiledBundleKey) can have a different release-hash path
+        // than what was asked for, so only the element's actual src/href is meaningful here.
+        if (taggedElements.some((t) => this.isResourceFetchComplete(t.url))) {
+            resolve();
+            return;
+        }
+        // Not provably complete yet -- listen on the actual element(s) isAssetTagPresent
+        // matched, and resolve as soon as any one of them finishes (success or error; a load
+        // failure elsewhere isn't this caller's problem to retry). A listener attached here can
+        // only miss an already-fired event in the narrow cross-origin-without-timing-header gap
+        // above; the timeout below bounds that residual risk instead of hanging forever.
+        let settled = false;
+        const settle = () => {
+            if (!settled) {
+                settled = true;
+                resolve();
+            }
+        };
+        taggedElements.forEach((t) => {
+            t.el.addEventListener('load', settle, { once: true });
+            t.el.addEventListener('error', settle, { once: true });
+        });
+        this.window.setTimeout(settle, 15000);
     }
     requireCssAsync(url) {
         const assetKey = this.resolveAssetKey(url);
@@ -165,8 +195,9 @@ class CF {
             // A tag matching this url already in the DOM is NOT the same guarantee -- it only
             // proves presence, not that the browser finished downloading/executing it. Wait for
             // real completion instead of resolving just because the tag exists.
-            if (this.isAssetTagPresent('link', 'href', url)) {
-                this.waitForExistingAssetTag(() => resolve(url));
+            const existingTags = this.findAssetTags('link', 'href', url);
+            if (existingTags.length > 0) {
+                this.waitForExistingAssetTag(() => resolve(url), existingTags);
                 return;
             }
             this.cssRequired.push(url);
@@ -222,8 +253,9 @@ class CF {
             // A tag matching this url already in the DOM is NOT the same guarantee -- it only
             // proves presence, not that the browser finished downloading/executing it. Wait for
             // real completion instead of resolving just because the tag exists.
-            if (this.isAssetTagPresent('link', 'href', url) || this.isAssetTagPresent('script', 'src', url)) {
-                this.waitForExistingAssetTag(() => resolve(url));
+            const existingTags = this.findAssetTags('link', 'href', url).concat(this.findAssetTags('script', 'src', url));
+            if (existingTags.length > 0) {
+                this.waitForExistingAssetTag(() => resolve(url), existingTags);
                 return;
             }
             this.required.push(url);
