@@ -8,7 +8,7 @@ class BootstrapHelper {
     check() {
         this.isBootstrap = window.bootstrap !== undefined;
         this.bootstrapVersion = null;
-        if(this.isBootstrap) {
+        if(this.isBootstrap && window.bootstrap.Tooltip) {
             this.bootstrapVersion = window.bootstrap.Tooltip.VERSION;
         }
     }
@@ -16,10 +16,10 @@ class BootstrapHelper {
         return this.isBootstrap;
     }
     isBootstrap5() {
-        return this.isBootstrap && this.bootstrapVersion.startsWith('5');
+        return this.isBootstrap && !!this.bootstrapVersion && this.bootstrapVersion.startsWith('5');
     }
     isBootstrap4() {
-        return this.isBootstrap && this.bootstrapVersion.startsWith('4');
+        return this.isBootstrap && !!this.bootstrapVersion && this.bootstrapVersion.startsWith('4');
     }
     bootstrapVersion() {
         return this.bootstrapVersion;
