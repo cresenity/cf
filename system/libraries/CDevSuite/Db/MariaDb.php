@@ -88,7 +88,7 @@ abstract class CDevSuite_Db_MariaDb {
      * @return string
      */
     protected function temporaryDumpPath($fileName) {
-        return CTemporary::getDirectory('devsuite/db/db-dumps') . $fileName;
+        return CTemporary::getDirectory('devsuite', 'db/db-dumps') . $fileName;
     }
 
     protected function getExtension(CBackup_Database_AbstractDumper $dbDumper) {

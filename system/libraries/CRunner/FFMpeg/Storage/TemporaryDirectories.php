@@ -19,7 +19,7 @@ class CRunner_FFMpeg_Storage_TemporaryDirectories {
      * Sets the root and removes the trailing slash.
      */
     public function __construct() {
-        $this->root = rtrim(CTemporary::getDirectory('runner/ffmpeg'), '/\\');
+        $this->root = rtrim(CTemporary::getDirectory('runner', 'ffmpeg'), '/\\');
     }
 
     /**

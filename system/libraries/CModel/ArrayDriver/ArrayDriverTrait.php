@@ -94,7 +94,7 @@ trait CModel_ArrayDriver_ArrayDriverTrait {
      * @return string
      */
     protected static function arrayDriverCacheDirectory() {
-        $directory = DOCROOT . 'temp' . DS . CTemporary::appFolder('model/array/cache');
+        $directory = DOCROOT . 'temp' . DS . CTemporary::appFolder('model') . DS . 'array' . DS . 'cache';
         $legacyDirectory = DOCROOT . 'temp' . DS . 'model' . DS . 'array' . DS . 'cache';
         if (!is_dir($directory) && is_dir($legacyDirectory) && is_writable($legacyDirectory)) {
             @mkdir($directory, 0777, true);

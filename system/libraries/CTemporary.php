@@ -51,15 +51,23 @@ class CTemporary {
     }
 
     /**
-     * @param null|mixed $folder
+     * Temp directory, created when missing: `temp/<folder>/<appCode>/[<subPath>/]`, so the app code always sits
+     * right after the type folder.
+     *
+     * @param null|mixed  $folder
+     * @param null|string $subPath folders below the app folder, e.g. `db/db-dumps`
      *
      * @return string
      */
-    public static function getDirectory($folder = null) {
+    public static function getDirectory($folder = null, $subPath = null) {
         $path = DOCROOT . 'temp' . DIRECTORY_SEPARATOR;
 
         if ($folder != null) {
             $path .= static::appFolder($folder) . DIRECTORY_SEPARATOR;
+            $subPath = trim((string) $subPath, DIRECTORY_SEPARATOR . '/');
+            if ($subPath !== '') {
+                $path .= str_replace('/', DIRECTORY_SEPARATOR, $subPath) . DIRECTORY_SEPARATOR;
+            }
         }
 
         if (!is_dir($path)) {

@@ -25,8 +25,8 @@ class TemporaryPathsPerAppTest extends TestCase {
 
         try {
             $this->assertDirectoryExists($created);
-            $this->assertSame(rtrim(CTemporary::getDirectory('runner/ffmpeg'), '/\\'), dirname($created));
-            $this->assertStringContainsString('runner' . DS . 'ffmpeg' . DS . $this->appSegment(), $created, 'folder app ada di path');
+            $this->assertSame(rtrim(CTemporary::getDirectory('runner', 'ffmpeg'), '/\\'), dirname($created));
+            $this->assertStringContainsString('runner' . DS . $this->appSegment() . DS . 'ffmpeg', $created, 'appCode tepat setelah folder tipe');
         } finally {
             $directories->deleteAll();
         }
@@ -36,7 +36,7 @@ class TemporaryPathsPerAppTest extends TestCase {
 
     public function testFfmpegRootIsCreatedWhenMissing() {
         // sebelumnya create() memakai mkdir non-rekursif sehingga gagal bila temp/runner/ffmpeg belum ada
-        $root = rtrim(CTemporary::getDirectory('runner/ffmpeg'), '/\\');
+        $root = rtrim(CTemporary::getDirectory('runner', 'ffmpeg'), '/\\');
 
         $this->assertDirectoryExists($root);
     }
@@ -49,13 +49,13 @@ class TemporaryPathsPerAppTest extends TestCase {
 
         $path = $method->invoke($instance, 'mysql-contoh.sql');
 
-        $this->assertSame(CTemporary::getDirectory('devsuite/db/db-dumps') . 'mysql-contoh.sql', $path);
-        $this->assertStringContainsString('db-dumps' . DS . $this->appSegment() . DS . 'mysql-contoh.sql', $path);
+        $this->assertSame(CTemporary::getDirectory('devsuite', 'db/db-dumps') . 'mysql-contoh.sql', $path);
+        $this->assertStringContainsString('devsuite' . DS . $this->appSegment() . DS . 'db' . DS . 'db-dumps' . DS . 'mysql-contoh.sql', $path, 'appCode tepat setelah folder tipe');
         $this->assertDirectoryExists(dirname($path));
     }
 
     public function testArrayDriverCacheDirectoryIsPerAppAndStaysOptIn() {
-        $expected = DOCROOT . 'temp' . DS . CTemporary::appFolder('model/array/cache');
+        $expected = DOCROOT . 'temp' . DS . 'model' . DS . $this->appSegment() . DS . 'array' . DS . 'cache';
         $legacy = DOCROOT . 'temp' . DS . 'model' . DS . 'array' . DS . 'cache';
         $existedBefore = is_dir($expected);
         $legacyUsable = is_dir($legacy) && is_writable($legacy);
@@ -74,6 +74,26 @@ class TemporaryPathsPerAppTest extends TestCase {
             if (!$existedBefore && is_dir($directory)) {
                 @rmdir($directory);
             }
+        }
+    }
+
+    public function testGetDirectoryPutsTheAppCodeRightAfterTheTypeFolder() {
+        $plain = CTemporary::getDirectory('uji-tipe');
+        $nested = CTemporary::getDirectory('uji-tipe', 'a/b');
+        $slashes = CTemporary::getDirectory('uji-tipe', '/a/b/');
+
+        try {
+            $this->assertSame(DOCROOT . 'temp' . DS . 'uji-tipe' . DS . $this->appSegment() . DS, $plain, 'tanpa subPath: perilaku lama');
+            $this->assertSame($plain . 'a' . DS . 'b' . DS, $nested);
+            $this->assertSame($nested, $slashes, 'garis miring di tepi subPath diabaikan');
+            $this->assertDirectoryExists($nested);
+            $this->assertSame(DOCROOT . 'temp' . DS, CTemporary::getDirectory(), 'tanpa folder: root temp');
+            $this->assertSame(DOCROOT . 'temp' . DS, CTemporary::getDirectory(null, 'a/b'), 'subPath tanpa folder diabaikan');
+        } finally {
+            @rmdir($nested);
+            @rmdir(dirname(rtrim($nested, DS)));
+            @rmdir($plain);
+            @rmdir(DOCROOT . 'temp' . DS . 'uji-tipe');
         }
     }
 }
