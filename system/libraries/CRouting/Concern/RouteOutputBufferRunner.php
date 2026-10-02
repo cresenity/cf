@@ -31,22 +31,7 @@ trait CRouting_Concern_RouteOutputBufferRunner {
             $output = $this->cleanOutputBuffer();
         }
         if ($response == null || is_bool($response)) {
-            if (!is_string($output)) {
-                $output = '';
-            }
-            //collect the header
-            $response = c::response($output);
-
-            if (!headers_sent()) {
-                $headers = headers_list();
-
-                foreach ($headers as $header) {
-                    list($headerKey, $headerValue) = explode(':', $header);
-                    header_remove($headerKey);
-
-                    $response->headers->set($headerKey, $headerValue);
-                }
-            }
+            $response = $this->makeResponseFromOutput($output);
         }
 
         return $response;

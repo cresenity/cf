@@ -94,21 +94,7 @@ class CHTTP_Kernel {
             $response = $response->toResponse($request);
         }
         if ($response == null || is_bool($response)) {
-            //collect the header
-            $response = c::response($output);
-
-            if (!headers_sent()) {
-                $headers = headers_list();
-                foreach ($headers as $header) {
-                    $headerExploded = explode(':', $header);
-                    $headerKey = carr::get($headerExploded, 0);
-                    $headerValue = implode(':', array_splice($headerExploded, 1));
-
-                    if (strtolower($headerKey) != 'set-cookie') {
-                        $response->headers->set($headerKey, $headerValue);
-                    }
-                }
-            }
+            $response = $this->makeResponseFromOutput($output);
         }
 
         $response = $this->toResponse($request, $response);

@@ -21,6 +21,39 @@ trait CHTTP_Trait_OutputBufferTrait {
     }
 
     /**
+     * Bungkus output hasil echo menjadi respons beserta header yang sudah diset lewat header().
+     *
+     * @param mixed      $output
+     * @param null|array $headerLines baris "Nama: nilai"; null memakai headers_list()
+     *
+     * @return CHTTP_Response
+     */
+    public function makeResponseFromOutput($output, array $headerLines = null) {
+        $response = c::response(is_string($output) ? $output : '');
+        $native = $headerLines === null;
+        if ($native) {
+            $headerLines = headers_sent() ? [] : headers_list();
+        }
+        foreach ($headerLines as $line) {
+            $position = strpos($line, ':');
+            if ($position === false) {
+                continue;
+            }
+            $name = trim(substr($line, 0, $position));
+            // Set-Cookie dibiarkan di header PHP agar atributnya tidak rusak
+            if ($name === '' || strtolower($name) === 'set-cookie') {
+                continue;
+            }
+            if ($native) {
+                header_remove($name);
+            }
+            $response->headers->set($name, trim(substr($line, $position + 1)));
+        }
+
+        return $response;
+    }
+
+    /**
      * @return int
      */
     public function getOutputBufferLevel() {
