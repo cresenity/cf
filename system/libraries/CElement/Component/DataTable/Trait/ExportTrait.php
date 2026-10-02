@@ -173,9 +173,7 @@ trait CElement_Component_DataTable_Trait_ExportTrait {
                     if ($k == $col->get_fieldname()) {
                         $col_v = $v;
                         $ori_v = $col_v;
-                        foreach ($col->transforms as $trans) {
-                            $col_v = $trans->execute($col_v);
-                        }
+                        $col_v = $col->applyTransform($col_v, $row);
                     }
                 }
                 //if formatted
@@ -388,10 +386,11 @@ trait CElement_Component_DataTable_Trait_ExportTrait {
                     if ($k == $col->getFieldname()) {
                         $col_v = $v;
                         $ori_v = $col_v;
-                        foreach ($col->transforms as $trans) {
-                            if ($trans->getFunction() != 'format_currency') {
-                                $col_v = $trans->execute($col_v);
-                            }
+                        $transforms = array_filter($col->getTransforms(), function ($transform) {
+                            return $transform !== 'format_currency';
+                        });
+                        if (count($transforms) > 0) {
+                            $col_v = c::manager()->transform()->call(array_values($transforms), $col_v, $row);
                         }
                     }
                 }

@@ -165,9 +165,7 @@ trait CElement_Component_DataTable_Trait_Legacy_ExportTrait {
                     if ($k == $col->get_fieldname()) {
                         $col_v = $v;
                         $ori_v = $col_v;
-                        foreach ($col->transforms as $trans) {
-                            $col_v = $trans->execute($col_v);
-                        }
+                        $col_v = $col->applyTransform($col_v, $row);
                     }
                 }
                 //if formatted
