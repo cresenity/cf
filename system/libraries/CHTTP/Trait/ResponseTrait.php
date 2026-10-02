@@ -109,6 +109,81 @@ trait CHTTP_Trait_ResponseTrait {
     }
 
     /**
+     * Remove a header(s) from the response.
+     *
+     * @param array|string $key
+     *
+     * @return $this
+     */
+    public function withoutHeader($key) {
+        foreach ((array) $key as $header) {
+            $this->headers->remove($header);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Add multiple cookies to the response.
+     *
+     * @param array $cookies
+     *
+     * @return $this
+     */
+    public function withCookies(array $cookies) {
+        foreach ($cookies as $cookie) {
+            $this->headers->setCookie($cookie);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Expire a cookie when sending the response.
+     *
+     * @param \Symfony\Component\HttpFoundation\Cookie|string $cookie
+     * @param null|string                                       $path
+     * @param null|string                                       $domain
+     *
+     * @return $this
+     */
+    public function withoutCookie($cookie, $path = null, $domain = null) {
+        if (is_string($cookie)) {
+            $cookie = CHTTP::cookie()->forget($cookie, $path, $domain);
+        }
+
+        $this->headers->setCookie($cookie);
+
+        return $this;
+    }
+
+    /**
+     * Expire multiple cookies when sending the response.
+     *
+     * @param array       $cookies
+     * @param null|string $path
+     * @param null|string $domain
+     *
+     * @return $this
+     */
+    public function withoutCookies(array $cookies, $path = null, $domain = null) {
+        foreach ($cookies as $cookie) {
+            $this->withoutCookie($cookie, $path, $domain);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get the status text for the response.
+     *
+     * @return string
+     */
+    public function statusText() {
+        return $this->statusText;
+    }
+
+    /**
      * Get the callback of the response.
      *
      * @return null|string

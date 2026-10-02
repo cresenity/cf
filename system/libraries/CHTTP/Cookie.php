@@ -182,6 +182,30 @@ class CHTTP_Cookie implements CHTTP_Contract_CookieInterface {
     }
 
     /**
+     * Expire a cookie by queueing it with an expired date.
+     *
+     * @param string      $name
+     * @param null|string $path
+     * @param null|string $domain
+     *
+     * @return void
+     */
+    public function expire($name, $path = null, $domain = null) {
+        $this->queue($this->forget($name, $path, $domain));
+    }
+
+    /**
+     * Flush the cookies which have been queued for the next request.
+     *
+     * @return $this
+     */
+    public function flushQueuedCookies() {
+        $this->queued = [];
+
+        return $this;
+    }
+
+    /**
      * Get the path and domain, or the default values.
      *
      * @param string      $path

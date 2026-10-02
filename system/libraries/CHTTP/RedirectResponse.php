@@ -21,6 +21,13 @@ class CHTTP_RedirectResponse extends BaseRedirectResponse {
     protected $request;
 
     /**
+     * The session store instance.
+     *
+     * @var null|CSession_Store
+     */
+    protected $session;
+
+    /**
      * Flash a piece of data to the session.
      *
      * @param string|array $key
@@ -191,10 +198,75 @@ class CHTTP_RedirectResponse extends BaseRedirectResponse {
      *
      * @param CHTTP_Request $request
      *
-     * @return void
+     * @return $this
      */
     public function setRequest(CHTTP_Request $request) {
         $this->request = $request;
+
+        return $this;
+    }
+
+    /**
+     * Enforce that the redirect target has the same origin as the current request, otherwise use the fallback.
+     *
+     * @param string $fallback
+     * @param bool   $validateScheme
+     * @param bool   $validatePort
+     *
+     * @return $this
+     */
+    public function enforceSameOrigin($fallback, $validateScheme = true, $validatePort = true) {
+        $target = parse_url((string) $this->getTargetUrl());
+        $request = $this->request ?: CHTTP::request();
+        $current = parse_url($request->getSchemeAndHttpHost());
+
+        if (!is_array($target) || !is_array($current)) {
+            return $this->setTargetUrl($fallback);
+        }
+
+        $isRelativePath = !isset($target['host']) && !isset($target['scheme']) && strncmp((string) $this->getTargetUrl(), '/', 1) === 0 && strncmp((string) $this->getTargetUrl(), '//', 2) !== 0;
+        if ($isRelativePath) {
+            return $this;
+        }
+
+        $port = function (array $parts) {
+            $defaults = ['http' => 80, 'https' => 443];
+            $scheme = strtolower((string) carr::get($parts, 'scheme'));
+            $explicit = isset($parts['port']) ? (int) $parts['port'] : null;
+
+            return $explicit !== null && $explicit !== carr::get($defaults, $scheme) ? $explicit : null;
+        };
+
+        if (strtolower((string) carr::get($target, 'host')) !== strtolower((string) carr::get($current, 'host'))
+            || ($validateScheme && strtolower((string) carr::get($target, 'scheme')) !== strtolower((string) carr::get($current, 'scheme')))
+            || ($validatePort && $port($target) !== $port($current))
+        ) {
+            $this->setTargetUrl($fallback);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get the session instance used for flashing data.
+     *
+     * @return CSession_Store
+     */
+    public function getSession() {
+        return $this->session();
+    }
+
+    /**
+     * Set the session instance used for flashing data.
+     *
+     * @param CSession_Store $session
+     *
+     * @return $this
+     */
+    public function setSession(CSession_Store $session) {
+        $this->session = $session;
+
+        return $this;
     }
 
     /**
@@ -225,6 +297,6 @@ class CHTTP_RedirectResponse extends BaseRedirectResponse {
      * @return CSession_Store
      */
     public function session() {
-        return c::session();
+        return $this->session ?: c::session();
     }
 }

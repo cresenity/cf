@@ -110,14 +110,25 @@ final class CHTTP_Redirector {
     }
 
     /**
+     * Get the URL (if any) the user was trying to reach before being redirected.
+     *
+     * @return null|string
+     */
+    public function getIntendedUrl() {
+        return $this->session->get('url.intended');
+    }
+
+    /**
      * Set the intended url.
      *
      * @param string $url
      *
-     * @return void
+     * @return $this
      */
     public function setIntendedUrl($url) {
         $this->session->put('url.intended', $url);
+
+        return $this;
     }
 
     /**

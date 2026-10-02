@@ -59,6 +59,9 @@ class CHTTP_JsonResponse extends BaseJsonResponse {
     public function setData($data = []) {
         $this->original = $data;
 
+        // buang status galat json_last_error() milik panggilan sebelumnya
+        json_decode('[]');
+
         if ($data instanceof Jsonable) {
             $this->data = $data->toJson($this->encodingOptions);
         } elseif ($data instanceof JsonSerializable) {

@@ -14,11 +14,14 @@ class CHTTP_Exception_ResponseException extends RuntimeException {
      * Create a new HTTP response exception instance.
      *
      * @param \Symfony\Component\HttpFoundation\Response $response
+     * @param null|Throwable                            $previous
      *
      * @return void
      */
-    public function __construct(Response $response) {
+    public function __construct(Response $response, ?Throwable $previous = null) {
         $this->response = $response;
+
+        parent::__construct($previous ? $previous->getMessage() : '', $previous ? $previous->getCode() : 0, $previous);
     }
 
     /**
