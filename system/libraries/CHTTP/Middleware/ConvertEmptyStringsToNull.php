@@ -39,6 +39,15 @@ class CHTTP_Middleware_ConvertEmptyStringsToNull extends CHTTP_Middleware_Transf
     }
 
     /**
+     * Flush the global state of the middleware.
+     *
+     * @return void
+     */
+    public static function flushState() {
+        static::$skipCallbacks = [];
+    }
+
+    /**
      * Register a callback that instructs the middleware to be skipped.
      *
      * @param \Closure $callback
