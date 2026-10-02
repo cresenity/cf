@@ -199,8 +199,8 @@ final class CHTTP_ResponseCache {
      * @return $this
      */
     public function forget($uris, array $tags = []) {
-        $uris = is_array($uris) ? $uris : func_get_args();
-        $this->selectCachedItems()->forUrls($uris)->forget();
+        $uris = is_array($uris) ? $uris : array_values(array_filter(func_get_args(), 'is_string'));
+        $this->selectCachedItems()->usingTags($tags)->forUrls($uris)->forget();
 
         return $this;
     }

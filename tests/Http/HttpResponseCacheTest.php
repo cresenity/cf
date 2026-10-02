@@ -14,6 +14,14 @@ class HttpResponseCacheProfileForTest extends CHTTP_ResponseCache_CacheProfile {
     }
 }
 
+class HttpResponseCacheGadgetForTest {
+    public static $woken = false;
+
+    public function __wakeup() {
+        static::$woken = true;
+    }
+}
+
 class HttpResponseCacheTest extends TestCase {
     /**
      * @return CHTTP_Response
@@ -127,5 +135,100 @@ class HttpResponseCacheTest extends TestCase {
         $this->assertFalse($profile->shouldCacheRequest($ajax));
 
         $this->assertFalse($profile->shouldCacheRequest(CHTTP_Request::create('https://contoh.test/a', 'POST')));
+    }
+
+    public function testClearOnAnUntaggedStoreOnlyInvalidatesResponseCacheEntries() {
+        $store = c::cache()->store('array');
+        $store->put('milik-lain-' . __FUNCTION__, 'tetap', 60);
+        $cache = new CHTTP_ResponseCache();
+        $cache->useCache($store);
+        $cache->enable();
+        $a = CHTTP_Request::create('https://contoh.test/' . __FUNCTION__ . '/a', 'GET');
+        $b = CHTTP_Request::create('https://contoh.test/' . __FUNCTION__ . '/b', 'GET');
+        $cache->cacheResponse($a, new CHTTP_Response('A'));
+        $cache->cacheResponse($b, new CHTTP_Response('B'));
+        $this->assertTrue($cache->hasBeenCached($a));
+
+        $cache->clear();
+
+        $this->assertFalse($cache->hasBeenCached($a));
+        $this->assertFalse($cache->hasBeenCached($b));
+        $this->assertSame('tetap', $store->get('milik-lain-' . __FUNCTION__), 'kunci lain di store yang sama tidak ikut terhapus');
+
+        $cache->cacheResponse($a, new CHTTP_Response('A2'));
+        $this->assertSame('A2', $cache->getCachedResponseFor($a)->getContent(), 'setelah clear() cache bisa dipakai lagi');
+    }
+
+    public function testClearIsSeenByAnotherInstanceOnTheSameStore() {
+        $store = c::cache()->store('array');
+        $request = CHTTP_Request::create('https://contoh.test/' . __FUNCTION__, 'GET');
+        $first = new CHTTP_ResponseCache();
+        $first->useCache($store);
+        $first->cacheResponse($request, new CHTTP_Response('x'));
+        $second = new CHTTP_ResponseCache();
+        $second->useCache($store);
+        $this->assertTrue($second->hasBeenCached($request));
+
+        $first->clear();
+
+        $freshInstance = new CHTTP_ResponseCache();
+        $freshInstance->useCache($store);
+        $this->assertFalse($freshInstance->hasBeenCached($request), 'proses/request lain membaca generasi baru');
+    }
+
+    public function testForgetHonorsTags() {
+        $cache = $this->cache();
+        $request = CHTTP_Request::create('https://contoh.test/' . __FUNCTION__, 'GET');
+        $cache->cacheResponse($request, new CHTTP_Response('x'));
+
+        $cache->forget('https://contoh.test/' . __FUNCTION__, ['tag-lain']);
+        $this->assertTrue($cache->hasBeenCached($request), 'forget dengan tag hanya menyentuh entri bertag itu');
+
+        $cache->forget('https://contoh.test/' . __FUNCTION__);
+        $this->assertFalse($cache->hasBeenCached($request));
+    }
+
+    public function testUnserializeDoesNotInstantiateUnexpectedClasses() {
+        $payload = serialize([
+            'statusCode' => 200,
+            'headers' => $this->responseWithCookie()->headers,
+            'content' => 'x',
+            'type' => 'normal',
+            'gadget' => new HttpResponseCacheGadgetForTest(),
+        ]);
+        HttpResponseCacheGadgetForTest::$woken = false;
+
+        (new CHTTP_ResponseCache_Serializer_DefaultSerializer())->unserialize($payload);
+
+        $this->assertFalse(HttpResponseCacheGadgetForTest::$woken, 'kelas di luar daftar izin tidak boleh dibangkitkan dari store cache');
+    }
+
+    public function testPayloadWithoutAHeaderBagIsRejected() {
+        $this->expectException(CHTTP_ResponseCache_Exception_CouldNotUnserializeException::class);
+
+        (new CHTTP_ResponseCache_Serializer_DefaultSerializer())->unserialize(serialize([
+            'statusCode' => 200,
+            'headers' => new HttpResponseCacheGadgetForTest(),
+            'content' => 'x',
+        ]));
+    }
+
+    public function testGetReturnsNullWhenTheEntryExpiredBetweenHasAndGet() {
+        $repository = new CHTTP_ResponseCache_Repository(c::cache()->store('array'));
+
+        $this->assertNull($repository->get('responsecache-tidak-ada-' . __FUNCTION__));
+    }
+
+    public function testForgetAcceptsAnArrayOfUris() {
+        $cache = $this->cache();
+        $a = CHTTP_Request::create('https://contoh.test/' . __FUNCTION__ . '/a', 'GET');
+        $b = CHTTP_Request::create('https://contoh.test/' . __FUNCTION__ . '/b', 'GET');
+        $cache->cacheResponse($a, new CHTTP_Response('A'));
+        $cache->cacheResponse($b, new CHTTP_Response('B'));
+
+        $cache->forget(['https://contoh.test/' . __FUNCTION__ . '/a', 'https://contoh.test/' . __FUNCTION__ . '/b']);
+
+        $this->assertFalse($cache->hasBeenCached($a));
+        $this->assertFalse($cache->hasBeenCached($b));
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
@@ -14,7 +15,7 @@ class CHTTP_ResponseCache_Serializer_DefaultSerializer implements CHTTP_Response
     }
 
     public function unserialize($serializedResponse) {
-        $responseProperties = unserialize($serializedResponse);
+        $responseProperties = @unserialize($serializedResponse, ['allowed_classes' => [ResponseHeaderBag::class, Cookie::class]]);
 
         if (!$this->containsValidResponseProperties($responseProperties)) {
             throw CHTTP_ResponseCache_Exception_CouldNotUnserializeException::serializedResponse($serializedResponse);
@@ -79,6 +80,10 @@ class CHTTP_ResponseCache_Serializer_DefaultSerializer implements CHTTP_Response
         }
 
         if (!isset($properties['content'], $properties['statusCode'])) {
+            return false;
+        }
+
+        if (!isset($properties['headers']) || !$properties['headers'] instanceof ResponseHeaderBag) {
             return false;
         }
 

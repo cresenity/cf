@@ -107,11 +107,13 @@ class CHTTP_Kernel {
 
         if ($responseCache->hasCache() && $responseCache->cacheProfile()->shouldCacheRequest($request)) {
             if ($responseCache->hasBeenCached($request)) {
-                CEvent::dispatch(new CHTTP_ResponseCache_Event_CacheHit($request));
-
                 $response = $responseCache->getCachedResponseFor($request);
 
-                return $response;
+                if ($response !== null) {
+                    CEvent::dispatch(new CHTTP_ResponseCache_Event_CacheHit($request));
+
+                    return $response;
+                }
             }
         }
 

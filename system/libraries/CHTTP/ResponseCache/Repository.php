@@ -22,80 +22,91 @@ class CHTTP_ResponseCache_Repository {
      *
      * @return void
      */
-    public function put($key, Response $response, $seconds) {
-        if ($this->cache != null) {
-            $this->cache->put($key, $this->responseSerializer->serialize($response), is_numeric($seconds) ? c::now()->addSeconds($seconds) : $seconds);
+    /**
+     * Kunci penanda generasi untuk cache tanpa tag; clear() menaikkannya sehingga hanya entri response yang tak terbaca lagi.
+     */
+    const GENERATION_KEY = 'responsecache-generation';
+
+    /**
+     * @var null|int
+     */
+    protected $generation;
+
+    /**
+     * @return bool
+     */
+    protected function usesTags() {
+        return $this->isTagged($this->cache);
+    }
+
+    /**
+     * @return int
+     */
+    protected function currentGeneration() {
+        if ($this->generation === null) {
+            $this->generation = (int) $this->cache->get(static::GENERATION_KEY, 0);
         }
+
+        return $this->generation;
     }
 
     /**
      * @param string $key
      *
-     * @return bool
+     * @return string
      */
+    protected function storeKey($key) {
+        return $this->usesTags() ? $key : $key . ':g' . $this->currentGeneration();
+    }
+
+    public function put($key, Response $response, $seconds) {
+        if ($this->cache != null) {
+            $this->cache->put($this->storeKey($key), $this->responseSerializer->serialize($response), is_numeric($seconds) ? c::now()->addSeconds($seconds) : $seconds);
+        }
+    }
+
     public function has($key) {
         if ($this->cache != null) {
-            return $this->cache->has($key);
+            return $this->cache->has($this->storeKey($key));
         }
 
         return false;
     }
 
-    /**
-     * @param string $key
-     *
-     * @return null|Response
-     */
     public function get($key) {
         if ($this->cache != null) {
-            return $this->responseSerializer->unserialize($this->cache->get($key));
+            $stored = $this->cache->get($this->storeKey($key));
+            if ($stored === null) {
+                return null;
+            }
+
+            return $this->responseSerializer->unserialize($stored);
         }
 
         return null;
     }
 
-    /**
-     * @return void
-     */
     public function clear() {
         if ($this->cache != null) {
-            // @phpstan-ignore-next-line
-            if ($this->cache instanceof CCache_TaggedCache && !empty($this->cache->getTags())) {
+            if ($this->usesTags()) {
                 $this->cache->flush();
 
                 return;
             }
-            $this->cache->clear();
+            // tanpa tag, hanya entri response cache yang boleh tak terbaca - bukan seluruh store
+            $this->generation = $this->currentGeneration() + 1;
+            $this->cache->forever(static::GENERATION_KEY, $this->generation);
         }
-        // $cacheTag = CHTTP::responseCache()->cacheProfile()->cacheTag();
-
-        // if (empty($cacheTag) {
-        //     $this->cache->clear();
-
-        //     return;
-        // }
-
-        // $this->cache->tags($cacheTag)->flush();
     }
 
-    /**
-     * @param string $key
-     *
-     * @return bool
-     */
     public function forget($key) {
         if ($this->cache != null) {
-            return $this->cache->forget($key);
+            return $this->cache->forget($this->storeKey($key));
         }
 
         return false;
     }
 
-    /**
-     * @param array $tags
-     *
-     * @return null|self
-     */
     public function tags(array $tags) {
         if ($this->cache != null) {
             // @phpstan-ignore-next-line
@@ -111,6 +122,7 @@ class CHTTP_ResponseCache_Repository {
 
     public function setCache(CCache_Repository $cache) {
         $this->cache = $cache;
+        $this->generation = null;
 
         return $this;
     }
