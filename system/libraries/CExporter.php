@@ -350,6 +350,14 @@ class CExporter {
         );
     }
 
+    /**
+     * @param string $folder
+     * @param string $filename
+     *
+     * @return string
+     *
+     * @deprecated 1.9 menulis ke DOCROOT/export (di dalam docroot web, tanpa pembersihan); pakai CTemporary::getDirectory()
+     */
     public static function makePath($folder, $filename) {
         $depth = 5;
         $path = self::getDirectory();
@@ -369,6 +377,11 @@ class CExporter {
         return $path . $filename;
     }
 
+    /**
+     * @return string
+     *
+     * @deprecated 1.9 DOCROOT/export berada di docroot web; pakai CTemporary::getDirectory()
+     */
     public static function getDirectory() {
         $path = DOCROOT . 'export' . DIRECTORY_SEPARATOR;
         if (!is_dir($path)) {
@@ -378,6 +391,14 @@ class CExporter {
         return $path;
     }
 
+    /**
+     * @param string $path
+     * @param string $folder
+     *
+     * @return string
+     *
+     * @deprecated 1.9 hanya dipakai makePath(); pakai CTemporary::getDirectory()
+     */
     public static function makefolder($path, $folder) {
         $path = $path . $folder . DIRECTORY_SEPARATOR;
         if (!is_dir($path)) {

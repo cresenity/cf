@@ -559,6 +559,23 @@ trait CElement_Component_DataTable_Trait_ExportTrait {
      * @deprecated use downloadExcel
      */
     public function exportExcel($filename, $sheet_name = 'data') {
+        $excel = $this->buildExcelExport($sheet_name);
+        $sfn = cstr::sanitize($filename, true);
+
+        $fn = $this->excelDownloadPath($sfn);
+        $excel->save($fn);
+
+        cdownload::force($fn, null, $sfn);
+    }
+
+    /**
+     * Workbook untuk exportExcel(): header laporan, judul kolom, baris data (dengan transform kolom), gaya.
+     *
+     * @param string $sheet_name
+     *
+     * @return CExcel
+     */
+    protected function buildExcelExport($sheet_name) {
         $this->export_excel = true;
         $excel = CExcel::factory()->setCreator('cresenity_system')->setSubject('Cresenity Report');
         $excel->setActiveSheetName($sheet_name);
@@ -613,9 +630,7 @@ trait CElement_Component_DataTable_Trait_ExportTrait {
                     if ($k == $col->getFieldname()) {
                         $col_v = $v;
 
-                        foreach ($col->transforms as $trans) {
-                            $col_v = $trans->execute($col_v);
-                        }
+                        $col_v = $col->applyTransform($col_v, $row);
                     }
                 }
                 //if formatted
@@ -751,13 +766,36 @@ trait CElement_Component_DataTable_Trait_ExportTrait {
         }
         $excel->setAutoWidth();
         $excel->setHeaderStyle($header_count + 1);
-        $sfn = cstr::sanitize($filename, true);
 
-        $fn = CExporter::makePath('excel', $sfn);
-        $excel->save($fn);
-        // echo $fn;
+        return $excel;
+    }
 
-        cdownload::force($fn, null, $sfn);
+    /**
+     * Berkas sementara untuk exportExcel(): temp/export/<appCode>/excel/<acak>-<nama>, dihapus saat request selesai
+     * (cdownload::force() mengakhiri request dengan exit). Nama yang diunduh pengguna tetap `$safeName`.
+     *
+     * @param string $safeName
+     *
+     * @return string
+     */
+    protected function excelDownloadPath($safeName) {
+        $path = CTemporary::getDirectory('export', 'excel') . cstr::random(16) . '-' . $safeName;
+        register_shutdown_function(function () use ($path) {
+            static::deleteExcelDownload($path);
+        });
+
+        return $path;
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return void
+     */
+    protected static function deleteExcelDownload($path) {
+        if (is_file($path)) {
+            @unlink($path);
+        }
     }
 
     /**
