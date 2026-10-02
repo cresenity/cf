@@ -231,4 +231,47 @@ class UploadedFileTest extends TestCase {
         $this->assertSame('public-docs/public-name.txt', $result);
         $this->assertFileExists($this->scratchDiskRoot . '/public-docs/public-name.txt');
     }
+
+    public function testStoreWithoutAPathWritesAtTheDiskRoot() {
+        $diskName = $this->registerScratchDisk();
+
+        $result = $this->makeUploadedFile()->store('', $diskName);
+
+        $this->assertStringNotContainsString('/', $result);
+        $this->assertFileExists($this->scratchDiskRoot . '/' . $result);
+    }
+
+    public function testStoreAsAcceptsTheNameAsTheOnlyArgument() {
+        $diskName = $this->registerScratchDisk();
+
+        $result = $this->makeUploadedFile()->storeAs('solo.txt', ['disk' => $diskName]);
+
+        $this->assertSame('solo.txt', $result);
+        $this->assertFileExists($this->scratchDiskRoot . '/solo.txt');
+    }
+
+    public function testStorePubliclyAsAcceptsTheNameAsTheOnlyArgument() {
+        $diskName = $this->registerScratchDisk();
+
+        $result = $this->makeUploadedFile()->storePubliclyAs('publik.txt', ['disk' => $diskName]);
+
+        $this->assertSame('publik.txt', $result);
+        $this->assertFileExists($this->scratchDiskRoot . '/publik.txt');
+    }
+
+    public function testDimensionsReadsAnImageAndIsFalseForOtherFiles() {
+        $png = sys_get_temp_dir() . '/chttp_dimensions_' . cstr::random(8) . '.png';
+        file_put_contents($png, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAYAAAC56t6BAAAAEklEQVR4nGNgYGD4z8DAwAADAAMEAQExXm3KAAAAAElFTkSuQmCC'));
+
+        try {
+            $image = new CHTTP_UploadedFile($png, 'gambar.png', 'image/png', null, null, true);
+            $dimensions = $image->dimensions();
+            $this->assertSame(2, $dimensions[0]);
+            $this->assertSame(3, $dimensions[1]);
+        } finally {
+            unlink($png);
+        }
+
+        $this->assertFalse($this->makeUploadedFile()->dimensions());
+    }
 }

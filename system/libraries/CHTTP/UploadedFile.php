@@ -25,7 +25,7 @@ class CHTTP_UploadedFile extends SymfonyUploadedFile {
      *
      * @return string|false
      */
-    public function store($path, $options = []) {
+    public function store($path = '', $options = []) {
         return $this->storeAs($path, $this->hashName(), $this->parseOptions($options));
     }
 
@@ -37,7 +37,7 @@ class CHTTP_UploadedFile extends SymfonyUploadedFile {
      *
      * @return string|false
      */
-    public function storePublicly($path, $options = []) {
+    public function storePublicly($path = '', $options = []) {
         $options = $this->parseOptions($options);
         $options['visibility'] = 'public';
 
@@ -53,7 +53,11 @@ class CHTTP_UploadedFile extends SymfonyUploadedFile {
      *
      * @return string|false
      */
-    public function storePubliclyAs($path, $name, $options = []) {
+    public function storePubliclyAs($path, $name = null, $options = []) {
+        if ($name === null || is_array($name)) {
+            list($path, $name, $options) = ['', $path, $name ?: []];
+        }
+
         $options = $this->parseOptions($options);
         $options['visibility'] = 'public';
 
@@ -69,7 +73,11 @@ class CHTTP_UploadedFile extends SymfonyUploadedFile {
      *
      * @return string|false
      */
-    public function storeAs($path, $name, $options = []) {
+    public function storeAs($path, $name = null, $options = []) {
+        if ($name === null || is_array($name)) {
+            list($path, $name, $options) = ['', $path, $name ?: []];
+        }
+
         $options = $this->parseOptions($options);
         $disk = carr::pull($options, 'disk');
 

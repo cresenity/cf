@@ -21,6 +21,13 @@ class CHTTP_Request extends SymfonyRequest implements Arrayable, ArrayAccess {
     protected $browser;
 
     /**
+     * The Accept header the acceptable content types were last calculated from.
+     *
+     * @var null|string
+     */
+    protected $cachedAcceptHeader;
+
+    /**
      * The decoded JSON content for the request.
      *
      * @var null|\Symfony\Component\HttpFoundation\ParameterBag
@@ -104,6 +111,33 @@ class CHTTP_Request extends SymfonyRequest implements Arrayable, ArrayAccess {
     }
 
     /**
+     * Get the host name.
+     *
+     * @return string
+     */
+    public function host() {
+        return $this->getHost();
+    }
+
+    /**
+     * Get the HTTP host being requested.
+     *
+     * @return string
+     */
+    public function httpHost() {
+        return $this->getHttpHost();
+    }
+
+    /**
+     * Get the scheme and HTTP host.
+     *
+     * @return string
+     */
+    public function schemeAndHttpHost() {
+        return $this->getSchemeAndHttpHost();
+    }
+
+    /**
      * Get the URL (no query string) for the request.
      *
      * @return string
@@ -134,6 +168,21 @@ class CHTTP_Request extends SymfonyRequest implements Arrayable, ArrayAccess {
         $question = $this->getBaseUrl() . $this->getPathInfo() === '/' ? '/?' : '?';
 
         return count($this->query()) > 0 ? $this->url() . $question . carr::query(array_merge($this->query(), $query)) : $this->fullUrl() . $question . carr::query($query);
+    }
+
+    /**
+     * Get the full URL for the request without the given query string parameters.
+     *
+     * @param array|string $keys
+     *
+     * @return string
+     */
+    public function fullUrlWithoutQuery($keys) {
+        $query = carr::except($this->query(), (array) $keys);
+
+        $question = $this->getBaseUrl() . $this->getPathInfo() === '/' ? '/?' : '?';
+
+        return count($query) > 0 ? $this->url() . $question . carr::query($query) : $this->url();
     }
 
     /**
@@ -303,6 +352,35 @@ class CHTTP_Request extends SymfonyRequest implements Arrayable, ArrayAccess {
         $this->getInputSource()->add($input);
 
         return $this;
+    }
+
+    /**
+     * Merge new input into the request's input, but only when that key is missing from the request.
+     *
+     * @param array $input
+     *
+     * @return $this
+     */
+    public function mergeIfMissing(array $input) {
+        return $this->merge(c::collect($input)->filter(function ($value, $key) {
+            return $this->missing($key);
+        })->toArray());
+    }
+
+    /**
+     * Get the acceptable content types, recalculated when the Accept header changed since the last read.
+     *
+     * @return array
+     */
+    public function getAcceptableContentTypes() {
+        $currentAcceptHeader = $this->headers->get('Accept');
+
+        if ($this->cachedAcceptHeader !== $currentAcceptHeader) {
+            $this->acceptableContentTypes = null;
+            $this->cachedAcceptHeader = $currentAcceptHeader;
+        }
+
+        return parent::getAcceptableContentTypes();
     }
 
     /**

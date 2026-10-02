@@ -51,6 +51,26 @@ trait CHTTP_Trait_InteractsWithContentTypes {
     }
 
     /**
+     * Determine if the first acceptable content type is markdown.
+     *
+     * @return bool
+     */
+    public function wantsMarkdown() {
+        $acceptable = $this->getAcceptableContentTypes();
+
+        return isset($acceptable[0]) && strncasecmp($acceptable[0], 'text/markdown', 13) === 0;
+    }
+
+    /**
+     * Determine whether the current request accepts markdown.
+     *
+     * @return bool
+     */
+    public function acceptsMarkdown() {
+        return $this->accepts('text/markdown');
+    }
+
+    /**
      * Determines whether the current requests accepts a given content type.
      *
      * @param string|array $contentTypes

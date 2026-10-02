@@ -53,6 +53,13 @@ class CHTTP_FormRequest extends CHTTP_Request implements CValidation_ValidatesWh
     protected $validator;
 
     /**
+     * Indicates whether validation should stop after the first rule failure.
+     *
+     * @var bool
+     */
+    protected $stopOnFirstFailure = false;
+
+    /**
      * Get the validator instance for the request.
      *
      * @return CValidation_Validator
@@ -68,6 +75,14 @@ class CHTTP_FormRequest extends CHTTP_Request implements CValidation_ValidatesWh
             $validator = $this->container->call([$this, 'validator'], compact('factory'));
         } else {
             $validator = $this->createDefaultValidator($factory);
+        }
+
+        if ($this->stopOnFirstFailure) {
+            $validator->stopOnFirstFailure();
+        }
+
+        foreach ((array) ($this->container ? $this->container->call([$this, 'after']) : $this->after()) as $callback) {
+            $validator->after($callback);
         }
 
         if (method_exists($this, 'withValidator')) {
@@ -180,6 +195,39 @@ class CHTTP_FormRequest extends CHTTP_Request implements CValidation_ValidatesWh
      */
     public function validated() {
         return $this->getValidatorInstance()->validated();
+    }
+
+    /**
+     * Get a validated input container for the validated input.
+     *
+     * @param null|array $keys
+     *
+     * @return array|\CBase_ValidatedInput
+     */
+    public function safe(?array $keys = null) {
+        return $this->getValidatorInstance()->safe($keys);
+    }
+
+    /**
+     * Get the callbacks to run after the validation rules have been evaluated.
+     *
+     * @return array
+     */
+    public function after() {
+        return [];
+    }
+
+    /**
+     * Set the validator instance used by the request.
+     *
+     * @param CValidation_Validator $validator
+     *
+     * @return $this
+     */
+    public function setValidator(CValidation_Validator $validator) {
+        $this->validator = $validator;
+
+        return $this;
     }
 
     /**

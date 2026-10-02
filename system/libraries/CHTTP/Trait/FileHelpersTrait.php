@@ -20,6 +20,15 @@ trait CHTTP_Trait_FileHelpersTrait {
     }
 
     /**
+     * Get the image dimensions, or false when the file is not an image.
+     *
+     * @return array|false
+     */
+    public function dimensions() {
+        return @getimagesize($this->getRealPath());
+    }
+
+    /**
      * Get the file's extension.
      *
      * @return string

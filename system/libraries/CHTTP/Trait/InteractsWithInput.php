@@ -47,7 +47,7 @@ trait CHTTP_Trait_InteractsWithInput {
     public function bearerToken() {
         $header = $this->header('Authorization', '');
 
-        $position = strrpos($header, 'Bearer ');
+        $position = strripos($header, 'Bearer ');
         if ($position !== false) {
             $header = substr($header, $position + 7);
 

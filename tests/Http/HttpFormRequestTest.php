@@ -27,6 +27,26 @@ class HttpFormRequestPlainForTest extends CHTTP_FormRequest {
 class HttpFormRequestWithoutRulesForTest extends CHTTP_FormRequest {
 }
 
+class HttpFormRequestAfterForTest extends CHTTP_FormRequest {
+    protected $stopOnFirstFailure = true;
+
+    public function authorize() {
+        return true;
+    }
+
+    public function rules() {
+        return ['nama' => 'required|min:5|alpha', 'umur' => 'required'];
+    }
+
+    public function after() {
+        return [function ($validator) {
+            if ($this->input('nama') === 'Larangan') {
+                $validator->errors()->add('nama', 'nama dilarang');
+            }
+        }];
+    }
+}
+
 class HttpFormRequestTest extends TestCase {
     /**
      * @param string $class
@@ -37,6 +57,7 @@ class HttpFormRequestTest extends TestCase {
     protected function make($class, array $input) {
         $request = $class::create('/uji', 'POST', $input);
         $request->setContainer(c::container());
+        $request->setRedirector(CHTTP_Redirector::instance());
 
         return $request;
     }
@@ -83,5 +104,46 @@ class HttpFormRequestTest extends TestCase {
         $request = $this->make(HttpFormRequestWithoutRulesForTest::class, ['apa' => 'saja']);
 
         $this->assertSame([], $request->validated());
+    }
+
+    public function testSafeReturnsTheValidatedInputContainer() {
+        $request = $this->make(HttpFormRequestPlainForTest::class, ['name' => 'Budi', 'email' => 'budi@contoh.test', 'role' => 'admin']);
+
+        $safe = $request->safe();
+
+        $this->assertSame(['name' => 'Budi', 'email' => 'budi@contoh.test'], $safe->all());
+        $this->assertSame(['name' => 'Budi'], $request->safe(['name']));
+    }
+
+    public function testAfterCallbacksRunAndCanAddErrors() {
+        $request = $this->make(HttpFormRequestAfterForTest::class, ['nama' => 'Larangan', 'umur' => '30']);
+
+        try {
+            $request->validateResolved();
+            $this->fail('seharusnya gagal karena callback after');
+        } catch (CValidation_Exception $e) {
+            $this->assertSame(['nama dilarang'], $e->validator->errors()->get('nama'));
+        }
+    }
+
+    public function testStopOnFirstFailureStopsAfterTheFirstFailingAttribute() {
+        $request = $this->make(HttpFormRequestAfterForTest::class, ['nama' => 'ab1']);
+
+        try {
+            $request->validateResolved();
+            $this->fail('seharusnya gagal');
+        } catch (CValidation_Exception $e) {
+            $this->assertGreaterThanOrEqual(1, count($e->validator->errors()->get('nama')));
+            $this->assertCount(0, $e->validator->errors()->get('umur'), 'atribut sesudah kegagalan pertama tidak dievaluasi');
+        }
+    }
+
+    public function testSetValidatorReplacesTheValidatorUsedByTheRequest() {
+        $request = $this->make(HttpFormRequestPlainForTest::class, ['name' => 'Budi', 'email' => 'x@contoh.test']);
+        $custom = CValidation_Factory::instance()->make(['a' => 1], ['a' => 'required']);
+
+        $this->assertSame($request, $request->setValidator($custom));
+
+        $this->assertSame(['a' => 1], $request->validated());
     }
 }
