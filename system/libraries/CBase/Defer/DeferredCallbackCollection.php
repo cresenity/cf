@@ -9,6 +9,20 @@ class CBase_Defer_DeferredCallbackCollection implements ArrayAccess, Countable {
     protected array $callbacks = [];
 
     /**
+     * Koleksi bersama satu proses; c::defer() mengisinya dan akhir request menjalankannya.
+     *
+     * @return static
+     */
+    public static function instance() {
+        $container = CContainer::getInstance();
+        if (!$container->bound(static::class)) {
+            $container->singleton(static::class);
+        }
+
+        return $container->make(static::class);
+    }
+
+    /**
      * Get the first callback in the collection.
      *
      * @return callable

@@ -2340,7 +2340,7 @@ class c {
         return c::tap(
             new CBase_Defer_DeferredCallback($callback, $name, $always),
             function ($deferred) {
-                return CContainer::getInstance()->make(CBase_Defer_DeferredCallbackCollection::class)[] = $deferred;
+                return CBase_Defer_DeferredCallbackCollection::instance()[] = $deferred;
             }
         );
     }

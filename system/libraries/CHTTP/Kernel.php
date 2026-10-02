@@ -159,6 +159,7 @@ class CHTTP_Kernel {
 
     public function terminate($request, $response) {
         $this->terminateMiddleware($request, $response);
+        $this->invokeDeferredCallbacks($response);
         CF::terminate();
         if (!$this->terminated) {
             $this->terminated = true;
@@ -176,6 +177,7 @@ class CHTTP_Kernel {
     protected function terminateMiddleware($request, $response) {
         $middlewares = CHTTP::shouldSkipMiddleware() ? [] : array_merge(
             $this->gatherRouteMiddleware($request),
+            CMiddleware::middleware(),
             $this->middleware
         );
 
@@ -186,12 +188,29 @@ class CHTTP_Kernel {
 
             list($name) = $this->parseMiddleware($middleware);
 
+            if (class_exists($name) && !method_exists($name, 'terminate')) {
+                continue;
+            }
+
             $instance = c::container()->make($name);
 
             if (method_exists($instance, 'terminate')) {
                 $instance->terminate($request, $response);
             }
         }
+    }
+
+    /**
+     * Run the callbacks registered with c::defer(), skipping failed responses unless marked "always".
+     *
+     * @param \CHTTP_Response $response
+     *
+     * @return void
+     */
+    protected function invokeDeferredCallbacks($response) {
+        CBase_Defer_DeferredCallbackCollection::instance()->invokeWhen(function ($callback) use ($response) {
+            return $response->getStatusCode() < 400 || $callback->always;
+        });
     }
 
     /**
