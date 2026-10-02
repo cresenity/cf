@@ -476,6 +476,15 @@ class CHTTP_Request extends SymfonyRequest implements Arrayable, ArrayAccess {
     }
 
     /**
+     * Determine if a session is available; CF keeps it in CBase, not on the Symfony request.
+     *
+     * @return bool
+     */
+    public function hasSession() {
+        return parent::hasSession() || CBase::session() !== null;
+    }
+
+    /**
      * Get the session associated with the request.
      *
      * @throws \RuntimeException

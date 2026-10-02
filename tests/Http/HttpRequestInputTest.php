@@ -197,8 +197,9 @@ class HttpRequestInputTest extends TestCase {
         $request->flash();
         $this->assertSame(['name' => 'Hery', 'password' => 'rahasia', 'age' => 30], $request->session()->getOldInput());
         $this->assertSame('Hery', $request->session()->getOldInput('name'));
-        //old() hanya membaca sesi bila request membawa sesi (hasSession()); di sini tidak
-        $this->assertSame('bawaan', $request->old('name', 'bawaan'));
+        $this->assertTrue($request->hasSession());
+        $this->assertSame('Hery', $request->old('name', 'bawaan'), 'old() membaca input yang di-flash');
+        $this->assertSame('bawaan', $request->old('tidak-ada', 'bawaan'));
 
         $request->flashOnly('name', 'age');
         $this->assertSame(['name' => 'Hery', 'age' => 30], $request->session()->getOldInput());

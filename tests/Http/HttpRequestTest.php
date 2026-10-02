@@ -692,14 +692,27 @@ class HttpRequestTest extends TestCase {
         $this->assertSame('http://external.example/from-here', $request->referrer());
     }
 
-    public function testOldReturnsDefaultWithoutSession() {
+    public function testOldReturnsDefaultWhenNothingWasFlashed() {
+        CBase::session()->forget('_old_input');
         $request = CHTTP_Request::create('/', 'GET');
 
-        // No session has been attached to the request (hasSession() is
-        // false), so old() must fall back to the given default rather than
-        // touching the global session/application state.
         $this->assertNull($request->old('name'));
         $this->assertSame('fallback', $request->old('name', 'fallback'));
+    }
+
+    public function testOldReadsTheFlashedInputOfTheCurrentSession() {
+        $request = CHTTP_Request::create('/', 'GET');
+        CBase::session()->put('_old_input', ['name' => 'Budi', 'kota' => 'Bandung']);
+
+        try {
+            $this->assertTrue($request->hasSession(), 'sesi CF ada walau tidak dipasang ke request Symfony');
+            $this->assertSame('Budi', $request->old('name'));
+            $this->assertSame('Bandung', $request->old('kota', 'x'));
+            $this->assertSame('x', $request->old('tidak-ada', 'x'));
+            $this->assertSame('Budi', c::old('name'), 'helper c::old() lewat request aktif');
+        } finally {
+            CBase::session()->forget('_old_input');
+        }
     }
 
     public function testFingerprintThrowsWithoutRoute() {
