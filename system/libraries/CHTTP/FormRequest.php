@@ -46,11 +46,22 @@ class CHTTP_FormRequest extends CHTTP_Request implements CValidation_ValidatesWh
     protected $errorBag = 'default';
 
     /**
+     * The validator instance.
+     *
+     * @var null|CValidation_Validator
+     */
+    protected $validator;
+
+    /**
      * Get the validator instance for the request.
      *
      * @return CValidation_Validator
      */
     protected function getValidatorInstance() {
+        if ($this->validator) {
+            return $this->validator;
+        }
+
         $factory = CValidation_Factory::instance();
 
         if (method_exists($this, 'validator')) {
@@ -63,7 +74,9 @@ class CHTTP_FormRequest extends CHTTP_Request implements CValidation_ValidatesWh
             $this->withValidator($validator);
         }
 
-        return $validator;
+        $this->validator = $validator;
+
+        return $this->validator;
     }
 
     /**
@@ -76,10 +89,19 @@ class CHTTP_FormRequest extends CHTTP_Request implements CValidation_ValidatesWh
     protected function createDefaultValidator(CValidation_Factory $factory) {
         return $factory->make(
             $this->validationData(),
-            $this->container->call([$this, 'rules']),
+            $this->validationRules(),
             $this->messages(),
             $this->attributes()
         );
+    }
+
+    /**
+     * Get the validation rules, empty when the request defines none.
+     *
+     * @return array
+     */
+    protected function validationRules() {
+        return method_exists($this, 'rules') ? $this->container->call([$this, 'rules']) : [];
     }
 
     /**
@@ -152,14 +174,12 @@ class CHTTP_FormRequest extends CHTTP_Request implements CValidation_ValidatesWh
     /**
      * Get the validated data from the request.
      *
+     * @throws CValidation_Exception
+     *
      * @return array
      */
     public function validated() {
-        $rules = $this->container->call([$this, 'rules']);
-
-        return $this->only(c::collect($rules)->keys()->map(function ($rule) {
-            return explode('.', $rule)[0];
-        })->unique()->toArray());
+        return $this->getValidatorInstance()->validated();
     }
 
     /**
