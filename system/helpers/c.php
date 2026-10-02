@@ -393,6 +393,18 @@ class c {
         return CLogger::logger()->debug($message, $context);
     }
 
+    /**
+     * Logger aplikasi; dengan pesan, tulis sebagai debug.
+     *
+     * @param null|string $message
+     * @param array       $context
+     *
+     * @return null|\CLogger_Manager
+     */
+    public static function log($message = null, array $context = []) {
+        return static::logger($message, $context);
+    }
+
     //@codingStandardsIgnoreEnd
 
     /**
