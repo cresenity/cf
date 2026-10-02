@@ -17,8 +17,8 @@ class HttpOutputBufferResponseTest extends TestCase {
      *
      * @return CHTTP_Response
      */
-    protected function wrap($output, array $headerLines = []) {
-        return (new HttpOutputBufferResponseHarness())->makeResponseFromOutput($output, $headerLines);
+    protected function wrap($output, array $headerLines = [], $statusCode = null) {
+        return (new HttpOutputBufferResponseHarness())->makeResponseFromOutput($output, $headerLines, $statusCode);
     }
 
     public function testHeaderValueContainingColonsIsKeptWhole() {
@@ -58,6 +58,18 @@ class HttpOutputBufferResponseTest extends TestCase {
         $this->assertSame('halo', $this->wrap('halo')->getContent());
         $this->assertSame('', $this->wrap(false)->getContent(), 'ob_get_clean() tanpa buffer mengembalikan false');
         $this->assertSame('', $this->wrap(null)->getContent());
+    }
+
+    public function testNativeStatusCodeIsCarriedOverToTheResponse() {
+        foreach ([404, 403, 500, 206, 204, 302] as $code) {
+            $this->assertSame($code, $this->wrap('x', [], $code)->getStatusCode(), 'status ' . $code);
+        }
+    }
+
+    public function testDefaultAndInvalidNativeStatusCodesKeepTheResponseAt200() {
+        foreach ([null, 200, false, 0, 99, 600, '404', 'abc'] as $code) {
+            $this->assertSame(200, $this->wrap('x', [], $code)->getStatusCode(), 'status ' . var_export($code, true));
+        }
     }
 
     /**

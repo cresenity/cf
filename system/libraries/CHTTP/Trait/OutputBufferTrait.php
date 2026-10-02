@@ -24,15 +24,20 @@ trait CHTTP_Trait_OutputBufferTrait {
      * Bungkus output hasil echo menjadi respons beserta header yang sudah diset lewat header().
      *
      * @param mixed      $output
-     * @param null|array $headerLines baris "Nama: nilai"; null memakai headers_list()
+     * @param null|array $headerLines baris "Nama: nilai"; null memakai headers_list() dan http_response_code()
+     * @param null|int   $statusCode  kode status native; dipakai bila $headerLines diberikan
      *
      * @return CHTTP_Response
      */
-    public function makeResponseFromOutput($output, array $headerLines = null) {
+    public function makeResponseFromOutput($output, array $headerLines = null, $statusCode = null) {
         $response = c::response(is_string($output) ? $output : '');
         $native = $headerLines === null;
         if ($native) {
             $headerLines = headers_sent() ? [] : headers_list();
+            $statusCode = http_response_code();
+        }
+        if (is_int($statusCode) && $statusCode !== 200 && $statusCode >= 100 && $statusCode < 600) {
+            $response->setStatusCode($statusCode);
         }
         foreach ($headerLines as $line) {
             $position = strpos($line, ':');
