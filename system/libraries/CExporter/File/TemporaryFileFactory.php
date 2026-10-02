@@ -50,8 +50,8 @@ class CExporter_File_TemporaryFileFactory {
      */
     public function makeLocal($fileName = null, $fileExtension = null) {
         $temporaryPath = CExporter::config()->get('temporary.local_path', DOCROOT . 'temp');
-        $temporaryPath .= DS . 'exporter';
-        $temporaryPath .= DS . CF::appCode();
+        //temp/exporter/<appCode>/<Ymd>; tanpa app berjalan memakai `common`, seperti CTemporary
+        $temporaryPath .= DS . CTemporary::appFolder('exporter');
         $temporaryPath .= DS . date('Ymd');
         if (!CFile::isDirectory($temporaryPath)) {
             CFile::makeDirectory($temporaryPath, 0755, true);
