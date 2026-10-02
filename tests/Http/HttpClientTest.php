@@ -1683,4 +1683,137 @@ class HttpClientTest extends TestCase {
         $this->assertNull($event->exception);
         $this->assertSame('https://example.com', $event->request->url());
     }
+
+    public function testAfterResponseCallbacksReceiveTheResponseAndTheRequest() {
+        $this->factory->fake(['*' => ['ok' => true]]);
+        $seen = [];
+
+        $this->factory->afterResponse(function ($response, $request) use (&$seen) {
+            $seen[] = [$response->status(), $request->url()];
+        })->get('http://foo.com/get');
+
+        $this->assertSame([[200, 'http://foo.com/get']], $seen);
+    }
+
+    public function testAfterResponseCanReplaceTheResponseAndIgnoresOtherReturnValues() {
+        $this->factory->fake(['*' => ['asli' => true]]);
+
+        $response = $this->factory
+            ->afterResponse(function () {
+                return 'bukan response';
+            })
+            ->afterResponse(function ($response) {
+                return new CHTTP_Client_Response(new Psr7Response(201, [], json_encode(['diganti' => true])));
+            })
+            ->get('http://foo.com/get');
+
+        $this->assertSame(['diganti' => true], $response->json());
+        $this->assertSame(201, $response->status());
+    }
+
+    public function testAfterResponseRunsForPooledRequestsToo() {
+        $this->factory->fake(['*' => ['ok' => true]]);
+        $seen = 0;
+
+        $this->factory->pool(function (CHTTP_Client_Pool $pool) use (&$seen) {
+            return [$pool->afterResponse(function ($response) use (&$seen) {
+                $seen++;
+            })->get('http://foo.com/get')];
+        });
+
+        $this->assertSame(1, $seen);
+    }
+
+    public function testWithQueryParametersAddsToTheQueryString() {
+        $this->factory->fake();
+
+        $this->factory->withQueryParameters(['a' => 1])->withQueryParameters(['b' => 2])->get('http://foo.com/get');
+
+        $this->factory->assertSent(function (CHTTP_Client_Request $request) {
+            return $request->url() === 'http://foo.com/get?a=1&b=2';
+        });
+    }
+
+    public function testQuerySendsTheQueryVerb() {
+        $this->factory->fake();
+
+        $this->factory->query('http://foo.com/cari', ['q' => 'abc']);
+
+        $this->factory->assertSent(function (CHTTP_Client_Request $request) {
+            return $request->method() === 'QUERY' && $request->url() === 'http://foo.com/cari';
+        });
+    }
+
+    public function testTimeoutsAcceptFractionsOfASecond() {
+        $pending = $this->factory->createPendingRequest()->timeout(1.5)->connectTimeout(0.5);
+        $property = new ReflectionProperty($pending, 'options');
+        $property->setAccessible(true);
+
+        $options = $property->getValue($pending);
+
+        $this->assertSame(1.5, $options['timeout']);
+        $this->assertSame(0.5, $options['connect_timeout']);
+    }
+
+    public function testWithoutGlobalConfigurationSkipsTheGlobalOptionsAndRestoresThem() {
+        $this->factory->fake();
+        $this->factory->globalOptions(['headers' => ['X-Global' => 'ya']]);
+
+        $result = $this->factory->withoutGlobalConfiguration(function () {
+            $this->factory->get('http://foo.com/dalam');
+
+            return 'selesai';
+        });
+        $this->factory->get('http://foo.com/luar');
+
+        $this->assertSame('selesai', $result);
+        $this->factory->assertSent(function (CHTTP_Client_Request $request) {
+            return $request->url() === 'http://foo.com/dalam' && !$request->hasHeader('X-Global');
+        });
+        $this->factory->assertSent(function (CHTTP_Client_Request $request) {
+            return $request->url() === 'http://foo.com/luar' && $request->hasHeader('X-Global');
+        });
+    }
+
+    public function testRecordCanBeCalledPubliclyAndKeepsTheRecordedPairs() {
+        $this->assertSame($this->factory, $this->factory->record());
+        $this->factory->fake(['*' => ['ok' => true]]);
+
+        $this->factory->get('http://foo.com/get');
+
+        $this->assertCount(1, $this->factory->recorded());
+    }
+
+    public function testJsonDecodingFlagsAreHonoredAndChangingThemDecodesAgain() {
+        $this->factory->fake(['*' => $this->factory->response('{"id": 12345678901234567890}', 200)]);
+        $response = $this->factory->get('http://foo.com/besar');
+
+        $this->assertIsFloat($response->json('id'));
+        $this->assertSame('12345678901234567890', $response->json('id', null, JSON_BIGINT_AS_STRING));
+        $this->assertIsFloat($response->json('id'), 'tanpa flag kembali ke bawaan');
+        $this->assertSame('12345678901234567890', $response->object(JSON_BIGINT_AS_STRING)->id);
+        $this->assertSame('12345678901234567890', $response->collect(null, JSON_BIGINT_AS_STRING)->get('id'));
+        $this->assertSame('12345678901234567890', $response->fluent(null, JSON_BIGINT_AS_STRING)->get('id'));
+    }
+
+    public function testDefaultJsonDecodingFlagsApplyToEveryResponse() {
+        $this->factory->fake(['*' => $this->factory->response('{"id": 12345678901234567890}', 200)]);
+        CHTTP_Client_Response::$defaultJsonDecodingFlags = JSON_BIGINT_AS_STRING;
+
+        try {
+            $response = $this->factory->get('http://foo.com/besar');
+            $this->assertSame('12345678901234567890', $response->json('id'));
+        } finally {
+            CHTTP_Client_Response::$defaultJsonDecodingFlags = 0;
+        }
+    }
+
+    public function testFalsyJsonBodiesAreDecodedOnceAndStillReturned() {
+        $this->factory->fake(['*' => $this->factory->response('false', 200)]);
+        $response = $this->factory->get('http://foo.com/salah');
+
+        $this->assertFalse($response->json());
+        $this->assertFalse($response->json());
+        $this->assertSame('bawaan', $response->json('apa', 'bawaan'));
+    }
 }

@@ -136,6 +136,13 @@ class CHTTP_Client_PendingRequest {
     protected $retryWhenCallback = null;
 
     /**
+     * The callbacks run after each response is received.
+     *
+     * @var callable[]
+     */
+    protected $afterResponseCallbacks = [];
+
+    /**
      * The callbacks that should execute before the request is sent.
      *
      * @var \CCollection
@@ -475,6 +482,34 @@ class CHTTP_Client_PendingRequest {
     }
 
     /**
+     * Set the given query parameters in the request URI.
+     *
+     * @param array $parameters
+     *
+     * @return $this
+     */
+    public function withQueryParameters(array $parameters) {
+        $this->options = array_merge_recursive($this->options, [
+            'query' => $parameters,
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * Register a callback that runs after each response; a returned response replaces the original.
+     *
+     * @param callable $callback
+     *
+     * @return $this
+     */
+    public function afterResponse(callable $callback) {
+        $this->afterResponseCallbacks[] = $callback;
+
+        return $this;
+    }
+
+    /**
      * Specify the URL parameters that can be substituted into the request URL.
      *
      * @param array $parameters
@@ -558,7 +593,7 @@ class CHTTP_Client_PendingRequest {
      *
      * @return $this
      */
-    public function timeout(int $seconds) {
+    public function timeout($seconds) {
         return c::tap($this, function () use ($seconds) {
             $this->options['timeout'] = $seconds;
         });
@@ -567,11 +602,11 @@ class CHTTP_Client_PendingRequest {
     /**
      * Specify the connect timeout (in seconds) for the request.
      *
-     * @param int $seconds
+     * @param float|int $seconds
      *
      * @return $this
      */
-    public function connectTimeout(int $seconds) {
+    public function connectTimeout($seconds) {
         return c::tap($this, function () use ($seconds) {
             $this->options['connect_timeout'] = $seconds;
         });
@@ -738,6 +773,20 @@ class CHTTP_Client_PendingRequest {
     }
 
     /**
+     * Issue a QUERY request to the given URL.
+     *
+     * @param string            $url
+     * @param array|string|null $data
+     *
+     * @return \CHTTP_Client_Response
+     */
+    public function query(string $url, $data = []) {
+        return $this->send('QUERY', $url, [
+            $this->bodyFormat => $data,
+        ]);
+    }
+
+    /**
      * Issue a GET request to the given URL.
      *
      * @param string            $url
@@ -869,38 +918,40 @@ class CHTTP_Client_PendingRequest {
 
         return c::retry($this->tries ?: 1, function ($attempt) use ($method, $url, $options, &$shouldRetry) {
             try {
-                return c::tap($this->newResponse($this->sendRequest($method, $url, $options)), function ($response) use ($attempt, &$shouldRetry) {
-                    $this->populateResponse($response);
-                    $this->dispatchResponseReceivedEvent($response);
-                    if (!$response->successful()) {
-                        try {
-                            $shouldRetry = $this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $response->toException(), $this, $this->request->toPsrRequest()->getMethod()) : true;
-                        } catch (Exception $exception) {
-                            $shouldRetry = false;
+                $response = $this->newResponse($this->sendRequest($method, $url, $options));
+                $this->populateResponse($response);
+                $this->dispatchResponseReceivedEvent($response);
+                $response = $this->runAfterResponseCallbacks($response);
+                if (!$response->successful()) {
+                    try {
+                        $shouldRetry = $this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $response->toException(), $this, $this->request->toPsrRequest()->getMethod()) : true;
+                    } catch (Exception $exception) {
+                        $shouldRetry = false;
 
-                            throw $exception;
-                        }
-
-                        if ($this->throwCallback
-                            && ($this->throwIfCallback === null
-                             || call_user_func($this->throwIfCallback, $response))
-                        ) {
-                            $response->throw($this->throwCallback);
-                        }
-
-                        $potentialTries = is_array($this->tries)
-                            ? count($this->tries) + 1
-                            : $this->tries;
-
-                        if ($attempt < $potentialTries && $shouldRetry) {
-                            $response->throw();
-                        }
-
-                        if ($potentialTries > 1 && $this->retryThrow) {
-                            $response->throw();
-                        }
+                        throw $exception;
                     }
-                });
+
+                    if ($this->throwCallback
+                        && ($this->throwIfCallback === null
+                         || call_user_func($this->throwIfCallback, $response))
+                    ) {
+                        $response->throw($this->throwCallback);
+                    }
+
+                    $potentialTries = is_array($this->tries)
+                        ? count($this->tries) + 1
+                        : $this->tries;
+
+                    if ($attempt < $potentialTries && $shouldRetry) {
+                        $response->throw();
+                    }
+
+                    if ($potentialTries > 1 && $this->retryThrow) {
+                        $response->throw();
+                    }
+                }
+
+                return $response;
             } catch (TransferException $e) {
                 if ($e instanceof ConnectException) {
                     $this->marshalConnectionException($e);
@@ -995,10 +1046,12 @@ class CHTTP_Client_PendingRequest {
     protected function makePromise(string $method, string $url, array $options = [], int $attempt = 1) {
         return $this->promise = $this->sendRequest($method, $url, $options)
             ->then(function (MessageInterface $message) {
-                return c::tap($this->newResponse($message), function ($response) {
-                    $this->populateResponse($response);
-                    $this->dispatchResponseReceivedEvent($response);
-                });
+                $response = $this->newResponse($message);
+
+                $this->populateResponse($response);
+                $this->dispatchResponseReceivedEvent($response);
+
+                return $this->runAfterResponseCallbacks($response);
             })
             ->otherwise(function ($e) {
                 if ($e instanceof CHTTP_Client_Exception_StrayRequestException) {
@@ -1505,6 +1558,25 @@ class CHTTP_Client_PendingRequest {
         if ($dispatcher = c::optional($this->factory)->getDispatcher()) {
             $dispatcher->dispatch(new CHTTP_Client_Event_RequestSending($this->request));
         }
+    }
+
+    /**
+     * Execute the "after response" callbacks.
+     *
+     * @param CHTTP_Client_Response $response
+     *
+     * @return CHTTP_Client_Response
+     */
+    protected function runAfterResponseCallbacks(CHTTP_Client_Response $response) {
+        foreach ($this->afterResponseCallbacks as $callback) {
+            $returned = call_user_func($callback, $response, $this->request);
+
+            if ($returned instanceof CHTTP_Client_Response) {
+                $response = $returned;
+            }
+        }
+
+        return $response;
     }
 
     /**

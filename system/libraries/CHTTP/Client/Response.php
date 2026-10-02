@@ -36,6 +36,27 @@ class CHTTP_Client_Response implements ArrayAccess {
     protected $decoded;
 
     /**
+     * Indicates that the JSON body has been decoded.
+     *
+     * @var bool
+     */
+    protected $decodedJson = false;
+
+    /**
+     * The flags used when the JSON body was last decoded.
+     *
+     * @var null|int
+     */
+    protected $decodingFlags;
+
+    /**
+     * The default flags used when decoding JSON bodies.
+     *
+     * @var int
+     */
+    public static $defaultJsonDecodingFlags = 0;
+
+    /**
      * The length at which request exceptions will be truncated.
      *
      * @var null|int<1, max>|false
@@ -67,12 +88,18 @@ class CHTTP_Client_Response implements ArrayAccess {
      *
      * @param null|string $key
      * @param mixed       $default
+     * @param null|int    $flags   json_decode flags (JSON_BIGINT_AS_STRING, JSON_INVALID_UTF8_SUBSTITUTE, ...)
      *
      * @return mixed
      */
-    public function json($key = null, $default = null) {
-        if (!$this->decoded) {
-            $this->decoded = json_decode($this->body(), true);
+    public function json($key = null, $default = null, $flags = null) {
+        $flags = $flags === null ? static::$defaultJsonDecodingFlags : $flags;
+
+        if (!$this->decodedJson || $this->decodingFlags !== $flags) {
+            $this->decoded = json_decode($this->body(), true, 512, $flags);
+
+            $this->decodingFlags = $flags;
+            $this->decodedJson = true;
         }
 
         if (is_null($key)) {
@@ -85,32 +112,36 @@ class CHTTP_Client_Response implements ArrayAccess {
     /**
      * Get the JSON decoded body of the response as an object.
      *
-     * @return object
+     * @param null|int $flags
+     *
+     * @return null|object
      */
-    public function object() {
-        return json_decode($this->body(), false);
+    public function object($flags = null) {
+        return json_decode($this->body(), false, 512, $flags === null ? static::$defaultJsonDecodingFlags : $flags);
     }
 
     /**
      * Get the JSON decoded body of the response as a collection.
      *
      * @param null|string $key
+     * @param null|int    $flags
      *
      * @return \CCollection
      */
-    public function collect($key = null) {
-        return CCollection::make($this->json($key));
+    public function collect($key = null, $flags = null) {
+        return CCollection::make($this->json($key, null, $flags));
     }
 
     /**
      * Get the JSON decoded body of the response as a fluent object.
      *
      * @param null|string $key
+     * @param null|int    $flags
      *
      * @return \CBase_Fluent
      */
-    public function fluent($key = null) {
-        return new CBase_Fluent((array) $this->json($key));
+    public function fluent($key = null, $flags = null) {
+        return new CBase_Fluent((array) $this->json($key, null, $flags));
     }
 
     /**

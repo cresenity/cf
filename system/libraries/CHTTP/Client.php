@@ -156,6 +156,25 @@ final class CHTTP_Client {
     }
 
     /**
+     * Run the callback without the global middleware and options.
+     *
+     * @param Closure $callback
+     *
+     * @return mixed
+     */
+    public function withoutGlobalConfiguration(Closure $callback) {
+        list($middleware, $options) = [$this->globalMiddleware, $this->globalOptions];
+
+        list($this->globalMiddleware, $this->globalOptions) = [[], []];
+
+        try {
+            return $callback();
+        } finally {
+            list($this->globalMiddleware, $this->globalOptions) = [$middleware, $options];
+        }
+    }
+
+    /**
      * Add request middleware to apply to every request.
      *
      * @param callable $middleware
@@ -414,7 +433,7 @@ final class CHTTP_Client {
      *
      * @return $this
      */
-    protected function record() {
+    public function record() {
         $this->recording = true;
 
         return $this;
