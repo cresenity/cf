@@ -311,12 +311,14 @@ class CHTTP_Client_PendingRequest {
 
         $this->asMultipart();
 
-        $this->pendingFiles[] = array_filter([
-            'name' => $name,
-            'contents' => $contents,
-            'headers' => $headers,
-            'filename' => $filename,
-        ]);
+        $file = ['name' => $name, 'contents' => $contents];
+        if ($headers !== []) {
+            $file['headers'] = $headers;
+        }
+        if ($filename !== null) {
+            $file['filename'] = $filename;
+        }
+        $this->pendingFiles[] = $file;
 
         return $this;
     }
@@ -915,7 +917,7 @@ class CHTTP_Client_PendingRequest {
                 throw $e;
             }
         }, $this->retryDelay ?? 100, function ($exception) use (&$shouldRetry) {
-            $result = $shouldRetry ?? ($this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $exception, $this, c::optional($this->request)->toPsrRequest()->getMethod()) : true);
+            $result = $shouldRetry ?? ($this->retryWhenCallback ? call_user_func($this->retryWhenCallback, $exception, $this, $this->request ? $this->request->toPsrRequest()->getMethod() : null) : true);
 
             $shouldRetry = null;
 
@@ -1042,7 +1044,8 @@ class CHTTP_Client_PendingRequest {
             $shouldRetry = $this->retryWhenCallback ? call_user_func(
                 $this->retryWhenCallback,
                 $response instanceof CHTTP_Client_Response ? $response->toException() : $response,
-                $this
+                $this,
+                $method
             ) : true;
         } catch (Exception $exception) {
             return $exception;
@@ -1524,11 +1527,16 @@ class CHTTP_Client_PendingRequest {
     /**
      * Dispatch the ConnectionFailed event if a dispatcher is available.
      *
+     * @param null|CHTTP_Client_Request                          $request
+     * @param null|CHTTP_Client_Exception_ConnectionException $exception
+     *
      * @return void
      */
-    protected function dispatchConnectionFailedEvent() {
-        if ($dispatcher = c::optional($this->factory)->getDispatcher()) {
-            $dispatcher->dispatch(new CHTTP_Client_Event_ConnectionFailed($this->request));
+    protected function dispatchConnectionFailedEvent($request = null, $exception = null) {
+        $request = $request ?: $this->request;
+
+        if ($request && ($dispatcher = c::optional($this->factory)->getDispatcher())) {
+            $dispatcher->dispatch(new CHTTP_Client_Event_ConnectionFailed($request, $exception));
         }
     }
 

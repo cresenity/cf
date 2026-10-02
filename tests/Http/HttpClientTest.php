@@ -1600,4 +1600,87 @@ class HttpClientTest extends TestCase {
         $this->assertNull($response->json());
         $this->assertSame('bukan json', $response->body());
     }
+
+    public function testAttachKeepsFalsyContentsAndOnlyAddsOptionalKeysWhenGiven() {
+        $this->factory->fake();
+
+        $this->factory->attach('kosong', '', 'kosong.txt')->attach('nol', '0')->post('http://foo.com/file');
+
+        $this->factory->assertSent(function (CHTTP_Client_Request $request) {
+            $kosong = $request[0];
+            $nol = $request[1];
+
+            return array_key_exists('contents', $kosong) && $kosong['contents'] === '' && $kosong['filename'] === 'kosong.txt'
+                && array_key_exists('contents', $nol) && $nol['contents'] === '0'
+                && !array_key_exists('filename', $nol) && !array_key_exists('headers', $nol);
+        });
+    }
+
+    public function testAsyncRetryWhenCallbackReceivesTheHttpMethodAsThirdArgument() {
+        $this->factory->fake(['*' => $this->factory->sequence()->push(['error'], 500)->push(['ok'], 200)]);
+        $seen = [];
+
+        $this->factory->pool(function (CHTTP_Client_Pool $pool) use (&$seen) {
+            return [$pool->retry(2, 0, function ($exception, $request, $method) use (&$seen) {
+                $seen[] = $method;
+
+                return true;
+            }, false)->get('http://foo.com/get')];
+        });
+
+        $this->assertSame(['GET'], $seen);
+    }
+
+    public function testRetryWhenCallbackDoesNotFatalWhenTheRequestWasNeverBuilt() {
+        $this->factory->fake();
+        $caught = null;
+        $seenMethod = 'belum-dipanggil';
+
+        try {
+            //middleware yang gagal saat susunan handler dibangun: terjadi sebelum ada request
+            $this->factory->withMiddleware(function () {
+                throw new RuntimeException('middleware gagal');
+            })->retry(2, 0, function ($exception, $request, $method) use (&$seenMethod) {
+                $seenMethod = $method;
+
+                return false;
+            }, true)->get('http://foo.com/get');
+        } catch (Throwable $e) {
+            $caught = $e;
+        }
+
+        $this->assertInstanceOf(RuntimeException::class, $caught, 'exception asli sampai ke pemanggil, bukan fatal null');
+        $this->assertNull($seenMethod, 'tanpa request, method yang diteruskan null');
+    }
+
+    public function testConnectionFailedEventCarriesTheRequestAndTheException() {
+        $events = CEvent::dispatcher();
+        $captured = [];
+        $events->listen(CHTTP_Client_Event_ConnectionFailed::class, function ($event) use (&$captured) {
+            $captured[] = $event;
+        });
+
+        try {
+            $this->factory->fake(CHTTP_Client::failedConnection('Gagal tersambung'));
+            try {
+                $this->factory->get('https://example.com/rusak');
+            } catch (CHTTP_Client_Exception_ConnectionException $e) {
+                //dilempar ulang ke pemanggil; event sudah terpancar
+            }
+        } finally {
+            $events->forget(CHTTP_Client_Event_ConnectionFailed::class);
+        }
+
+        $this->assertCount(1, $captured);
+        $this->assertSame('https://example.com/rusak', $captured[0]->request->url());
+        $this->assertInstanceOf(CHTTP_Client_Exception_ConnectionException::class, $captured[0]->exception);
+        $this->assertSame('Gagal tersambung', $captured[0]->exception->getMessage());
+    }
+
+    public function testConnectionFailedEventStillWorksWithOnlyTheRequest() {
+        $event = new CHTTP_Client_Event_ConnectionFailed(new CHTTP_Client_Request(new GuzzleHttp\Psr7\Request('GET', 'https://example.com')));
+
+        $this->assertNull($event->exception);
+        $this->assertSame('https://example.com', $event->request->url());
+    }
 }

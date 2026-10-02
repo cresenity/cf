@@ -2,20 +2,21 @@
 
 class CHTTP_Client_Event_ConnectionFailed {
     /**
-     * The request instance.
-     *
-     * @var \CHTTP_Client_Request
+     * @var CHTTP_Client_Request
      */
     public $request;
 
     /**
-     * Create a new event instance.
-     *
-     * @param \CHTTP_Client_Request $request
-     *
-     * @return void
+     * @var null|CHTTP_Client_Exception_ConnectionException
      */
-    public function __construct(CHTTP_Client_Request $request) {
+    public $exception;
+
+    /**
+     * @param CHTTP_Client_Request                             $request
+     * @param null|CHTTP_Client_Exception_ConnectionException $exception
+     */
+    public function __construct(CHTTP_Client_Request $request, $exception = null) {
         $this->request = $request;
+        $this->exception = $exception;
     }
 }
