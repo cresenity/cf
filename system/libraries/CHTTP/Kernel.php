@@ -105,7 +105,7 @@ class CHTTP_Kernel {
     public function handleRequest(CHTTP_Request $request) {
         $responseCache = CHTTP_ResponseCache::instance();
 
-        if ($responseCache->hasCache()) {
+        if ($responseCache->hasCache() && $responseCache->cacheProfile()->shouldCacheRequest($request)) {
             if ($responseCache->hasBeenCached($request)) {
                 CEvent::dispatch(new CHTTP_ResponseCache_Event_CacheHit($request));
 

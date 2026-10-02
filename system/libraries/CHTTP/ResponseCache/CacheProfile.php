@@ -48,6 +48,10 @@ class CHTTP_ResponseCache_CacheProfile {
             return false;
         }
 
+        if ($request->headers->has('Authorization')) {
+            return false;
+        }
+
         return $request->isMethod('get');
     }
 
@@ -65,7 +69,31 @@ class CHTTP_ResponseCache_CacheProfile {
             return false;
         }
 
+        if ($this->hasPrivateCacheDirectives($response)) {
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * Respons yang menyatakan dirinya per-pengguna tidak boleh dibagikan lewat cache bersama.
+     *
+     * @param Response $response
+     *
+     * @return bool
+     */
+    public function hasPrivateCacheDirectives(Response $response) {
+        $cacheControl = strtolower((string) $response->headers->get('Cache-Control', ''));
+        if (strpos($cacheControl, 'no-store') !== false) {
+            return true;
+        }
+        // 'no-cache, private' adalah nilai bawaan respons yang tidak mengatur Cache-Control
+        if ($cacheControl !== 'no-cache, private' && strpos($cacheControl, 'private') !== false) {
+            return true;
+        }
+
+        return strpos(strtolower((string) $response->headers->get('Vary', '')), 'cookie') !== false;
     }
 
     public function isRunningInConsole() {

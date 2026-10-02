@@ -74,7 +74,7 @@ final class CHTTP_ResponseCache {
      * @return Response
      */
     public function getCachedResponseFor(CHTTP_Request $request, array $tags = []) {
-        return $this->taggedCache($tags)->get($this->hasher->getHashFor($request));
+        return $this->taggedCache($tags)->get($this->getHasher()->getHashFor($request));
     }
 
     /**
@@ -124,7 +124,7 @@ final class CHTTP_ResponseCache {
         }
 
         $this->getCache()->put(
-            $this->hasher->getHashFor($request),
+            $this->getHasher()->getHashFor($request),
             $response,
             $this->cacheProfile->cacheRequestUntil($request)
         );

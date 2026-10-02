@@ -2,6 +2,7 @@
 
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 
 class CHTTP_ResponseCache_Serializer_DefaultSerializer implements CHTTP_ResponseCache_Serializer_SerializerInterface {
     const RESPONSE_TYPE_NORMAL = 'normal';
@@ -21,7 +22,7 @@ class CHTTP_ResponseCache_Serializer_DefaultSerializer implements CHTTP_Response
 
         $response = $this->buildResponse($responseProperties);
 
-        $response->headers = $responseProperties['headers'];
+        $response->headers = $this->withoutCookies($responseProperties['headers']);
 
         return $response;
     }
@@ -33,7 +34,7 @@ class CHTTP_ResponseCache_Serializer_DefaultSerializer implements CHTTP_Response
      */
     protected function getResponseData(Response $response) {
         $statusCode = $response->getStatusCode();
-        $headers = $response->headers;
+        $headers = $this->withoutCookies(clone $response->headers);
 
         if ($response instanceof BinaryFileResponse) {
             $content = $response->getFile()->getPathname();
@@ -46,6 +47,25 @@ class CHTTP_ResponseCache_Serializer_DefaultSerializer implements CHTTP_Response
         $type = static::RESPONSE_TYPE_NORMAL;
 
         return compact('statusCode', 'headers', 'content', 'type');
+    }
+
+    /**
+     * Cookie milik pengunjung pertama tidak boleh ikut tersimpan maupun diputar ulang ke pengunjung lain.
+     *
+     * @param mixed $headers
+     *
+     * @return mixed
+     */
+    protected function withoutCookies($headers) {
+        if (!$headers instanceof ResponseHeaderBag) {
+            return $headers;
+        }
+        foreach ($headers->getCookies() as $cookie) {
+            $headers->removeCookie($cookie->getName(), $cookie->getPath(), $cookie->getDomain());
+        }
+        $headers->remove('Set-Cookie');
+
+        return $headers;
     }
 
     /**
