@@ -194,4 +194,82 @@ class Core_MaintenanceTest extends TestCase {
             CF::maintenanceDecision($this->config(['down' => false]), self::SECRET)
         );
     }
+
+    // ------------------------------------------------------------------
+    // kunci opsional: except, cookie bertanda tangan, respons
+    // ------------------------------------------------------------------
+
+    public function testExceptPathsAreLetThroughWhileEverythingElseStaysDown() {
+        $config = $this->config(['except' => ['health', 'webhook/*', '/']]);
+
+        $this->assertSame(CF::MAINTENANCE_BYPASS, CF::maintenanceDecision($config, 'health'));
+        $this->assertSame(CF::MAINTENANCE_BYPASS, CF::maintenanceDecision($config, '/health/'));
+        $this->assertSame(CF::MAINTENANCE_BYPASS, CF::maintenanceDecision($config, 'webhook/xendit/paid'));
+        $this->assertSame(CF::MAINTENANCE_BYPASS, CF::maintenanceDecision($config, ''), "'/' berarti halaman utama");
+        $this->assertSame(CF::MAINTENANCE_DOWN, CF::maintenanceDecision($config, 'product/list'));
+        $this->assertSame(CF::MAINTENANCE_DOWN, CF::maintenanceDecision($config, 'healthcheck'), 'tanpa wildcard harus persis sama');
+    }
+
+    public function testExceptDoesNothingWhileTheApplicationIsUp() {
+        $this->assertSame(CF::MAINTENANCE_UP, CF::maintenanceDecision($this->config(['down' => false, 'except' => ['health']]), 'health'));
+    }
+
+    public function testAConfigWithoutTheOptionalKeysBehavesAsBefore() {
+        $this->assertSame(CF::MAINTENANCE_DOWN, CF::maintenanceDecision($this->config(), 'health'));
+    }
+
+    public function testASignedBypassCookieIsAcceptedUntilItExpires() {
+        $now = 1000000;
+        $value = CF::maintenanceBypassCookieValue(self::SECRET, $now + 600);
+
+        $this->assertSame(CF::MAINTENANCE_BYPASS, CF::maintenanceDecision($this->config(), 'x', [CF::MAINTENANCE_COOKIE => $value], $now));
+        $this->assertSame(CF::MAINTENANCE_DOWN, CF::maintenanceDecision($this->config(), 'x', [CF::MAINTENANCE_COOKIE => $value], $now + 601), 'kedaluwarsa');
+    }
+
+    public function testASignedBypassCookieCannotBeForgedOrReusedWithAnotherSecret() {
+        $now = 1000000;
+        $payload = json_decode(base64_decode(CF::maintenanceBypassCookieValue(self::SECRET, $now + 600)), true);
+
+        $extended = base64_encode(json_encode(['expires_at' => $now + 999999, 'mac' => $payload['mac']]));
+        $otherSecret = CF::maintenanceBypassCookieValue('rahasia-lain', $now + 600);
+
+        $this->assertSame(CF::MAINTENANCE_DOWN, CF::maintenanceDecision($this->config(), 'x', [CF::MAINTENANCE_COOKIE => $extended], $now), 'masa berlaku diperpanjang tanpa tanda tangan baru');
+        $this->assertSame(CF::MAINTENANCE_DOWN, CF::maintenanceDecision($this->config(), 'x', [CF::MAINTENANCE_COOKIE => $otherSecret], $now));
+        $this->assertSame(CF::MAINTENANCE_DOWN, CF::maintenanceDecision($this->config(), 'x', [CF::MAINTENANCE_COOKIE => 'bukan-base64-json'], $now));
+    }
+
+    public function testThePlainSecretCookieStillWorksNextToTheSignedFormat() {
+        $this->assertSame(CF::MAINTENANCE_BYPASS, CF::maintenanceDecision($this->config(), 'x', [CF::MAINTENANCE_COOKIE => self::SECRET]));
+    }
+
+    public function testTheMaintenanceResponseDefaultsToA503View() {
+        $response = CF::maintenanceResponse($this->config(), CHTTP_Request::create('/x', 'GET'));
+
+        $this->assertSame(503, $response->getStatusCode());
+        $this->assertFalse($response->headers->has('Retry-After'));
+        $this->assertFalse($response->headers->has('Refresh'));
+    }
+
+    public function testTheMaintenanceResponseCarriesStatusRetryAndRefresh() {
+        $response = CF::maintenanceResponse($this->config(['status' => 502, 'retry' => 120, 'refresh' => 30]), CHTTP_Request::create('/x', 'GET'));
+
+        $this->assertSame(502, $response->getStatusCode());
+        $this->assertSame('120', $response->headers->get('Retry-After'));
+        $this->assertSame('30', $response->headers->get('Refresh'));
+    }
+
+    public function testJsonIsOnlyUsedWhenEnabledAndTheRequestExpectsIt() {
+        $request = CHTTP_Request::create('/api/x', 'GET', [], [], [], ['HTTP_ACCEPT' => 'application/json', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']);
+
+        $off = CF::maintenanceResponse($this->config(), $request);
+        $this->assertStringNotContainsString('application/json', (string) $off->headers->get('Content-Type'), 'tanpa kunci json perilaku lama dipertahankan');
+
+        $on = CF::maintenanceResponse($this->config(['json' => true, 'message' => 'Sedang pemeliharaan', 'retry' => 60]), $request);
+        $this->assertSame(503, $on->getStatusCode());
+        $this->assertSame('{"message":"Sedang pemeliharaan"}', $on->getContent());
+        $this->assertSame('60', $on->headers->get('Retry-After'));
+
+        $html = CF::maintenanceResponse($this->config(['json' => true]), CHTTP_Request::create('/x', 'GET', [], [], [], ['HTTP_ACCEPT' => 'text/html']));
+        $this->assertStringNotContainsString('application/json', (string) $html->headers->get('Content-Type'));
+    }
 }

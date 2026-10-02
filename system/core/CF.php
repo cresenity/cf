@@ -1426,6 +1426,9 @@ final class CF {
     /**
      * Determine if the application is down for maintenance.
      *
+     * Optional keys of `data/down`: `except` (paths, `*` wildcard), `retry`, `refresh`, `status`,
+     * `message`, `json` (answer JSON to requests that expect it) and `signed_bypass` (grant a signed, expiring cookie).
+     *
      * @return false|CHTTP_Response
      */
     public static function isDownForMaintenance() {
@@ -1443,36 +1446,76 @@ final class CF {
         }
 
         if ($decision == self::MAINTENANCE_GRANT) {
+            $value = (string) carr::get($data, 'secret');
+            if (carr::get($data, 'signed_bypass', false)) {
+                $value = self::maintenanceBypassCookieValue($value, time() + 60 * 60 * 12);
+            }
+
             return c::redirect(curl::base())->withCookie(
-                CHTTP::cookie()->make(self::MAINTENANCE_COOKIE, (string) carr::get($data, 'secret'), 60 * 12)
+                CHTTP::cookie()->make(self::MAINTENANCE_COOKIE, $value, 60 * 12)
             );
         }
 
-        return c::response()->view(carr::get($data, 'view', 'system.maintenance'), ['data' => $data], 503);
+        return self::maintenanceResponse($data, $request);
+    }
+
+    /**
+     * Build the response shown while the application is down.
+     *
+     * @param mixed         $data    contents of `down.php`
+     * @param CHTTP_Request $request
+     *
+     * @return CHTTP_Response
+     */
+    public static function maintenanceResponse($data, $request) {
+        $status = (int) carr::get($data, 'status', 503);
+        $headers = [];
+        if (carr::get($data, 'retry') !== null) {
+            $headers['Retry-After'] = (int) carr::get($data, 'retry');
+        }
+        if (carr::get($data, 'refresh') !== null) {
+            $headers['Refresh'] = (int) carr::get($data, 'refresh');
+        }
+
+        if (carr::get($data, 'json', false) && $request->expectsJson()) {
+            return c::response()->json(['message' => (string) carr::get($data, 'message', 'Service Unavailable')], $status, $headers);
+        }
+
+        return c::response()->view(carr::get($data, 'view', 'system.maintenance'), ['data' => $data], $status, $headers);
     }
 
     /**
      * Resolve the maintenance decision from configuration and request values.
      *
-     * @param mixed  $data   contents of `down.php`
-     * @param string $path   request path
-     * @param array  $cookie request cookies
+     * @param mixed    $data   contents of `down.php`
+     * @param string   $path   request path
+     * @param array    $cookie request cookies
+     * @param null|int $now    current timestamp (for tests)
      *
      * @return string one of the `MAINTENANCE_*` constants
      */
-    public static function maintenanceDecision($data, $path, array $cookie = []) {
+    public static function maintenanceDecision($data, $path, array $cookie = [], $now = null) {
         if (!is_array($data) || !carr::get($data, 'down', false)) {
             return self::MAINTENANCE_UP;
         }
 
         $secret = (string) carr::get($data, 'secret', '');
+        $trimmedPath = trim((string) $path, '/');
+
+        foreach ((array) carr::get($data, 'except', []) as $pattern) {
+            $pattern = trim((string) $pattern, '/');
+            if ($pattern === $trimmedPath || ($pattern !== '' && cstr::is($pattern, $trimmedPath))) {
+                return self::MAINTENANCE_BYPASS;
+            }
+        }
+
         if (strlen($secret) > 0) {
-            if (trim((string) $path, '/') === $secret) {
+            if ($trimmedPath === $secret) {
                 return self::MAINTENANCE_GRANT;
             }
 
             $value = (string) carr::get($cookie, self::MAINTENANCE_COOKIE, '');
-            if (strlen($value) > 0 && hash_equals($secret, $value)) {
+            if (strlen($value) > 0 && (hash_equals($secret, $value) || self::validMaintenanceBypassCookie($value, $secret, $now))) {
                 return self::MAINTENANCE_BYPASS;
             }
         }
@@ -1483,6 +1526,40 @@ final class CF {
         }
 
         return self::MAINTENANCE_DOWN;
+    }
+
+    /**
+     * Build a signed bypass cookie value that stops working at the given timestamp.
+     *
+     * @param string $secret
+     * @param int    $expiresAt
+     *
+     * @return string
+     */
+    public static function maintenanceBypassCookieValue($secret, $expiresAt) {
+        return base64_encode(json_encode([
+            'expires_at' => (int) $expiresAt,
+            'mac' => hash_hmac('sha256', (string) (int) $expiresAt, (string) $secret),
+        ]));
+    }
+
+    /**
+     * @param string   $value
+     * @param string   $secret
+     * @param null|int $now
+     *
+     * @return bool
+     */
+    protected static function validMaintenanceBypassCookie($value, $secret, $now = null) {
+        $decoded = base64_decode($value, true);
+        $payload = $decoded === false ? null : json_decode($decoded, true);
+        if (!is_array($payload) || !isset($payload['expires_at'], $payload['mac'])) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', (string) (int) $payload['expires_at'], $secret);
+
+        return hash_equals($expected, (string) $payload['mac']) && (int) $payload['expires_at'] > ($now === null ? time() : (int) $now);
     }
 
     /**
