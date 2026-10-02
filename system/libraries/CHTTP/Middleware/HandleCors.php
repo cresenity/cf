@@ -112,7 +112,7 @@ class CHTTP_Middleware_HandleCors {
      * @return array
      */
     protected function getPathsByHost($host) {
-        $paths = $this->paths ?: CF::config('http.cors.path', []);
+        $paths = $this->paths ?: CF::config('http.cors.paths', []) ?: CF::config('http.cors.path', []);
         // If where are paths by given host
         if (isset($paths[$host])) {
             return $paths[$host];
