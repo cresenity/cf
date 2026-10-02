@@ -159,6 +159,7 @@ class CBase_Pipeline implements CBase_PipelineInterface {
         return function ($stack, $pipe) {
             return function () use ($stack, $pipe) {
                 $passable = func_get_args();
+                $original = $passable ? $passable[0] : null;
                 $passable[] = $stack;
                 $passable = array_merge($passable, $this->parameters);
 
@@ -188,7 +189,7 @@ class CBase_Pipeline implements CBase_PipelineInterface {
 
                     return $this->handleCarry($carry);
                 } catch (Exception $e) {
-                    return $this->handleException($passable, $e);
+                    return $this->handleException($original, $e);
                 }
             };
         };
