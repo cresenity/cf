@@ -37,6 +37,26 @@ class HttpResponseFactoryTest extends TestCase {
         return CHTTP_Redirector::instance();
     }
 
+    /**
+     * Tangkap output yang dialirkan (ob_flush di dalam stream tidak sampai ke ob_get_clean biasa).
+     *
+     * @param \Symfony\Component\HttpFoundation\Response $response
+     *
+     * @return string
+     */
+    protected function capture($response) {
+        $collected = '';
+        ob_start(function ($chunk) use (&$collected) {
+            $collected .= $chunk;
+
+            return '';
+        });
+        $response->sendContent();
+        ob_end_flush();
+
+        return $collected;
+    }
+
     public function testMakeAndNoContentSetStatusHeadersAndBody() {
         $response = $this->factory()->make('halo', 201, ['X-Uji' => 'ya']);
 
@@ -170,5 +190,72 @@ class HttpResponseFactoryTest extends TestCase {
     public function testFactoryAndRedirectorAreSingletons() {
         $this->assertSame(CHTTP_ResponseFactory::instance(), CHTTP_ResponseFactory::instance());
         $this->assertSame(CHTTP_Redirector::instance(), CHTTP_Redirector::instance());
+    }
+
+    public function testStreamWithAGeneratorFlushesChunksAndDisablesProxyBuffering() {
+        $response = $this->factory()->stream(function () {
+            yield 'satu';
+            yield 'dua';
+        }, 200, ['X-Uji' => 'ya']);
+
+        $this->assertSame('no', $response->headers->get('X-Accel-Buffering'));
+        $this->assertSame('ya', $response->headers->get('X-Uji'));
+        $this->assertSame('satudua', $this->capture($response));
+    }
+
+    public function testStreamWithAPlainCallbackIsLeftUntouched() {
+        $response = $this->factory()->stream(function () {
+            echo 'biasa';
+        });
+
+        $this->assertNull($response->headers->get('X-Accel-Buffering'));
+    }
+
+    public function testEventStreamWritesServerSentEventsAndAnEndMarker() {
+        $response = $this->factory()->eventStream(function () {
+            yield 'halo';
+            yield 7;
+            yield ['a' => 1];
+            yield new CHTTP_StreamedEvent('selesai', 'ok');
+        });
+
+        $this->assertSame('text/event-stream', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('no-cache', $response->headers->get('Cache-Control'));
+        $this->assertSame('no', $response->headers->get('X-Accel-Buffering'));
+        $output = $this->capture($response);
+
+        $this->assertSame(
+            "event: update\ndata: halo\n\nevent: update\ndata: 7\n\nevent: update\ndata: {\"a\":1}\n\nevent: selesai\ndata: ok\n\nevent: update\ndata: </stream>\n\n",
+            $output
+        );
+    }
+
+    public function testEventStreamEndMarkerCanBeAnEventOrOmitted() {
+        $withEvent = $this->factory()->eventStream(function () {
+            yield 'x';
+        }, [], new CHTTP_StreamedEvent('fin', 'bye'));
+        $this->assertStringEndsWith("event: fin\ndata: bye\n\n", $this->capture($withEvent));
+
+        $without = $this->factory()->eventStream(function () {
+            yield 'x';
+        }, [], null);
+        $this->assertSame("event: update\ndata: x\n\n", $this->capture($without));
+    }
+
+    public function testViewWithAnArrayOfNamesFailsWhenNoneExists() {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->factory()->view(['tidak.ada.satu', 'tidak.ada.dua']);
+    }
+
+    public function testEventStreamEscapesMarkupInEncodedPayloads() {
+        $response = $this->factory()->eventStream(function () {
+            yield ['html' => '<b>"x" & \'y\'</b>'];
+        }, [], null);
+
+        $this->assertSame(
+            "event: update\ndata: {\"html\":\"\\u003Cb\\u003E\\u0022x\\u0022 \\u0026 \\u0027y\\u0027\\u003C\\/b\\u003E\"}\n\n",
+            $this->capture($response)
+        );
     }
 }

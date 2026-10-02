@@ -22,6 +22,20 @@ class CMiddleware_Manager {
     ];
 
     /**
+     * The application's route middleware aliases.
+     *
+     * @var array
+     */
+    protected $routeMiddleware = [];
+
+    /**
+     * The priority-sorted list of middleware.
+     *
+     * @var array
+     */
+    protected $middlewarePriority = [];
+
+    /**
      * The application's route middleware groups.
      *
      * @var array

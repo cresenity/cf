@@ -94,6 +94,13 @@ class CHTTP_Response extends SymfonyResponse {
 
         $json = json_encode($content, JSON_INVALID_UTF8_SUBSTITUTE);
 
-        return $json !== false ? $json : json_encode(['error' => 'Failed to encode response content: ' . json_last_error_msg()]);
+        if ($json === false) {
+            $message = 'Failed to encode response content: ' . json_last_error_msg();
+            CLogger::error('CHTTP_Response: ' . $message);
+
+            return json_encode(['error' => $message]);
+        }
+
+        return $json;
     }
 }

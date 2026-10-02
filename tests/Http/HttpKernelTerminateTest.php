@@ -106,4 +106,72 @@ class HttpKernelTerminateTest extends TestCase {
         $this->assertCount(2, CBase_Defer_DeferredCallbackCollection::instance());
         $this->assertSame(CBase_Defer_DeferredCallbackCollection::instance(), CBase_Defer_DeferredCallbackCollection::instance());
     }
+
+    public function testTerminatingEventIsDispatchedBeforeTerminate() {
+        $fired = 0;
+        CEvent::dispatcher()->listen(CHTTP_Event_Terminating::class, function () use (&$fired) {
+            $fired++;
+        });
+
+        try {
+            (new CHTTP_Kernel())->terminate($this->request(), new CHTTP_Response('x'));
+        } finally {
+            CEvent::dispatcher()->forget(CHTTP_Event_Terminating::class);
+        }
+
+        $this->assertSame(1, $fired);
+    }
+
+    public function testRequestStartedAtIsSetByHandleAndClearedByTerminate() {
+        $kernel = new CHTTP_Kernel();
+        $this->assertNull($kernel->requestStartedAt());
+
+        $request = CHTTP_Request::create('https://contoh.test/jalur-tidak-ada-' . uniqid(), 'GET');
+        $response = $kernel->handle($request);
+
+        $this->assertInstanceOf(CCarbon::class, $kernel->requestStartedAt());
+        $this->assertLessThanOrEqual(time() + 1, $kernel->requestStartedAt()->getTimestamp());
+
+        $kernel->terminate($request, $response);
+        $this->assertNull($kernel->requestStartedAt());
+    }
+
+    public function testSlowRequestHandlersRunOnlyWhenTheThresholdIsExceeded() {
+        $kernel = new CHTTP_Kernel();
+        $calls = [];
+        $kernel->whenRequestLifecycleIsLongerThan(60000, function () use (&$calls) {
+            $calls[] = 'lama-sekali';
+        });
+        $kernel->whenRequestLifecycleIsLongerThan(0, function ($startedAt, $request, $response) use (&$calls) {
+            $calls[] = [get_class($startedAt), $request->path(), $response->getStatusCode()];
+        });
+        $request = CHTTP_Request::create('https://contoh.test/jalur-tidak-ada-' . uniqid(), 'GET');
+        $response = $kernel->handle($request);
+        usleep(2000);
+
+        $kernel->terminate($request, $response);
+
+        $this->assertCount(1, $calls);
+        $this->assertSame(CCarbon::class, $calls[0][0]);
+        $this->assertSame(404, $calls[0][2]);
+    }
+
+    public function testTheDurationThresholdAcceptsAnInterval() {
+        $kernel = new CHTTP_Kernel();
+        $called = false;
+        $kernel->whenRequestLifecycleIsLongerThan(\Carbon\CarbonInterval::milliseconds(1), function () use (&$called) {
+            $called = true;
+        });
+        $request = CHTTP_Request::create('https://contoh.test/jalur-tidak-ada-' . uniqid(), 'GET');
+        $response = $kernel->handle($request);
+        usleep(3000);
+
+        $kernel->terminate($request, $response);
+
+        $this->assertTrue($called);
+    }
+
+    public function testMiddlewareManagerDeclaresItsRouteMiddlewareAndPriorityLists() {
+        $this->assertSame([], CMiddleware::manager()->getRouteMiddleware());
+    }
 }

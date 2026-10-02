@@ -59,6 +59,10 @@ final class CHTTP_ResponseFactory implements CHTTP_Contract_ResponseFactoryInter
      * @return CHTTP_Response
      */
     public function view($view, $data = [], $status = 200, array $headers = []) {
+        if (is_array($view)) {
+            $view = $this->firstExistingView($view);
+        }
+
         if (!$view instanceof CView_View) {
             $view = CView::factory($view, $data);
         } else {
@@ -68,6 +72,25 @@ final class CHTTP_ResponseFactory implements CHTTP_Contract_ResponseFactoryInter
         }
 
         return $this->make($view, $status, $headers);
+    }
+
+    /**
+     * Pick the first view of the list that exists.
+     *
+     * @param array $views
+     *
+     * @throws InvalidArgumentException
+     *
+     * @return string
+     */
+    protected function firstExistingView(array $views) {
+        foreach ($views as $view) {
+            if (CView::exists($view)) {
+                return $view;
+            }
+        }
+
+        throw new InvalidArgumentException('None of the views in the given array exist.');
     }
 
     /**
@@ -100,6 +123,73 @@ final class CHTTP_ResponseFactory implements CHTTP_Contract_ResponseFactoryInter
     }
 
     /**
+     * Create a new server-sent events response from a generator callback.
+     *
+     * @param Closure                           $callback      returns a generator of messages or CHTTP_StreamedEvent
+     * @param array                             $headers
+     * @param null|CHTTP_StreamedEvent|string   $endStreamWith sent last; null or '' to send nothing
+     *
+     * @return StreamedResponse
+     */
+    public function eventStream(Closure $callback, array $headers = [], $endStreamWith = '</stream>') {
+        $flush = function () {
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+
+            flush();
+        };
+
+        return $this->stream(function () use ($callback, $endStreamWith, $flush) {
+            try {
+                foreach ($callback() as $message) {
+                    if (connection_aborted()) {
+                        break;
+                    }
+
+                    $event = 'update';
+
+                    if ($message instanceof CHTTP_StreamedEvent) {
+                        $event = $message->event;
+                        $message = $message->data;
+                    }
+
+                    if (!is_string($message) && !is_numeric($message)) {
+                        $message = json_encode($message, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+                    }
+
+                    echo "event: $event\n";
+                    echo 'data: ' . $message;
+                    echo "\n\n";
+
+                    $flush();
+                }
+
+                if ($endStreamWith !== null && $endStreamWith !== '') {
+                    $endEvent = 'update';
+
+                    if ($endStreamWith instanceof CHTTP_StreamedEvent) {
+                        $endEvent = $endStreamWith->event;
+                        $endStreamWith = $endStreamWith->data;
+                    }
+
+                    echo "event: $endEvent\n";
+                    echo 'data: ' . $endStreamWith;
+                    echo "\n\n";
+
+                    $flush();
+                }
+            } catch (Throwable $e) {
+                CException::exceptionHandler()->report($e);
+            }
+        }, 200, array_merge($headers, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+        ]));
+    }
+
+    /**
      * Create a new streamed response instance.
      *
      * @param \Closure $callback
@@ -109,6 +199,20 @@ final class CHTTP_ResponseFactory implements CHTTP_Contract_ResponseFactoryInter
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function stream($callback, $status = 200, array $headers = []) {
+        if ($callback instanceof Closure && (new ReflectionFunction($callback))->isGenerator()) {
+            return new StreamedResponse(function () use ($callback) {
+                foreach ($callback() as $chunk) {
+                    echo $chunk;
+
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+
+                    flush();
+                }
+            }, $status, array_merge($headers, ['X-Accel-Buffering' => 'no']));
+        }
+
         return new StreamedResponse($callback, $status, $headers);
     }
 

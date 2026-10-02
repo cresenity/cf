@@ -21,6 +21,20 @@ class CHTTP_Kernel {
      */
     protected $middleware = [];
 
+    /**
+     * The handlers to run when a request took longer than their threshold.
+     *
+     * @var array
+     */
+    protected $requestLifecycleDurationHandlers = [];
+
+    /**
+     * When the kernel started handling the current request (microtime).
+     *
+     * @var null|float
+     */
+    protected $requestStartedAt;
+
     protected $isHandled = false;
 
     protected $terminated;
@@ -129,6 +143,7 @@ class CHTTP_Kernel {
     }
 
     public function handle(CHTTP_Request $request) {
+        $this->requestStartedAt = microtime(true);
         CHTTP::setRequest($request);
         $response = null;
 
@@ -158,12 +173,70 @@ class CHTTP_Kernel {
     }
 
     public function terminate($request, $response) {
+        CEvent::dispatch(new CHTTP_Event_Terminating());
+
         $this->terminateMiddleware($request, $response);
         $this->invokeDeferredCallbacks($response);
         CF::terminate();
+        $this->runRequestLifecycleDurationHandlers($request, $response);
         if (!$this->terminated) {
             $this->terminated = true;
         }
+    }
+
+    /**
+     * Register a handler that runs when the request lifecycle took longer than the threshold.
+     *
+     * @param \Carbon\CarbonInterval|float|int $threshold milliseconds, or an interval
+     * @param callable                          $handler   receives the start time, the request and the response
+     *
+     * @return void
+     */
+    public function whenRequestLifecycleIsLongerThan($threshold, $handler) {
+        if ($threshold instanceof \Carbon\CarbonInterval) {
+            $threshold = $threshold->totalMilliseconds;
+        }
+
+        $this->requestLifecycleDurationHandlers[] = [
+            'threshold' => $threshold,
+            'handler' => $handler,
+        ];
+    }
+
+    /**
+     * When the request being handled started.
+     *
+     * @return null|CCarbon
+     */
+    public function requestStartedAt() {
+        if ($this->requestStartedAt === null) {
+            return null;
+        }
+
+        return CCarbon::createFromFormat('U.u', sprintf('%.6F', $this->requestStartedAt));
+    }
+
+    /**
+     * @param CHTTP_Request  $request
+     * @param CHTTP_Response $response
+     *
+     * @return void
+     */
+    protected function runRequestLifecycleDurationHandlers($request, $response) {
+        if ($this->requestStartedAt === null) {
+            return;
+        }
+
+        $elapsed = (microtime(true) - $this->requestStartedAt) * 1000;
+        $startedAt = $this->requestStartedAt();
+
+        foreach ($this->requestLifecycleDurationHandlers as $registered) {
+            if ($elapsed > $registered['threshold']) {
+                call_user_func($registered['handler'], $startedAt, $request, $response);
+            }
+        }
+
+        $this->requestStartedAt = null;
     }
 
     /**
