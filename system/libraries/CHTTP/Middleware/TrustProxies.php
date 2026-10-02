@@ -95,6 +95,9 @@ class CHTTP_Middleware_TrustProxies {
      */
     protected function getTrustedHeaderNames() {
         $headers = $this->headers ?: carr::get($this->config, 'headers');
+        if (is_int($headers)) {
+            return $headers;
+        }
         switch ($headers) {
             case 'HEADER_X_FORWARDED_AWS_ELB':
             case CHTTP_Request::HEADER_X_FORWARDED_AWS_ELB:
@@ -117,8 +120,6 @@ class CHTTP_Middleware_TrustProxies {
             default:
                 return CHTTP_Request::HEADER_X_FORWARDED_FOR | CHTTP_Request::HEADER_X_FORWARDED_HOST | CHTTP_Request::HEADER_X_FORWARDED_PORT | CHTTP_Request::HEADER_X_FORWARDED_PROTO | CHTTP_Request::HEADER_X_FORWARDED_AWS_ELB;
         }
-
-        return $headers;
     }
 
     /**

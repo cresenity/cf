@@ -84,6 +84,9 @@ class CMiddleware_TrustProxy {
      * @return int a bit field of Request::HEADER_*, to set which headers to trust from your proxies
      */
     protected function getTrustedHeaderNames() {
+        if (is_int($this->headers)) {
+            return $this->headers;
+        }
         switch ($this->headers) {
             case 'HEADER_X_FORWARDED_AWS_ELB':
             case CHTTP_Request::HEADER_X_FORWARDED_AWS_ELB:
