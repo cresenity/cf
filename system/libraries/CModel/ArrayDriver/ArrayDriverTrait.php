@@ -40,7 +40,7 @@ trait CModel_ArrayDriver_ArrayDriverTrait {
         $instance = (new static());
 
         $cacheFileName = CF::config('model.array_driver.cache-prefix', 'array-driver') . '-' . cstr::kebab(str_replace('\\', '', static::class)) . '.sqlite';
-        $cacheDirectory = DOCROOT . 'temp' . DS . 'model' . DS . 'array' . DS . 'cache';
+        $cacheDirectory = static::arrayDriverCacheDirectory();
         $cachePath = $cacheDirectory . '/' . $cacheFileName;
         $dataPath = $instance->arrayDriverCacheReferencePath();
 
@@ -85,6 +85,22 @@ trait CModel_ArrayDriver_ArrayDriverTrait {
 
                 break;
         }
+    }
+
+    /**
+     * Direktori cache sqlite per app. Caching tetap opt-in seperti sebelumnya: folder per app hanya dibuat
+     * bila folder lama yang dipakai bersama sudah ada dan bisa ditulis.
+     *
+     * @return string
+     */
+    protected static function arrayDriverCacheDirectory() {
+        $directory = DOCROOT . 'temp' . DS . CTemporary::appFolder('model/array/cache');
+        $legacyDirectory = DOCROOT . 'temp' . DS . 'model' . DS . 'array' . DS . 'cache';
+        if (!is_dir($directory) && is_dir($legacyDirectory) && is_writable($legacyDirectory)) {
+            @mkdir($directory, 0777, true);
+        }
+
+        return $directory;
     }
 
     /**

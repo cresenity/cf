@@ -69,7 +69,7 @@ abstract class CDevSuite_Db_MariaDb {
         }
         $fileName = "{$dbType}-{$dbName}.{$this->getExtension($dbDumper)}";
 
-        $temporaryFilePath = DOCROOT . 'temp' . DS . 'devsuite' . DS . 'db' . DS . 'db-dumps' . DS . $fileName;
+        $temporaryFilePath = $this->temporaryDumpPath($fileName);
 
         $dbDumper->setDumpBinaryPath($this->getDumperBinaryPath());
         $this->files->ensureDirExists(dirname($temporaryFilePath));
@@ -78,6 +78,17 @@ abstract class CDevSuite_Db_MariaDb {
 
         $dbDumper->dumpToFile($temporaryFilePath);
         return $temporaryFilePath;
+    }
+
+    /**
+     * Berkas dump sementara, per app (dump bisa berisi data sensitif).
+     *
+     * @param string $fileName
+     *
+     * @return string
+     */
+    protected function temporaryDumpPath($fileName) {
+        return CTemporary::getDirectory('devsuite/db/db-dumps') . $fileName;
     }
 
     protected function getExtension(CBackup_Database_AbstractDumper $dbDumper) {
