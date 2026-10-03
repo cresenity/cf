@@ -118,7 +118,7 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
         ?array $transformers = null,
         ?Persister $persister = null
     ) {
-        ini_set('memory_limit', '-1');
+        ini_set('memory_limit', CF::config('ml.train_memory_limit', '-1'));
 
         $logger = new CML_Rubix_Logger('TrainData');
 
