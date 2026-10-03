@@ -31,7 +31,8 @@ class CML_Rubix {
                 'kmeans' => \Rubix\ML\Clusterers\KMeans::class
             ],
             'classifier' => [
-                'naivebayes' => \Rubix\ML\Classifiers\NaiveBayes::class
+                'naivebayes' => \Rubix\ML\Classifiers\NaiveBayes::class,
+                'logisticregression' => \Rubix\ML\Classifiers\LogisticRegression::class
             ]
         ];
     }
@@ -53,6 +54,15 @@ class CML_Rubix {
                 'naivebayes' => [
                     'priors' => null,
                     'smoothing' => 1.0
+                ],
+                'logisticregression' => [
+                    'batchSize' => 128,
+                    'optimizer' => null,
+                    'l2Penalty' => 1e-4,
+                    'epochs' => 1000,
+                    'minChange' => 1e-4,
+                    'window' => 5,
+                    'costFn' => null
                 ]
             ]
         ];

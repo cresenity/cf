@@ -5,6 +5,8 @@ class CML {
 
     const ESTIMATOR_CLASSIFIER_NAIVEBAYES = 'classifier.naivebayes';
 
+    const ESTIMATOR_CLASSIFIER_LOGISTICREGRESSION = 'classifier.logisticregression';
+
     /**
      * @return CML_Trainer
      */

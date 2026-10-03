@@ -77,6 +77,12 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
 
             static::trainWithoutTest($modelFilename, $train_data, $data_index_w_label, $estimator_algorithm, $transformers, $persister);
 
+            // trainPartSize=1: pemanggil mengevaluasi sendiri (mis. split train/validation/test
+            // miliknya) - error analysis atas set kosong hanya akan melempar exception.
+            if (count($test_data) === 0) {
+                return null;
+            }
+
             $report = static::getErrorAnalysis($modelFilename, $test_data, $data_index_w_label, $persister);
 
             return $report;
