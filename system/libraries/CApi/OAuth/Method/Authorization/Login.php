@@ -19,6 +19,7 @@ class CApi_OAuth_Method_Authorization_Login extends CApi_OAuth_MethodAbstract {
         $redirectUri = $request->redirect_uri;
         $codeChallenge = $request->code_challenge;
         $codeChallengeMethod = $request->code_challenge_method;
+        $scope = (string) $request->scope;
         $auth = $oauth->createSessionGuard();
         $successLogin = $auth->attempt(['email' => $email, 'password' => $password], false);
 
@@ -32,7 +33,7 @@ class CApi_OAuth_Method_Authorization_Login extends CApi_OAuth_MethodAbstract {
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
             'response_type' => 'code',
-            'scope' => '',
+            'scope' => $scope,
             'state' => $state,
         ];
         if ($codeChallenge) {
