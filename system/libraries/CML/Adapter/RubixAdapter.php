@@ -21,6 +21,7 @@ use Rubix\ML\Transformers\NumericStringConverter;
 use Rubix\ML\CrossValidation\Metrics\Informedness;
 use Rubix\ML\CrossValidation\Reports\ErrorAnalysis;
 use Rubix\ML\Persisters\Persister;
+use Rubix\ML\Probabilistic;
 
 require_once DOCROOT . 'system/vendor/Rubix/ML/functions.php';
 require_once DOCROOT . 'system/vendor/Rubix/ML/constants.php';
@@ -239,6 +240,49 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
         } else {
             return $prediction;
         }
+    }
+
+    /**
+     * Sama seperti predict(), tapi mengembalikan probabilitas per kelas (mis.
+     * ['male' => 0.82, 'female' => 0.18]) bukan label tunggal - cuma untuk estimator yang
+     * implement Rubix\ML\Probabilistic (NaiveBayes/GaussianNB/LogisticRegression/dst; KMeans
+     * TIDAK, lihat CML_Utils::CLUSTERER).
+     *
+     * @param array[]|array $input_data satu baris mentah atau daftar baris, sama seperti predict()
+     *
+     * @throws CML_Exception_RubixException kalau estimator yang dimuat bukan Probabilistic
+     *
+     * @return array[]|array satu baris probabilitas, atau daftar baris sejajar $input_data
+     */
+    public static function probability(
+        string $modelFilename,
+        array $input_data,
+        ?Estimator $estimator = null,
+        ?Persister $persister = null
+    ) {
+        $is_single_dimensional_array = false;
+        if (is_array($input_data) && !is_array($input_data[0] ?? null)) {
+            $input_data = [$input_data];
+            $is_single_dimensional_array = true;
+        }
+
+        $input_data = new Unlabeled($input_data);
+
+        if (is_null($estimator)) {
+            $estimator = static::getEstimatorFromFilesystem($modelFilename, $persister);
+        }
+
+        if (!$estimator instanceof Probabilistic) {
+            throw new CML_Exception_RubixException('Estimator ' . get_class($estimator) . ' tidak mendukung probabilitas (bukan Rubix\ML\Probabilistic).');
+        }
+
+        $probabilities = $estimator->proba($input_data);
+
+        if ($is_single_dimensional_array && is_array($probabilities)) {
+            return $probabilities[0];
+        }
+
+        return $probabilities;
     }
 
     public static function getErrorAnalysis(
