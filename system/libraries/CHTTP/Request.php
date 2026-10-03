@@ -565,9 +565,7 @@ class CHTTP_Request extends SymfonyRequest implements Arrayable, ArrayAccess {
     /**
      * Get the session associated with the request.
      *
-     * @throws \RuntimeException
-     *
-     * @return \CSession_Store
+     * @return null|\CSession_Store null when no session is configured
      */
     public function session() {
         return CBase::session();
