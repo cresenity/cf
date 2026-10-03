@@ -186,6 +186,8 @@ class CApi_ExceptionHandler implements CApi_Contract_ExceptionHandlerInterface, 
         $statusCode = $this->getStatusCode($exception);
         if ($exception instanceof CAuth_Exception_AuthenticationException) {
             $statusCode = 401;
+        } elseif ($exception instanceof CAuth_Exception_AuthorizationException) {
+            $statusCode = 403;
         }
 
         return new CHTTP_Response($response, $statusCode, $this->getHeaders($exception));
@@ -205,6 +207,8 @@ class CApi_ExceptionHandler implements CApi_Contract_ExceptionHandlerInterface, 
             $statusCode = $exception->status;
         } elseif ($exception instanceof CAuth_Exception_AuthenticationException) {
             $statusCode = 401;
+        } elseif ($exception instanceof CAuth_Exception_AuthorizationException) {
+            $statusCode = 403;
         } elseif ($exception instanceof HttpExceptionInterface) {
             $statusCode = $exception->getStatusCode();
         } else {
@@ -351,6 +355,9 @@ class CApi_ExceptionHandler implements CApi_Contract_ExceptionHandlerInterface, 
     protected function getExceptionStatusCode(Exception $exception, $defaultStatusCode = 500) {
         if ($exception instanceof CAuth_Exception_AuthenticationException) {
             return 401;
+        }
+        if ($exception instanceof CAuth_Exception_AuthorizationException) {
+            return 403;
         }
 
         return ($exception instanceof HttpExceptionInterface) ? $exception->getStatusCode() : $defaultStatusCode;
