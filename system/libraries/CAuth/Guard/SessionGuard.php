@@ -510,6 +510,8 @@ class CAuth_Guard_SessionGuard implements CAuth_Contract_StatefulGuardInterface,
         }
 
         //$this->session->put($this->provider->getName(), $id);
+
+        $this->session->regenerate(true);
     }
 
     /**

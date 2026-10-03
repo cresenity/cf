@@ -176,6 +176,18 @@ class AuthSessionGuardTest extends TestCase {
         $this->assertSame(['Login', 'Authenticated'], $this->fired);
     }
 
+    public function testLoginRegeneratesTheSessionIdAndToken() {
+        $guard = $this->guard();
+        $oldId = $this->session->getId();
+        $oldToken = $this->session->token();
+
+        $guard->login($this->provider->retrieveById(2));
+
+        $this->assertNotSame($oldId, $this->session->getId(), 'id sesi diganti agar id yang ditanam sebelum login tidak berlaku');
+        $this->assertNotSame($oldToken, $this->session->token());
+        $this->assertSame(2, $this->session->get($guard->getName()));
+    }
+
     public function testLoginUsingId() {
         $guard = $this->guard();
 
