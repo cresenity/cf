@@ -96,4 +96,9 @@ return [
      */
     'authenticate' => false,
     'authenticate_redirect' => null,
+    /**
+     * Pola path (cstr::is, mis. `mcp`, `.well-known/*`) yang dilayani tanpa sesi: tidak ada middleware sesi,
+     * sehingga tidak ada cookie sesi pada responsnya. Untuk endpoint yang berautentikasi sendiri (bearer token).
+     */
+    'stateless_paths' => [],
 ];

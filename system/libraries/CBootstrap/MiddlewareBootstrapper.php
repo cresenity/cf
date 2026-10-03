@@ -12,7 +12,8 @@ class CBootstrap_MiddlewareBootstrapper extends CBootstrap_BootstrapperAbstract 
     public function bootstrap() {
         CMiddleware::manager()->pushMiddleware(CHTTP_Cookie_Middleware_AddQueuedCookiesToResponse::class);
         CMiddleware::manager()->pushMiddleware(CHTTP_Middleware_CleanInput::class);
-        if (!c::request()->is('cresenity/auth/ping')) {
+        $statelessPaths = (array) CF::config('session.stateless_paths', []);
+        if (!c::request()->is('cresenity/auth/ping') && !($statelessPaths && c::request()->is(...$statelessPaths))) {
             CMiddleware::manager()->pushMiddleware(CSession_Middleware_SessionMiddleware::class);
             if (CF::config('session.authenticate')) {
                 CMiddleware::manager()->pushMiddleware(CAuth_Middleware_AuthenticateSession::class);
