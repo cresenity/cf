@@ -20,6 +20,7 @@ use Rubix\ML\Transformers\MissingDataImputer;
 use Rubix\ML\Transformers\NumericStringConverter;
 use Rubix\ML\CrossValidation\Metrics\Informedness;
 use Rubix\ML\CrossValidation\Reports\ErrorAnalysis;
+use Rubix\ML\Persisters\Persister;
 
 require_once DOCROOT . 'system/vendor/Rubix/ML/functions.php';
 require_once DOCROOT . 'system/vendor/Rubix/ML/constants.php';
@@ -43,7 +44,8 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
         $data_index_w_label = null,
         ?Estimator $estimator_algorithm = null,
         ?array $transformers = null,
-        float $trainPartSize = 1
+        float $trainPartSize = 1,
+        ?Persister $persister = null
     ) {
         $is_testable = false;
         if (is_null($estimator_algorithm)) {
@@ -72,9 +74,9 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
             $train_data = array_slice($data, 0, $train_size);
             $test_data = array_slice($data, $train_size, sizeof($data) - 1);
 
-            static::trainWithoutTest($modelFilename, $train_data, $data_index_w_label, $estimator_algorithm, $transformers);
+            static::trainWithoutTest($modelFilename, $train_data, $data_index_w_label, $estimator_algorithm, $transformers, $persister);
 
-            $report = static::getErrorAnalysis($modelFilename, $test_data, $data_index_w_label);
+            $report = static::getErrorAnalysis($modelFilename, $test_data, $data_index_w_label, $persister);
 
             return $report;
         } else {
@@ -85,6 +87,7 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
                 $data_index_w_label,
                 $estimator_algorithm,
                 $transformers,
+                $persister,
             );
 
             return $return_data;
@@ -105,7 +108,8 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
         array $data,
         $data_index_w_label = null,
         ?Estimator $estimator_algorithm = null,
-        ?array $transformers = null
+        ?array $transformers = null,
+        ?Persister $persister = null
     ) {
         ini_set('memory_limit', '-1');
 
@@ -168,13 +172,19 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
                 ]
             );
         }
-        CML_Utils::createIfNotExistsFolder(dirname($modelFilename));
+        if ($persister === null) {
+            // Bawaan: filesystem lokal, seperti sebelum $persister ada - createIfNotExistsFolder
+            // cuma relevan untuk itu, persister lain (mis. CML_Persister_DiskPersister) urus
+            // sendiri tempat simpannya.
+            CML_Utils::createIfNotExistsFolder(dirname($modelFilename));
+            $persister = new Filesystem($modelFilename);
+        }
         $estimator = new PersistentModel(
             new Pipeline(
                 $transformers,
                 $estimator_algorithm
             ),
-            new Filesystem($modelFilename)
+            $persister
         );
 
         $estimator->train($dataset);
@@ -203,7 +213,8 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
     public static function predict(
         string $modelFilename,
         array $input_data,
-        ?Estimator $estimator = null
+        ?Estimator $estimator = null,
+        ?Persister $persister = null
     ) {
         $is_single_dimensional_array = false;
         if (is_array($input_data) && !is_array($input_data[0] ?? null)) {
@@ -218,7 +229,7 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
         $input_data = new Unlabeled($input_data);
 
         if (is_null($estimator)) {
-            $estimator = static::getEstimatorFromFilesystem($modelFilename);
+            $estimator = static::getEstimatorFromFilesystem($modelFilename, $persister);
         }
 
         $prediction = $estimator->predict($input_data);
@@ -233,7 +244,8 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
     public static function getErrorAnalysis(
         $modelFilename,
         array $samples_w_labels,
-        $key_for_labels
+        $key_for_labels,
+        ?Persister $persister = null
     ) {
         list($samples, $labels) = CML_Utils::getLabelsFromSamples($samples_w_labels, $key_for_labels);
 
@@ -241,7 +253,7 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
 
         $dataset = new Unlabeled($samples);
 
-        $estimator = static::getEstimatorFromFilesystem($modelFilename);
+        $estimator = static::getEstimatorFromFilesystem($modelFilename, $persister);
 
         $logger->info('Starting Error Analysis');
 
@@ -266,8 +278,8 @@ class CML_Adapter_RubixAdapter extends CML_AdapterAbstract {
         return $results;
     }
 
-    public static function getEstimatorFromFilesystem(string $modelFilename): Estimator {
-        return PersistentModel::load(new Filesystem($modelFilename));
+    public static function getEstimatorFromFilesystem(string $modelFilename, ?Persister $persister = null): Estimator {
+        return PersistentModel::load($persister ?: new Filesystem($modelFilename));
     }
 
     public static function fromCsv(string $filename, ?array $columns = null) {

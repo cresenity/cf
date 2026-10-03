@@ -6,7 +6,10 @@ use Rubix\ML\AnomalyDetectors\Scoring;
 
 class CML_Rubix_ResultFiller_AnomalyFiller implements CML_Contract_ResultFillerInterface {
     public static function predict($modelPath, array $data, Estimator $estimator): array {
-        $anomalies = CML_Adapter_RubixAdapter::predict($modelPath, $data);
+        // Pakai $estimator yang sudah dilatih di memori - jangan reload dari $modelPath, itu
+        // cuma masuk akal untuk Filesystem lokal dan gagal untuk persister lain (mis.
+        // CML_Persister_DiskPersister) yang tidak pernah dilewatkan ke sini.
+        $anomalies = CML_Adapter_RubixAdapter::predict($modelPath, $data, $estimator);
 
         if ($estimator instanceof Scoring) {
             $scores = $estimator->score(Unlabeled::build($data));

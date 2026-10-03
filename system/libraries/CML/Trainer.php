@@ -8,6 +8,8 @@ class CML_Trainer {
         $estimator = CML_Rubix::createEstimator($dataTrain->getEstimator(), $dataTrain->getEstimatorParameters());
         $modelRepository = CML_Manager::instance()->getModelRepository($dataTrain->getModelPath());
         $path = $modelRepository->file($dataTrain->getModelFile());
+        $disk = $dataTrain->getDisk();
+        $persister = $disk !== null ? new CML_Persister_DiskPersister($disk, $path) : null;
 
         return $adapter->train(
             $path,
@@ -15,6 +17,8 @@ class CML_Trainer {
             $dataTrain->getDataIndexWithLabel(),
             $estimator,
             $dataTrain->getTransformers(),
+            1,
+            $persister,
         );
     }
 }
