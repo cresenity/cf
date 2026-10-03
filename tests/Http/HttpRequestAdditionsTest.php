@@ -72,4 +72,15 @@ class HttpRequestAdditionsTest extends TestCase {
         $this->assertNull($this->request('https://contoh.test/x', ['HTTP_AUTHORIZATION' => 'Basic abc'])->bearerToken());
         $this->assertNull($this->request()->bearerToken());
     }
+
+    public function testAllLetsTextInputWinOverAFileWithTheSameName() {
+        $file = new \Symfony\Component\HttpFoundation\File\UploadedFile(__FILE__, 'a.txt', 'text/plain', null, true);
+        $request = CHTTP_Request::create('/', 'POST', ['photo' => 'teks', 'name' => 'x'], [], ['photo' => $file, 'doc' => $file]);
+
+        $all = $request->all();
+
+        $this->assertSame('teks', $all['photo'], 'input teks menang atas file bernama sama');
+        $this->assertInstanceOf(CHTTP_UploadedFile::class, $all['doc'], 'file tanpa input bernama sama tetap ikut');
+        $this->assertSame('teks', $request->all('photo')['photo']);
+    }
 }

@@ -245,7 +245,8 @@ trait CHTTP_Trait_InteractsWithInput {
      * @return array
      */
     public function all($keys = null) {
-        $input = array_replace_recursive($this->input(), $this->allFiles());
+        $input = $this->input();
+        $input = array_replace_recursive($input, $this->allFiles(), $input);
 
         if (!$keys) {
             return $input;
