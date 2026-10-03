@@ -42,7 +42,7 @@ class CTemporaryKnownBugsTest extends TestCase {
      * namanya sendiri mengandung titik (mis. versi "v1.2") — beda perlakuan dari nama
      * subdirektori sejenis yang tidak mengandung titik.
      */
-    public function testDirectoryGetPathFailsToCreateASubdirectoryNamedWithADot() {
+    public function testDirectoryGetPathCreatesASubdirectoryNamedWithADot() {
         $this->createdFolders[] = 'uji-bug10';
         $dir = CTemporary::createDirectory('uji-bug10');
 
@@ -50,10 +50,7 @@ class CTemporaryKnownBugsTest extends TestCase {
         $withDot = $dir->getPath('v1.2');
 
         $this->assertDirectoryExists($withoutDot, 'subdirektori tanpa titik dibuat dengan benar');
-        $this->assertDirectoryDoesNotExist(
-            $withDot,
-            'BUG #10: subdirektori "v1.2" salah dikira nama berkas (karena mengandung titik) sehingga tidak dibuat sama sekali'
-        );
+        $this->assertDirectoryExists($withDot, 'subdirektori "v1.2" bukan nama berkas (ekstensinya hanya angka) sehingga dibuat');
     }
 
     /**
@@ -61,7 +58,7 @@ class CTemporaryKnownBugsTest extends TestCase {
      * CTemporary_CustomDirectory (bukti duplikasi logic isFilePath()/removeFilenameFromPath()
      * antara Directory dan CustomDirectory, lihat §1 & §2 dokumen analisa).
      */
-    public function testCustomDirectoryPathFailsToCreateASubdirectoryNamedWithADot() {
+    public function testCustomDirectoryPathCreatesASubdirectoryNamedWithADot() {
         $dir = CTemporary::customDirectory()->force()->create();
 
         try {
@@ -69,10 +66,7 @@ class CTemporaryKnownBugsTest extends TestCase {
             $withDot = $dir->path('v1.2');
 
             $this->assertDirectoryExists($withoutDot, 'subdirektori tanpa titik dibuat dengan benar');
-            $this->assertDirectoryDoesNotExist(
-                $withDot,
-                'BUG #11: sama seperti #10, tapi di implementasi CustomDirectory yang terpisah'
-            );
+            $this->assertDirectoryExists($withDot, 'sama seperti Directory, di implementasi CustomDirectory');
         } finally {
             $dir->delete();
         }
@@ -113,18 +107,37 @@ class CTemporaryKnownBugsTest extends TestCase {
     }
 
     /**
-     * Temuan #14: CTemporary_LocalFile::getFileName() memanggil
-     * ->getDriver()->getAdapter()->getPathPrefix(), API gaya Flysystem v1 lama.
-     * CStorage_Adapter::getDriver() di kode saat ini mengembalikan objek
-     * League\Flysystem\Filesystem (v2/v3), yang TIDAK punya method getAdapter() publik
-     * — jadi baris ini fatal error setiap kali dipanggil, bukan cuma risiko teoretis.
+     * Temuan #14 (diperbaiki): getFileName() memakai CStorage_Adapter::path() sehingga tidak lagi bergantung
+     * pada API Flysystem v1 (getAdapter()->getPathPrefix()) yang sudah tidak ada.
      */
-    public function testLocalFileGetFileNameFailsAgainstTheCurrentFlysystemApi() {
-        $file = CTemporary::createLocalFile('isi apa saja untuk uji bug 14');
+    public function testLocalFileGetFileNameReturnsTheAbsolutePathOfTheStoredFile() {
+        $file = CTemporary::createLocalFile('isi uji bug 14');
 
-        $this->expectException(\Error::class);
-        $this->expectExceptionMessage('getAdapter');
+        $path = $file->getFileName();
 
-        $file->getFileName();
+        $this->assertFileExists($path);
+        $this->assertSame('isi uji bug 14', file_get_contents($path));
+        $this->assertSame($path, (string) $file, '__toString() memakai getFileName()');
+        $this->assertStringStartsWith(rtrim(CTemporary::local()->disk()->path(''), '/'), $path, 'berada di bawah root disk temp lokal');
+    }
+
+    public function testLocalFileDeleteRemovesTheFileAndToleratesAMissingOne() {
+        $file = CTemporary::createLocalFile('akan dihapus', null, null, false);
+        $path = $file->getFileName();
+        $this->assertFileExists($path);
+
+        $this->assertTrue($file->delete());
+        $this->assertFileDoesNotExist($path);
+        $this->assertFalse($file->delete(), 'berkas yang sudah tidak ada dilaporkan false, bukan galat');
+    }
+
+    public function testLocalFileIsDeletedWhenTheObjectIsDestroyed() {
+        $file = CTemporary::createLocalFile('hilang saat objek dibuang');
+        $path = $file->getFileName();
+        $this->assertFileExists($path);
+
+        unset($file);
+
+        $this->assertFileDoesNotExist($path);
     }
 }

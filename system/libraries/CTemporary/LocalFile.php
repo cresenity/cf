@@ -91,9 +91,7 @@ class CTemporary_LocalFile {
      * @return string the full file name
      */
     public function getFileName() {
-        $filename = CTemporary::local()->getDriver()->getAdapter()->getPathPrefix() . $this->fileName;
-
-        return $filename;
+        return CTemporary::local()->disk()->path($this->fileName);
     }
 
     /**

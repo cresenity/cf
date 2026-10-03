@@ -6,6 +6,8 @@ defined('SYSPATH') or die('No direct access allowed.');
  * @see CTemporary
  */
 class CTemporary_Directory {
+    use CTemporary_Trait_FilePathTrait;
+
     protected $path;
 
     /**
@@ -48,17 +50,5 @@ class CTemporary_Directory {
 
     public function delete() {
         CFile::deleteDirectory($this->getPath());
-    }
-
-    protected function removeFilenameFromPath($path) {
-        if (!$this->isFilePath($path)) {
-            return $path;
-        }
-
-        return substr($path, 0, strrpos($path, DS));
-    }
-
-    protected function isFilePath($path) {
-        return strpos($path, '.') !== false;
     }
 }

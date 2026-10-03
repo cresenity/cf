@@ -1,6 +1,8 @@
 <?php
 
 class CTemporary_CustomDirectory {
+    use CTemporary_Trait_FilePathTrait;
+
     /**
      * @var string
      */
@@ -172,28 +174,6 @@ class CTemporary_CustomDirectory {
         }
 
         return trim($name);
-    }
-
-    /**
-     * @param string $path
-     *
-     * @return string
-     */
-    protected function removeFilenameFromPath($path) {
-        if (!$this->isFilePath($path)) {
-            return $path;
-        }
-
-        return substr($path, 0, strrpos($path, DIRECTORY_SEPARATOR));
-    }
-
-    /**
-     * @param string $path
-     *
-     * @return bool
-     */
-    protected function isFilePath($path) {
-        return cstr::contains($path, '.');
     }
 
     /**
