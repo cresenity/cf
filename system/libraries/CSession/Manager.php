@@ -113,6 +113,24 @@ class CSession_Manager {
     }
 
     /**
+     * Get the maximum number of seconds a route-level session lock is held.
+     *
+     * @return int
+     */
+    public function defaultRouteBlockLockSeconds() {
+        return (int) $this->config->get('block_lock_seconds', 10);
+    }
+
+    /**
+     * Get the maximum number of seconds to wait for a route-level session lock.
+     *
+     * @return int
+     */
+    public function defaultRouteBlockWaitSeconds() {
+        return (int) $this->config->get('block_wait_seconds', 10);
+    }
+
+    /**
      * Get the session configuration.
      *
      * @return array
@@ -128,6 +146,17 @@ class CSession_Manager {
      */
     public function getDefaultDriver() {
         return $this->config->get('driver', 'native');
+    }
+
+    /**
+     * Set the default session driver name.
+     *
+     * @param string $name
+     *
+     * @return void
+     */
+    public function setDefaultDriver($name) {
+        $this->config->set('driver', $name);
     }
 
     public function applyNativeSession() {

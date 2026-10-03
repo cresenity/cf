@@ -226,6 +226,30 @@ class CSession_Store implements CSession_Contract_SessionInterface {
     }
 
     /**
+     * Get all the session data except for a specified array of items.
+     *
+     * @param array $keys
+     *
+     * @return array
+     */
+    public function except(array $keys) {
+        return carr::except($this->attributes, $keys);
+    }
+
+    /**
+     * Determine if any of the given keys are present and not null.
+     *
+     * @param string|array $key
+     *
+     * @return bool
+     */
+    public function hasAny($key) {
+        return c::collect(is_array($key) ? $key : func_get_args())->filter(function ($key) {
+            return $this->get($key) !== null;
+        })->count() >= 1;
+    }
+
+    /**
      * Checks if a key exists.
      *
      * @param string|array $key
@@ -599,6 +623,15 @@ class CSession_Store implements CSession_Contract_SessionInterface {
     }
 
     /**
+     * Get the current session ID.
+     *
+     * @return string
+     */
+    public function id() {
+        return $this->getId();
+    }
+
+    /**
      * Get the name of the session.
      *
      * @return string
@@ -707,6 +740,26 @@ class CSession_Store implements CSession_Contract_SessionInterface {
      */
     public function setPreviousUrl($url) {
         $this->put('_previous.url', $url);
+    }
+
+    /**
+     * Get the previous route name from the session.
+     *
+     * @return null|string
+     */
+    public function previousRoute() {
+        return $this->get('_previous.route');
+    }
+
+    /**
+     * Set the "previous" route name in the session.
+     *
+     * @param null|string $route
+     *
+     * @return void
+     */
+    public function setPreviousRoute($route) {
+        $this->put('_previous.route', $route);
     }
 
     /**
