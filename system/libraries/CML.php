@@ -3,6 +3,8 @@
 class CML {
     const ESTIMATOR_CLUSTERER_KMEANS = 'clusterer.kmeans';
 
+    const ESTIMATOR_CLASSIFIER_NAIVEBAYES = 'classifier.naivebayes';
+
     /**
      * @return CML_Trainer
      */

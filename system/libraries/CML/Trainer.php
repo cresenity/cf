@@ -17,7 +17,7 @@ class CML_Trainer {
             $dataTrain->getDataIndexWithLabel(),
             $estimator,
             $dataTrain->getTransformers(),
-            1,
+            $dataTrain->getTrainPartSize(),
             $persister,
         );
     }

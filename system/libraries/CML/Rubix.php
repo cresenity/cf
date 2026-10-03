@@ -29,6 +29,9 @@ class CML_Rubix {
         return [
             'clusterer' => [
                 'kmeans' => \Rubix\ML\Clusterers\KMeans::class
+            ],
+            'classifier' => [
+                'naivebayes' => \Rubix\ML\Classifiers\NaiveBayes::class
             ]
         ];
     }
@@ -44,6 +47,12 @@ class CML_Rubix {
                     'window' => 5,
                     'kernel' => new Manhattan(),
                     'seeder' => null
+                ]
+            ],
+            'classifier' => [
+                'naivebayes' => [
+                    'priors' => null,
+                    'smoothing' => 1.0
                 ]
             ]
         ];
