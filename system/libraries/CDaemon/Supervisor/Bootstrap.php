@@ -25,6 +25,9 @@ class CDaemon_Supervisor_Bootstrap {
             $queuer->addConnector('redis', function () {
                 return new CDaemon_Supervisor_Queue_RedisConnector(CRedis::instance());
             });
+            $queuer->addConnector('database', function () {
+                return new CDaemon_Supervisor_Queue_DatabaseConnector();
+            });
             static::listenForEvents();
 
             if (CF::config('daemon.supervisor.metrics.cron.enabled', false)) {
