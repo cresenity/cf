@@ -535,8 +535,10 @@ class CModel_HasResource_FileAdder_FileAdder {
     }
 
     protected function appendExtension($file, $extension) {
-        return $extension
-            ? $file . '.' . $extension
-            : $file;
+        if (!$extension || strtolower(substr($file, -(strlen($extension) + 1))) === strtolower('.' . $extension)) {
+            return $file;
+        }
+
+        return $file . '.' . $extension;
     }
 }
