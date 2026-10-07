@@ -3,32 +3,11 @@
 use Symfony\Component\Process\Process;
 
 /**
- * Installs devcloud-mcp into Claude Code as a Claude Code Plugin (changed
- * 2026-08-30, was a bare `claude mcp add`/npx registration before). The
- * plugin's code lives in `cresenity/devcloud-mcp` (private repo); this repo's
- * own `cresenity/devcloud-claude-marketplace` is a thin index pointing at it,
- * not a copy - see that repo's README.
+ * Registers the remote DevCloud MCP server (`https://devcloud.cresenity.com/mcp`) in Claude Code
+ * and removes the legacy Node plugin `devcloud-mcp` when it is present. The remote server needs
+ * one interactive login afterwards (`claude mcp login devcloud`), which cannot run from here.
  *
- * Node resolution (>=18, since the system-default `node` is often much older
- * or entirely missing from PATH outside an interactive shell) and the build
- * step both moved into the plugin itself - `bin/run.sh` resolves Node at
- * runtime, and `dist/bundle.cjs` is a committed, self-contained esbuild
- * bundle (a plain `github`/`git` plugin source only does a raw `git clone`,
- * no `npm install`/build step at all). Nothing here needs to warm up a cache
- * or find Node anymore - that whole category of problem (measured directly:
- * npx silently reusing a stale cached build, a bare `node` command resolving
- * an incompatible ancient version) lives inside the plugin now, not here.
- *
- * Always does a full uninstall+reinstall rather than trusting
- * `claude plugin update`'s own version-diffing - that command compares
- * `plugin.json`'s declared version string, which would need a manual bump on
- * every push to be noticed. A fresh install always re-clones current HEAD
- * regardless of the version field, so this sidesteps that entirely (same
- * "never trust an implicit staleness check" lesson as the old npx cache).
- *
- * Also runs `claude:sync` at the end - installing the plugin without a local
- * CLAUDE.md that matches devcloud's copy would leave a session working off
- * stale instructions from the very first prompt.
+ * Also runs `claude:sync` and installs the doc-guard hook, as before.
  */
 class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
     /**
@@ -47,18 +26,39 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
     const PLUGIN_NAME = 'devcloud-mcp';
 
     /**
+     * @var string
+     */
+    const MCP_SERVER_NAME = 'devcloud';
+
+    /**
+     * @var string
+     */
+    const MCP_SERVER_URL = 'https://devcloud.cresenity.com/mcp';
+
+    /**
+     * @var string
+     */
+    const MCP_CLIENT_ID = '29';
+
+    /**
+     * @var string
+     */
+    const MCP_CALLBACK_PORT = '8765';
+
+    /**
      * The name and signature of the console command.
      *
      * @var string
      */
     protected $signature = 'claude:install
         {--scope=user : Claude Code plugin scope: user, project, or local}
-        {--force : Uninstall an existing installation of this plugin before installing}';
+        {--force : Re-register the remote MCP server even when it is already registered}
+        {--keep-legacy : Do not uninstall the legacy devcloud-mcp Node plugin}';
 
     /**
      * @var string
      */
-    protected $description = 'Install the devcloud-mcp Claude Code Plugin (claude plugin install)';
+    protected $description = 'Register the remote DevCloud MCP server in Claude Code and remove the legacy devcloud-mcp plugin';
 
     /**
      * @return int
@@ -81,36 +81,82 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
 
         $this->warnIfNotLoggedIn();
 
-        $pluginRef = static::PLUGIN_NAME . '@' . static::MARKETPLACE_NAME;
-
-        $this->info('Adding marketplace ' . static::MARKETPLACE . '...');
-        $this->runClaude($claudeBinary, ['plugin', 'marketplace', 'add', static::MARKETPLACE]);
-
-        $this->info('Refreshing marketplace (forces a fresh pull, not a cached one)...');
-        $this->runClaude($claudeBinary, ['plugin', 'marketplace', 'update', static::MARKETPLACE_NAME]);
-
-        if ($this->option('force')) {
-            $this->line("Removing any existing '{$pluginRef}' installation ({$scope} scope)...");
-            $this->runClaude($claudeBinary, ['plugin', 'uninstall', $pluginRef, '--scope', $scope]);
+        if (!$this->option('keep-legacy')) {
+            $this->removeLegacyPlugin($claudeBinary, $scope);
         }
 
-        $this->info("Installing {$pluginRef} ({$scope} scope)...");
-        $installProcess = $this->runClaude($claudeBinary, ['plugin', 'install', $pluginRef, '--scope', $scope]);
-
-        if (!$installProcess->isSuccessful()) {
-            $this->error('`claude plugin install` failed. Pass --force to reinstall over an existing one.');
-
+        if (!$this->registerRemoteServer($claudeBinary, $scope)) {
             return CConsole::FAILURE_EXIT;
         }
 
-        $this->info("devcloud-mcp installed ({$scope} scope).");
-        $this->line('Restart any running Claude Code session (or run `/mcp` reconnect) for it to pick up the new version.');
+        $this->info('Remote MCP server registered (' . $scope . ' scope).');
+        $this->line('Next: run `claude mcp login ' . static::MCP_SERVER_NAME . '` in a normal terminal (one-time browser login), then start a new Claude Code session.');
 
         $this->call('claude:sync');
 
         $this->installDocGuardHook();
 
         return CConsole::SUCCESS_EXIT;
+    }
+
+    /**
+     * Uninstalls the legacy Node plugin when installed; absence is not an error.
+     *
+     * @param string $claudeBinary
+     * @param string $scope
+     *
+     * @return void
+     */
+    protected function removeLegacyPlugin($claudeBinary, $scope) {
+        $pluginRef = static::PLUGIN_NAME . '@' . static::MARKETPLACE_NAME;
+        $list = $this->runClaude($claudeBinary, ['plugin', 'list'], false);
+        if (!$list->isSuccessful() || strpos($list->getOutput(), static::PLUGIN_NAME) === false) {
+            $this->line('Legacy plugin ' . static::PLUGIN_NAME . ' not installed.');
+
+            return;
+        }
+
+        $this->info("Removing legacy plugin '{$pluginRef}' ({$scope} scope)...");
+        $uninstall = $this->runClaude($claudeBinary, ['plugin', 'uninstall', $pluginRef, '--scope', $scope]);
+        if (!$uninstall->isSuccessful()) {
+            $this->warn('Could not uninstall the legacy plugin; run `claude plugin uninstall ' . $pluginRef . '` manually (add --scope if it was installed elsewhere).');
+        }
+    }
+
+    /**
+     * Adds the remote MCP server unless it is already registered (or --force replaces it).
+     *
+     * @param string $claudeBinary
+     * @param string $scope
+     *
+     * @return bool
+     */
+    protected function registerRemoteServer($claudeBinary, $scope) {
+        $existing = $this->runClaude($claudeBinary, ['mcp', 'get', static::MCP_SERVER_NAME], false);
+        if ($existing->isSuccessful()) {
+            if (strpos($existing->getOutput(), static::MCP_SERVER_URL) !== false && !$this->option('force')) {
+                $this->line('Remote MCP server already registered.');
+
+                return true;
+            }
+
+            $this->line('Replacing existing MCP server entry...');
+            $this->runClaude($claudeBinary, ['mcp', 'remove', static::MCP_SERVER_NAME, '--scope', $scope]);
+        }
+
+        $this->info('Registering ' . static::MCP_SERVER_URL . '...');
+        $add = $this->runClaude($claudeBinary, [
+            'mcp', 'add', '--transport', 'http', '--scope', $scope,
+            '--client-id', static::MCP_CLIENT_ID, '--callback-port', static::MCP_CALLBACK_PORT,
+            static::MCP_SERVER_NAME, static::MCP_SERVER_URL,
+        ]);
+        if (!$add->isSuccessful()) {
+            $this->error('`claude mcp add` failed.');
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -156,23 +202,25 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
     /**
      * @param string $claudeBinary
      * @param array  $args
+     * @param bool   $echo   whether to print the command output
      *
      * @return Process
      */
-    protected function runClaude($claudeBinary, array $args) {
+    protected function runClaude($claudeBinary, array $args, $echo = true) {
         $process = new Process(array_merge([$claudeBinary], $args));
         $process->setTimeout(180);
-        $process->run(function ($type, $buffer) {
-            $this->output->write($buffer);
+        $process->run(function ($type, $buffer) use ($echo) {
+            if ($echo) {
+                $this->output->write($buffer);
+            }
         });
 
         return $process;
     }
 
     /**
-     * Reminder only - devcloud-mcp itself already fails each tool call with a
-     * clear message when the token is missing/expired, so this does not block
-     * installation.
+     * Reminder only: `phpcf devcloud:login` is still what the other phpcf devcloud
+     * commands use (the MCP server has its own `claude mcp login`).
      *
      * @return void
      */
@@ -180,7 +228,7 @@ class CConsole_Command_Claude_InstallCommand extends CConsole_Command {
         $tokenPath = CDevSuite::homePath() . 'devcloud' . DS . 'oauth.json';
         if (!CFile::exists($tokenPath)) {
             $this->warn('Not logged in to devcloud yet on this machine.');
-            $this->line('Run `phpcf devcloud:login` before using devcloud-mcp tools in Claude Code.');
+            $this->line('Run `phpcf devcloud:login` before using the other phpcf devcloud commands.');
         }
     }
 }
