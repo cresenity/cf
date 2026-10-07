@@ -27,4 +27,14 @@ class CAI {
     public static function fal($options = []) {
         return CAI_Manager::instance()->createFal($options);
     }
+
+    /**
+     * @param string $name
+     * @param string $version
+     *
+     * @return CAI_MCP_Server
+     */
+    public static function mcp($name, $version = '1.0.0') {
+        return CAI_MCP::server($name, $version);
+    }
 }
