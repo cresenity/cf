@@ -16,6 +16,10 @@ CBootstrap::instance()->addBootstrapper([
     CApp_Bootstrapper_DependencyChecker::class,
 ]);
 
+// Header response aman untuk semua app di semua environment (lihat SecurityHeaders.php
+// utk kenapa X-Frame-Options/HSTS tidak ikut di sini - keduanya opt-in per app).
+CMiddleware::manager()->pushMiddleware(CHTTP_Middleware_SecurityHeaders::class);
+
 $domain = CF::domain();
 
 CException::init();
