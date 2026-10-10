@@ -655,7 +655,16 @@ class CException_ExceptionHandler implements CException_ExceptionHandlerInterfac
      */
     protected function renderExceptionContent($e) {
         if (CF::isCli()) {
-            return $this->renderForConsole(new Symfony\Component\Console\Output\ConsoleOutput(), $e);
+            try {
+                return $this->renderForConsole(new Symfony\Component\Console\Output\ConsoleOutput(), $e);
+            } catch (Throwable $renderError) {
+                // ConsoleOutput butuh stream stdout/stderr asli -- bisa gagal di proses daemon
+                // yang sudah lama berjalan (fd ditutup/direct ke tempat lain). Jangan biarkan
+                // exception asli hilang tertutup error render ini.
+                @fwrite(STDERR, (string) $e . PHP_EOL);
+
+                return null;
+            }
         }
 
         $e = $this->unwrapWrappedException($e);
