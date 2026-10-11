@@ -55,6 +55,11 @@ class CApi_OAuth_Loader {
      */
     private $bridgeScopeRepository;
 
+    /**
+     * @var CApi_OAuth_DeviceCodeRepository
+     */
+    private $deviceCodeRepository;
+
     private $clientRepository;
 
     private $tokenRepository;
@@ -140,6 +145,13 @@ class CApi_OAuth_Loader {
             if ($this->oauth->implicitGrantEnabled) {
                 $server->enableGrantType(
                     $this->makeImplicitGrant(),
+                    $this->oauth->tokensExpireIn()
+                );
+            }
+
+            if ($this->oauth->deviceCodeGrantEnabled) {
+                $server->enableGrantType(
+                    $this->makeDeviceCodeGrant(),
                     $this->oauth->tokensExpireIn()
                 );
             }
@@ -229,6 +241,21 @@ class CApi_OAuth_Loader {
      */
     protected function makeImplicitGrant() {
         return new ImplicitGrant($this->oauth->tokensExpireIn());
+    }
+
+    /**
+     * Create and configure an instance of the Device Authorization grant (RFC 8628).
+     *
+     * @return \CApi_OAuth_Bridge_DeviceCodeGrant
+     */
+    protected function makeDeviceCodeGrant() {
+        $grant = new CApi_OAuth_Bridge_DeviceCodeGrant(
+            $this->getDeviceCodeRepository(),
+            $this->getBridgeRefreshTokenRepository()
+        );
+        $grant->setRefreshTokenTTL($this->oauth->refreshTokensExpireIn());
+
+        return $grant;
     }
 
     /**
@@ -366,6 +393,17 @@ class CApi_OAuth_Loader {
         }
 
         return $this->bridgeScopeRepository;
+    }
+
+    /**
+     * @return CApi_OAuth_DeviceCodeRepository
+     */
+    public function getDeviceCodeRepository() {
+        if ($this->deviceCodeRepository == null) {
+            $this->deviceCodeRepository = new CApi_OAuth_DeviceCodeRepository($this->oauth);
+        }
+
+        return $this->deviceCodeRepository;
     }
 
     public function getResourceServer() {

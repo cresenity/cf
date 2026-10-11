@@ -110,3 +110,30 @@ CREATE TABLE `oauth_personal_access_client` (
   `status` tinyint(4) NOT NULL DEFAULT '1',
   PRIMARY KEY (`oauth_personal_access_client_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+DROP TABLE IF EXISTS `oauth_device_code`;
+CREATE TABLE `oauth_device_code` (
+  `oauth_device_code_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `org_id` bigint(20) unsigned DEFAULT NULL,
+  `oauth_client_id` bigint(20) unsigned DEFAULT NULL,
+  `device_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `user_type` varchar(255) DEFAULT NULL,
+  `scopes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `verification_uri` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `device_code_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'PENDING',
+  `expires_at` datetime DEFAULT NULL,
+  `last_polled_at` datetime DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  `createdby` varchar(50) DEFAULT NULL,
+  `updated` datetime DEFAULT NULL,
+  `updatedby` varchar(50) DEFAULT NULL,
+  `deleted` datetime DEFAULT NULL,
+  `deletedby` varchar(50) DEFAULT NULL,
+  `status` tinyint(4) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`oauth_device_code_id`),
+  UNIQUE KEY `uq_oauth_device_code_device_code` (`device_code`),
+  KEY `idx_oauth_device_code_user_code` (`user_code`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -15,6 +15,17 @@ class CApi_OAuth {
     public $implicitGrantEnabled = false;
 
     /**
+     * Indicates if the device authorization grant type (RFC 8628) is enabled.
+     * Opt-in, mati secara default untuk semua app yang memakai CApi_OAuth --
+     * app yang mau memakainya menyalakan eksplisit lewat enableDeviceCodeGrant()
+     * atau dengan menyetel properti ini langsung (lihat DBootstrap::configureOAuth()
+     * di devcloud untuk contoh pemakaian).
+     *
+     * @var bool
+     */
+    public $deviceCodeGrantEnabled = false;
+
+    /**
      * The default scope.
      *
      * @var string
@@ -120,6 +131,40 @@ class CApi_OAuth {
      * @var string
      */
     public $refreshTokenModel = CApi_OAuth_Model_OAuthRefreshToken::class;
+
+    /**
+     * The device code model class name.
+     *
+     * @var string
+     */
+    public $deviceCodeModel = CApi_OAuth_Model_OAuthDeviceCode::class;
+
+    /**
+     * The interval a device code stays valid before expiring.
+     *
+     * @var null|\DateInterval
+     */
+    public $deviceCodeExpireIn;
+
+    /**
+     * Minimum interval between two polls of the same device code (RFC 8628
+     * `interval`/`slow_down`).
+     *
+     * @var null|\DateInterval
+     */
+    public $deviceCodePollingInterval;
+
+    /**
+     * URL halaman web (BUKAN endpoint API) tempat user mengetik user_code dan
+     * approve/deny -- app-specific (devcloud punya controller/view sendiri),
+     * jadi tidak ditebak dari prefix dispatcher seperti RouteManager's getTokenUrl()
+     * dkk. Wajib diisi eksplisit oleh app yang menyalakan deviceCodeGrantEnabled
+     * (lihat DBootstrap::configureOAuth() di devcloud) -- Method/DeviceAuthorization
+     * menolak jelas kalau ini kosong, bukan menebak sebuah URL.
+     *
+     * @var null|string
+     */
+    public $deviceVerificationUri;
 
     /**
      * Indicates if Passport should unserializes cookies.
@@ -250,6 +295,20 @@ class CApi_OAuth {
      */
     public function enableImplicitGrant() {
         $this->implicitGrantEnabled = true;
+
+        return $this;
+    }
+
+    /**
+     * Enable the device authorization grant type (RFC 8628). Mati secara default
+     * (lihat $deviceCodeGrantEnabled) -- hanya app yang memanggil ini (atau
+     * menyetel propertinya langsung) yang expose endpoint
+     * `oauth/device_authorization` dan grant `urn:ietf:params:oauth:grant-type:device_code`.
+     *
+     * @return static
+     */
+    public function enableDeviceCodeGrant() {
+        $this->deviceCodeGrantEnabled = true;
 
         return $this;
     }
@@ -388,6 +447,40 @@ class CApi_OAuth {
         }
 
         $this->socialAccessTokensExpireIn = CCarbon::now()->diff($date);
+
+        return $this;
+    }
+
+    /**
+     * Get or set how long a device code stays valid before expiring.
+     *
+     * @param null|\DateTimeInterface $date
+     *
+     * @return \DateInterval|static
+     */
+    public function deviceCodeExpireIn(?DateTimeInterface $date = null) {
+        if (is_null($date)) {
+            return $this->deviceCodeExpireIn ?: new DateInterval('PT10M');
+        }
+
+        $this->deviceCodeExpireIn = CCarbon::now()->diff($date);
+
+        return $this;
+    }
+
+    /**
+     * Get or set the minimum interval between two polls of the same device code.
+     *
+     * @param null|\DateInterval $interval
+     *
+     * @return \DateInterval|static
+     */
+    public function deviceCodePollingInterval(?DateInterval $interval = null) {
+        if (is_null($interval)) {
+            return $this->deviceCodePollingInterval ?: new DateInterval('PT5S');
+        }
+
+        $this->deviceCodePollingInterval = $interval;
 
         return $this;
     }
@@ -731,6 +824,63 @@ class CApi_OAuth {
         $refreshTokenModel = $this->refreshTokenModel;
 
         return new $refreshTokenModel();
+    }
+
+    /**
+     * Set the device code model class name.
+     *
+     * @param string $deviceCodeModel
+     *
+     * @return $this
+     */
+    public function useDeviceCodeModel($deviceCodeModel) {
+        $this->deviceCodeModel = $deviceCodeModel;
+
+        return $this;
+    }
+
+    /**
+     * Get the device code model class name.
+     *
+     * @return string
+     */
+    public function deviceCodeModel() {
+        return $this->deviceCodeModel;
+    }
+
+    /**
+     * Get a new device code model instance.
+     *
+     * @return \CApi_OAuth_Model_OAuthDeviceCode
+     */
+    public function deviceCode() {
+        $deviceCodeModel = $this->deviceCodeModel();
+
+        return new $deviceCodeModel();
+    }
+
+    /**
+     * @return \CApi_OAuth_DeviceCodeRepository
+     */
+    public function deviceCodeRepository() {
+        return $this->loader()->getDeviceCodeRepository();
+    }
+
+    /**
+     * Get or set the device verification page URL (see $deviceVerificationUri).
+     *
+     * @param null|string $uri
+     *
+     * @return null|string|static
+     */
+    public function deviceVerificationUri($uri = null) {
+        if (is_null($uri)) {
+            return $this->deviceVerificationUri;
+        }
+
+        $this->deviceVerificationUri = $uri;
+
+        return $this;
     }
 
     /**
