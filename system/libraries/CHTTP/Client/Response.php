@@ -307,19 +307,31 @@ class CHTTP_Client_Response implements ArrayAccess {
      */
     public function toException() {
         if ($this->failed()) {
-            $originalTruncateAt = CHTTP_Client_Exception_RequestException::$truncateAt;
+            return $this->makeRequestException();
+        }
+    }
 
-            try {
-                if ($this->truncateExceptionsAt !== null) {
-                    $this->truncateExceptionsAt === false
-                        ? CHTTP_Client_Exception_RequestException::dontTruncate()
-                        : CHTTP_Client_Exception_RequestException::truncateAt($this->truncateExceptionsAt);
-                }
+    /**
+     * Build the request exception for this response, regardless of whether the
+     * status is considered a failure - throwIfStatus()/throwUnlessStatus() need
+     * this to raise on a caller-chosen status (e.g. 200) that failed() would
+     * never classify as an error.
+     *
+     * @return \CHTTP_Client_Exception_RequestException
+     */
+    protected function makeRequestException() {
+        $originalTruncateAt = CHTTP_Client_Exception_RequestException::$truncateAt;
 
-                return new CHTTP_Client_Exception_RequestException($this);
-            } finally {
-                CHTTP_Client_Exception_RequestException::$truncateAt = $originalTruncateAt;
+        try {
+            if ($this->truncateExceptionsAt !== null) {
+                $this->truncateExceptionsAt === false
+                    ? CHTTP_Client_Exception_RequestException::dontTruncate()
+                    : CHTTP_Client_Exception_RequestException::truncateAt($this->truncateExceptionsAt);
             }
+
+            return new CHTTP_Client_Exception_RequestException($this);
+        } finally {
+            CHTTP_Client_Exception_RequestException::$truncateAt = $originalTruncateAt;
         }
     }
 
@@ -383,10 +395,14 @@ class CHTTP_Client_Response implements ArrayAccess {
      */
     public function throwIfStatus($statusCode) {
         if (is_callable($statusCode) && $statusCode($this->status(), $this)) {
-            return $this->throw();
+            throw $this->makeRequestException();
         }
 
-        return $this->status() === $statusCode ? $this->throw() : $this;
+        if ($this->status() === $statusCode) {
+            throw $this->makeRequestException();
+        }
+
+        return $this;
     }
 
     /**
@@ -400,10 +416,18 @@ class CHTTP_Client_Response implements ArrayAccess {
      */
     public function throwUnlessStatus($statusCode) {
         if (is_callable($statusCode)) {
-            return $statusCode($this->status(), $this) ? $this : $this->throw();
+            if ($statusCode($this->status(), $this)) {
+                return $this;
+            }
+
+            throw $this->makeRequestException();
         }
 
-        return $this->status() === $statusCode ? $this : $this->throw();
+        if ($this->status() === $statusCode) {
+            return $this;
+        }
+
+        throw $this->makeRequestException();
     }
 
     /**
