@@ -100,6 +100,17 @@ abstract class CSocialLogin_AbstractUser implements ArrayAccess, CSocialLogin_Co
     }
 
     /**
+     * Fallback for a raw provider attribute with no declared property or getter.
+     *
+     * @param string $key
+     *
+     * @return mixed
+     */
+    public function __get($key) {
+        return isset($this->user[$key]) ? $this->user[$key] : null;
+    }
+
+    /**
      * Set the raw user array from the provider.
      *
      * @param array $user
