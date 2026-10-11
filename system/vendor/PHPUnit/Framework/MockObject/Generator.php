@@ -121,7 +121,7 @@ final class Generator {
      * @throws RuntimeException
      * @throws \PHPUnit\Framework\InvalidArgumentException
      */
-    public function getMock($type, $methods = [], array $arguments = [], $mockClassName = '', $callOriginalConstructor = true, $callOriginalClone = true, $callAutoload = true, $cloneArguments = true, $callOriginalMethods = false, object $proxyTarget = null, $allowMockingUnknownTypes = true, $returnValueGeneration = true) {
+    public function getMock($type, $methods = [], array $arguments = [], $mockClassName = '', $callOriginalConstructor = true, $callOriginalClone = true, $callAutoload = true, $cloneArguments = true, $callOriginalMethods = false, ?object $proxyTarget = null, $allowMockingUnknownTypes = true, $returnValueGeneration = true) {
         if (!is_array($methods) && null !== $methods) {
             throw InvalidArgumentException::create(2, 'array');
         }
@@ -218,7 +218,7 @@ final class Generator {
      * @throws OriginalConstructorInvocationRequiredException
      * @throws \PHPUnit\Framework\InvalidArgumentException
      */
-    public function getMockForAbstractClass($originalClassName, array $arguments = [], $mockClassName = '', $callOriginalConstructor = true, $callOriginalClone = true, $callAutoload = true, array $mockedMethods = null, $cloneArguments = true) {
+    public function getMockForAbstractClass($originalClassName, array $arguments = [], $mockClassName = '', $callOriginalConstructor = true, $callOriginalClone = true, $callAutoload = true, ?array $mockedMethods = null, $cloneArguments = true) {
         if (class_exists($originalClassName, $callAutoload)
             || interface_exists($originalClassName, $callAutoload)) {
             try {
@@ -286,7 +286,7 @@ final class Generator {
      * @throws OriginalConstructorInvocationRequiredException
      * @throws \PHPUnit\Framework\InvalidArgumentException
      */
-    public function getMockForTrait($traitName, array $arguments = [], $mockClassName = '', $callOriginalConstructor = true, $callOriginalClone = true, $callAutoload = true, array $mockedMethods = null, $cloneArguments = true) {
+    public function getMockForTrait($traitName, array $arguments = [], $mockClassName = '', $callOriginalConstructor = true, $callOriginalClone = true, $callAutoload = true, ?array $mockedMethods = null, $cloneArguments = true) {
         if (!trait_exists($traitName, $callAutoload)) {
             throw new UnknownTraitException($traitName);
         }
@@ -372,7 +372,7 @@ final class Generator {
      * @throws ReflectionException
      * @throws ClassIsFinalException
      */
-    public function generate($type, array $methods = null, $mockClassName = '', $callOriginalClone = true, $callAutoload = true, $cloneArguments = true, $callOriginalMethods = false) {
+    public function generate($type, ?array $methods = null, $mockClassName = '', $callOriginalClone = true, $callAutoload = true, $cloneArguments = true, $callOriginalMethods = false) {
         if ($mockClassName !== '') {
             return $this->generateMock(
                 $type,
@@ -636,7 +636,7 @@ final class Generator {
      * @throws RuntimeException
      * @throws ReflectionException
      */
-    private function getObject(MockType $mockClass, $type = '', $callOriginalConstructor = false, $callAutoload = false, array $arguments = [], $callOriginalMethods = false, object $proxyTarget = null, $returnValueGeneration = true) {
+    private function getObject(MockType $mockClass, $type = '', $callOriginalConstructor = false, $callAutoload = false, array $arguments = [], $callOriginalMethods = false, ?object $proxyTarget = null, $returnValueGeneration = true) {
         $className = $mockClass->generate();
 
         if ($callOriginalConstructor) {

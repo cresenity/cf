@@ -16,7 +16,7 @@ use PHPUnit\Framework\Exception\Exception;
  * @internal
  */
 class Error extends Exception {
-    public function __construct($message, $code, $file, $line, \Exception $previous = null) {
+    public function __construct($message, $code, $file, $line, ?\Exception $previous = null) {
         parent::__construct($message, $code, $previous);
 
         $this->file = $file;

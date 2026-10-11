@@ -71,7 +71,7 @@ class Container
      */
     protected $_namedMocks = array();
 
-    public function __construct(Generator $generator = null, LoaderInterface $loader = null)
+    public function __construct(?Generator $generator = null, ?LoaderInterface $loader = null)
     {
         $this->_generator = $generator ?: \Mockery::getDefaultGenerator();
         $this->_loader = $loader ?: \Mockery::getDefaultLoader();

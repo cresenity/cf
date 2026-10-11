@@ -143,7 +143,14 @@ final class Invocation implements SelfDescribing {
                 return 0;
 
             case 'bool':
+            case 'false':
                 return false;
+
+            case 'true':
+                return true;
+
+            case 'null':
+                return null;
 
             case 'array':
                 return [];

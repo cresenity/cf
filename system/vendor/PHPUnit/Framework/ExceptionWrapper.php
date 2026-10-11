@@ -102,7 +102,7 @@ final class ExceptionWrapper extends Exception {
      *
      * Approach works both for var_dump() and var_export() and print_r().
      */
-    private function originalException(Throwable $exceptionToStore = null) {
+    private function originalException(?Throwable $exceptionToStore = null) {
         static $originalExceptions;
 
         $instanceId = spl_object_hash($this);

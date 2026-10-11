@@ -42,7 +42,7 @@ class CallCenter
      *
      * @param StringUtil $util
      */
-    public function __construct(StringUtil $util = null)
+    public function __construct(?StringUtil $util = null)
     {
         $this->util = $util ?: new StringUtil;
         $this->unexpectedCalls = new SplObjectStorage();

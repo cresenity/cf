@@ -29,7 +29,7 @@ interface LegacyMockInterface
      * @param object $partialObject
      * @return void
      */
-    public function mockery_init(\Mockery\Container $container = null, $partialObject = null);
+    public function mockery_init(?\Mockery\Container $container = null, $partialObject = null);
 
     /**
      * Set expected method calls
@@ -105,7 +105,7 @@ interface LegacyMockInterface
      * @param array $args (optional)
      * @return mixed
      */
-    public function shouldNotHaveBeenCalled(array $args = null);
+    public function shouldNotHaveBeenCalled(?array $args = null);
 
     /**
      * In the event shouldReceive() accepting an array of methods/returns

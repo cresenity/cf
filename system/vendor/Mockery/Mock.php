@@ -176,7 +176,7 @@ class Mock implements MockInterface
      * @param bool $instanceMock
      * @return void
      */
-    public function mockery_init(\Mockery\Container $container = null, $partialObject = null, $instanceMock = true)
+    public function mockery_init(?\Mockery\Container $container = null, $partialObject = null, $instanceMock = true)
     {
         if (is_null($container)) {
             $container = new \Mockery\Container();
@@ -803,7 +803,7 @@ class Mock implements MockInterface
         return null;
     }
 
-    public function shouldNotHaveBeenCalled(array $args = null)
+    public function shouldNotHaveBeenCalled(?array $args = null)
     {
         return $this->shouldNotHaveReceived("__invoke", $args);
     }

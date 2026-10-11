@@ -87,7 +87,7 @@ final class PhptTestCase implements Reorderable, SelfDescribing, Test {
      *
      * @throws Exception
      */
-    public function __construct($filename, AbstractPhpProcess $phpUtil = null) {
+    public function __construct($filename, ?AbstractPhpProcess $phpUtil = null) {
         if (!is_file($filename)) {
             throw new Exception(
                 sprintf(
@@ -117,7 +117,7 @@ final class PhptTestCase implements Reorderable, SelfDescribing, Test {
      * @throws \SebastianBergmann\CodeCoverage\UnintentionallyCoveredCodeException
      * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
      */
-    public function run(TestResult $result = null) {
+    public function run(?TestResult $result = null) {
         if ($result === null) {
             $result = new TestResult();
         }

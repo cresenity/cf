@@ -47,8 +47,8 @@ class Doubler
      * @param ClassCreator  $creator
      * @param NameGenerator $namer
      */
-    public function __construct(ClassMirror $mirror = null, ClassCreator $creator = null,
-                                NameGenerator $namer = null)
+    public function __construct(?ClassMirror $mirror = null, ?ClassCreator $creator = null,
+                                ?NameGenerator $namer = null)
     {
         $this->mirror  = $mirror  ?: new ClassMirror;
         $this->creator = $creator ?: new ClassCreator;
@@ -90,7 +90,7 @@ class Doubler
      *
      * @throws \Prophecy\Exception\InvalidArgumentException
      */
-    public function double(ReflectionClass $class = null, array $interfaces, array $args = null)
+    public function double(?ReflectionClass $class, array $interfaces, ?array $args = null)
     {
         foreach ($interfaces as $interface) {
             if (!$interface instanceof ReflectionClass) {
@@ -128,7 +128,7 @@ class Doubler
      *
      * @return string
      */
-    protected function createDoubleClass(ReflectionClass $class = null, array $interfaces)
+    protected function createDoubleClass(?ReflectionClass $class, array $interfaces)
     {
         $name = $this->namer->name($class, $interfaces);
         $node = $this->mirror->reflect($class, $interfaces);

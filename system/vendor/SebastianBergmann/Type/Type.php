@@ -53,6 +53,10 @@ abstract class Type {
                 $result = new FalseType();
 
                 break;
+            case 'true':
+                $result = new TrueType();
+
+                break;
             case 'iterable':
                 $result = new IterableType($allowsNull);
 
@@ -107,6 +111,10 @@ abstract class Type {
     }
 
     public function isFalse() {
+        return false;
+    }
+
+    public function isTrue() {
         return false;
     }
 

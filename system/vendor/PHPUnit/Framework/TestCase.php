@@ -702,7 +702,7 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
      * @throws \SebastianBergmann\CodeCoverage\UnintentionallyCoveredCodeException
      * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
      */
-    public function run(TestResult $result = null) {
+    public function run(?TestResult $result = null) {
         if ($result === null) {
             $result = $this->createResult();
         }
