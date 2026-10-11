@@ -21,7 +21,9 @@ class CHTTP_Middleware_TrimStrings extends CHTTP_Middleware_TransformRequest {
      * @var array
      */
     protected $except = [
-
+        'current_password',
+        'password',
+        'password_confirmation',
     ];
 
     /**

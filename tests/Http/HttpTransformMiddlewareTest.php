@@ -61,10 +61,20 @@ class HttpTransformMiddlewareTest extends TestCase {
         $this->assertNull($request->json('kosong'));
     }
 
-    public function testTrimStringsHasNoDefaultExceptionSoPasswordsAreTrimmed() {
-        $request = $this->pass(new CHTTP_Middleware_TrimStrings(), $this->post(['password' => '  rahasia  ']));
+    public function testTrimStringsDefaultExceptLeavesPasswordFieldsUntrimmed() {
+        // #-21062: current_password/password/password_confirmation dikecualikan bawaan
+        // (upstream), supaya spasi yang disengaja di sandi tidak ikut dipangkas diam-diam.
+        $request = $this->pass(new CHTTP_Middleware_TrimStrings(), $this->post([
+            'current_password' => '  rahasia-lama  ',
+            'password' => '  rahasia  ',
+            'password_confirmation' => '  rahasia  ',
+            'nama' => '  Budi  ',
+        ]));
 
-        $this->assertSame('rahasia', $request->request->get('password'));
+        $this->assertSame('  rahasia-lama  ', $request->request->get('current_password'));
+        $this->assertSame('  rahasia  ', $request->request->get('password'));
+        $this->assertSame('  rahasia  ', $request->request->get('password_confirmation'));
+        $this->assertSame('Budi', $request->request->get('nama'), 'field lain tetap dipangkas seperti biasa');
     }
 
     public function testTrimStringsExceptListUsesExactDottedKeys() {
