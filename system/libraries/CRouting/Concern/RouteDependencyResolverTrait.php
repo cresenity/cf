@@ -33,70 +33,23 @@ trait CRouting_Concern_RouteDependencyResolverTrait {
      * @return array
      */
     public function resolveMethodDependencies(array $parameters, ReflectionFunctionAbstract $reflector) {
-        //support for php 5.6
-        if (!method_exists($reflector, 'getType')) {
-            foreach ($reflector->getParameters() as $key => $parameter) {
-                // If the parameter has a type-hinted class, we will check to see if it is already in
-                // the list of parameters. If it is we will just skip it as it is probably a model
-                // binding and we do not want to mess with those; otherwise, we resolve it here.
-                $className = CBase_Reflector::getParameterClassName($parameter);
-
-                if ($className && !$this->alreadyInParameters($className, $parameters)) {
-                    array_splice(
-                        $parameters,
-                        $key,
-                        0,
-                        [$this->container->make($className)]
-                    );
-                }
-            }
-
-            return $parameters;
-        }
-
-        $instanceCount = 0;
-
-        $values = array_values($parameters);
-
-        $skippableValue = new \stdClass();
-
         foreach ($reflector->getParameters() as $key => $parameter) {
-            $instance = $this->transformDependency($parameter, $parameters, $skippableValue);
+            // If the parameter has a type-hinted class, we will check to see if it is already in
+            // the list of parameters. If it is we will just skip it as it is probably a model
+            // binding and we do not want to mess with those; otherwise, we resolve it here.
+            $className = CBase_Reflector::getParameterClassName($parameter);
 
-            if ($instance !== $skippableValue) {
-                $instanceCount++;
-
-                $this->spliceIntoParameters($parameters, $key, $instance);
-            } elseif (!isset($values[$key - $instanceCount])
-                && $parameter->isDefaultValueAvailable()
-            ) {
-                $this->spliceIntoParameters($parameters, $key, $parameter->getDefaultValue());
+            if ($className && !$this->alreadyInParameters($className, $parameters)) {
+                array_splice(
+                    $parameters,
+                    $key,
+                    0,
+                    [$this->container->make($className)]
+                );
             }
         }
 
         return $parameters;
-    }
-
-    /**
-     * Attempt to transform the given parameter into a class instance.
-     *
-     * @param \ReflectionParameter $parameter
-     * @param array                $parameters
-     * @param object               $skippableValue
-     *
-     * @return mixed
-     */
-    protected function transformDependency(ReflectionParameter $parameter, $parameters, $skippableValue) {
-        $className = CBase_Reflector::getParameterClassName($parameter);
-
-        // If the parameter has a type-hinted class, we will check to see if it is already in
-        // the list of parameters. If it is we will just skip it as it is probably a model
-        // binding and we do not want to mess with those; otherwise, we resolve it here.
-        if ($className && !$this->alreadyInParameters($className, $parameters)) {
-            return $parameter->isDefaultValueAvailable() ? null : CContainer::getInstance()->make($className);
-        }
-
-        return $skippableValue;
     }
 
     /**
@@ -111,23 +64,5 @@ trait CRouting_Concern_RouteDependencyResolverTrait {
         return !is_null(carr::first($parameters, function ($value) use ($class) {
             return $value instanceof $class;
         }));
-    }
-
-    /**
-     * Splice the given value into the parameter list.
-     *
-     * @param array  $parameters
-     * @param string $offset
-     * @param mixed  $value
-     *
-     * @return void
-     */
-    protected function spliceIntoParameters(array &$parameters, $offset, $value) {
-        array_splice(
-            $parameters,
-            $offset,
-            0,
-            [$value]
-        );
     }
 }
