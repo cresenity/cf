@@ -22,7 +22,9 @@ class CApi_OAuth_Method_Authorization_Deny extends CApi_OAuth_MethodAbstract {
         $separator = $authRequest->getGrantTypeId() === 'implicit' ? '#' : (strstr($uri, '?') ? '&' : '?');
 
         return c::response()->redirectTo(
-            $uri . $separator . 'error=access_denied&state=' . $request->input('state')
+            $this->getOAuth()->appendIssuerParam(
+                $uri . $separator . 'error=access_denied&state=' . $request->input('state')
+            )
         );
     }
 }

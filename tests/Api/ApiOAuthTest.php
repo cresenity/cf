@@ -37,4 +37,43 @@ class ApiOAuthTest extends TestCase {
         $this->assertSame(['scope-a' => 'A'], $first->scopes);
         $this->assertSame([], $second->scopes, 'instance lain tidak boleh ikut berubah');
     }
+
+    public function testIssuerIsNullWithoutConfigAndAppendIssuerParamIsANoOp() {
+        $oauth = new CApi_OAuth('cfapitest-oauth-no-issuer');
+
+        $this->assertNull($oauth->issuer());
+        $this->assertSame('https://app.test/cb?code=abc&state=xyz', $oauth->appendIssuerParam('https://app.test/cb?code=abc&state=xyz'), '#-21086 aditif: tanpa config issuer, redirect tidak berubah sama sekali');
+    }
+
+    public function testAppendIssuerParamAddsToAnExistingQueryString() {
+        CConfig::repository()->set('api.groups.cfapitest-oauth-issuer-q.oauth.issuer', 'https://issuer.test');
+        $oauth = new CApi_OAuth('cfapitest-oauth-issuer-q');
+
+        $this->assertSame('https://issuer.test', $oauth->issuer());
+        $this->assertSame(
+            'https://app.test/cb?code=abc&state=xyz&iss=https%3A%2F%2Fissuer.test',
+            $oauth->appendIssuerParam('https://app.test/cb?code=abc&state=xyz')
+        );
+    }
+
+    public function testAppendIssuerParamStartsAQueryStringWhenNoneExists() {
+        CConfig::repository()->set('api.groups.cfapitest-oauth-issuer-noq.oauth.issuer', 'https://issuer.test');
+        $oauth = new CApi_OAuth('cfapitest-oauth-issuer-noq');
+
+        $this->assertSame(
+            'https://app.test/cb?iss=https%3A%2F%2Fissuer.test',
+            $oauth->appendIssuerParam('https://app.test/cb')
+        );
+    }
+
+    public function testAppendIssuerParamAddsToTheFragmentForTheImplicitGrant() {
+        CConfig::repository()->set('api.groups.cfapitest-oauth-issuer-frag.oauth.issuer', 'https://issuer.test');
+        $oauth = new CApi_OAuth('cfapitest-oauth-issuer-frag');
+
+        $this->assertSame(
+            'https://app.test/cb#access_token=abc&state=xyz&iss=https%3A%2F%2Fissuer.test',
+            $oauth->appendIssuerParam('https://app.test/cb#access_token=abc&state=xyz'),
+            'grant implisit menaruh parameter di fragment, bukan query string'
+        );
+    }
 }

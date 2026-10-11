@@ -576,6 +576,43 @@ class CApi_OAuth {
     }
 
     /**
+     * The RFC 9207 issuer identifier stamped onto the authorize redirect's `iss`
+     * parameter. Opt-in: a config without `api.groups.<group>.oauth.issuer` set
+     * returns null, and callers leave the redirect untouched in that case.
+     *
+     * @return null|string
+     */
+    public function issuer() {
+        return CF::config('api.groups.' . $this->apiGroup . '.oauth.issuer');
+    }
+
+    /**
+     * Append `iss=<issuer>` to an authorize redirect URI, matching whichever
+     * part (query string or, for the implicit grant, fragment) already carries
+     * `code`/`access_token`/`error`/`state`. Returns $uri unchanged when no
+     * issuer is configured (see issuer()).
+     *
+     * @param string $uri
+     *
+     * @return string
+     */
+    public function appendIssuerParam($uri) {
+        $issuer = $this->issuer();
+        if ($issuer === null || $issuer === '') {
+            return $uri;
+        }
+
+        $param = 'iss=' . rawurlencode($issuer);
+        if (strpos($uri, '#') !== false) {
+            // Implicit grant: parameters live in the fragment, which always already
+            // has at least one (access_token/error), so '&' is always correct here.
+            return $uri . '&' . $param;
+        }
+
+        return $uri . (strpos($uri, '?') !== false ? '&' : '?') . $param;
+    }
+
+    /**
      * Determine if clients are identified using UUIDs.
      *
      * @return bool

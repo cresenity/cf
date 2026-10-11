@@ -17,8 +17,14 @@ class CApi_OAuth_Method_Authorization_Approve extends CApi_OAuth_MethodAbstract 
 
         $authRequest = $this->getAuthRequestFromSession($request);
 
-        return $this->convertResponse(
-            $server->completeAuthorizationRequest($authRequest, new Psr7Response())
-        );
+        $psrResponse = $server->completeAuthorizationRequest($authRequest, new Psr7Response());
+        if ($psrResponse->hasHeader('Location')) {
+            $psrResponse = $psrResponse->withHeader(
+                'Location',
+                $oauth->appendIssuerParam($psrResponse->getHeaderLine('Location'))
+            );
+        }
+
+        return $this->convertResponse($psrResponse);
     }
 }
