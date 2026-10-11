@@ -320,8 +320,8 @@ class CApi_OAuth {
      *
      * @return void
      */
-    public static function tokensCan(array $scopes) {
-        static::$scopes = $scopes;
+    public function tokensCan(array $scopes) {
+        $this->scopes = $scopes;
     }
 
     /**
