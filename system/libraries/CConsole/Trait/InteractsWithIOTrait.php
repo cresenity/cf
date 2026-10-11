@@ -237,7 +237,14 @@ trait CConsole_Trait_InteractsWithIOTrait {
             $table->setColumnStyle($columnIndex, $columnStyle);
         }
 
-        $table->render();
+        try {
+            $table->render();
+        } catch (Throwable $renderError) {
+            // stream output butuh stdout/stderr asli -- bisa gagal kalau proses dipanggil
+            // interaktif lalu terminalnya sudah tidak ada (sesi SSH putus, dsb). Jangan
+            // sampai command yang sedang berjalan ikut fatal karenanya.
+            @fwrite(STDERR, '[table] gagal menulis output: ' . $renderError->getMessage() . PHP_EOL);
+        }
     }
 
     /**
