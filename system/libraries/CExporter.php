@@ -212,6 +212,27 @@ class CExporter {
         return static::writer()->export($export, $writerType);
     }
 
+    /**
+     * Jalankan $callback dengan cache sel PhpSpreadsheet dialihkan ke berkas disk
+     * (CExporter_Cache_FileCache) alih-alih array di memori; cache dikembalikan ke
+     * keadaan sebelumnya setelahnya, apa pun hasil $callback.
+     *
+     * @param callable $callback
+     *
+     * @return mixed
+     */
+    public static function runWithDiskCellCache(callable $callback) {
+        $previousCache = \PhpOffice\PhpSpreadsheet\Settings::getCache();
+        $diskCache = new CExporter_Cache_FileCache();
+        \PhpOffice\PhpSpreadsheet\Settings::setCache($diskCache);
+        try {
+            return $callback();
+        } finally {
+            \PhpOffice\PhpSpreadsheet\Settings::setCache($previousCache);
+            $diskCache->close();
+        }
+    }
+
     public static function config() {
         return CExporter_Config::instance();
     }
