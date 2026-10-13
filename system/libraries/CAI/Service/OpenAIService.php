@@ -65,6 +65,25 @@ class CAI_Service_OpenAIService extends CAI_ServiceAbstract {
         return $this->openAI->images()->create($params);
     }
 
+    /**
+     * Classifies if text/image violates OpenAI's Content Policy.
+     *
+     * @see https://platform.openai.com/docs/api-reference/moderations/create
+     *
+     * @param array $options input (string|array), model (default omni-moderation-latest)
+     *
+     * @return \OpenAI\Responses\Moderations\CreateResponse
+     */
+    public function moderation(array $options = []) {
+        $params = ['input' => carr::get($options, 'input')];
+        $model = carr::get($options, 'model');
+        if (!empty($model)) {
+            $params['model'] = $model;
+        }
+
+        return $this->openAI->moderations()->create($params);
+    }
+
     public function getOpenAI() {
         return $this->openAI;
     }
