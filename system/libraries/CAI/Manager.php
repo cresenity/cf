@@ -68,6 +68,15 @@ class CAI_Manager {
         return new CAI_Service_ElevenLabs($options);
     }
 
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_Qwen
+     */
+    public function createQwen($options = []) {
+        return new CAI_Service_Qwen($options);
+    }
+
     public function createOllamaService() {
     }
 

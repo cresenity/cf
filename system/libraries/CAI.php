@@ -56,6 +56,15 @@ class CAI {
     }
 
     /**
+     * @param array $options
+     *
+     * @return CAI_Service_Qwen
+     */
+    public static function qwen($options = []) {
+        return CAI_Manager::instance()->createQwen($options);
+    }
+
+    /**
      * @param string $name
      * @param string $version
      *
