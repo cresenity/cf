@@ -50,7 +50,6 @@ final class CQC_Phpstan_Service_ReturnType_ModelFindExtension implements Dynamic
         if (!cstr::startsWith($methodName, 'find')) {
             return false;
         }
-        PHPStan\dumpType('test');
         if (!$this->reflectionProvider->getClass(CModel_Query::class)->hasNativeMethod($methodName)
             && !$this->reflectionProvider->getClass(CDatabase_Query_Builder::class)->hasNativeMethod($methodName)
         ) {
