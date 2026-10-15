@@ -112,6 +112,10 @@ services:
         tags:
             - phpstan.broker.dynamicMethodReturnTypeExtension
     -
+        class: CQC_Phpstan_Service_ReturnType_ContainerMakeExtension
+        tags:
+            - phpstan.broker.dynamicMethodReturnTypeExtension
+    -
         class: CQC_Phpstan_Service_ReturnType_ModelFindExtension
         tags:
             - phpstan.broker.dynamicStaticMethodReturnTypeExtension
@@ -119,6 +123,28 @@ services:
         class: CQC_Phpstan_Service_ReturnType_ModelMakeExtension
         tags:
             - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+    -
+        class: CQC_Phpstan_Service_ReturnType_ValueExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+    -
+        class: CQC_Phpstan_Service_ReturnType_EnvExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+    -
+        class: CQC_Phpstan_Service_ReturnType_EnvironmentExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+    -
+        class: CQC_Phpstan_Service_ReturnType_ContainerExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+    -
+        class: CQC_Phpstan_Service_ReturnType_FactoryInstanceExtension
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension
+    -
+        class: CQC_Phpstan_Service_Support_ContainerMakeHelper
     -
         class: CQC_Phpstan_Service_ReturnType_AddControlExtension
         tags:
