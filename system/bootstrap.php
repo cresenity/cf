@@ -31,7 +31,10 @@ if (CF::config('collector.exception')) {
     //justru galat yang paling perlu terlihat (TypeError dan kerabatnya) tidak
     //pernah terkumpul.
     CException::exceptionHandler()->reportable(function (Throwable $e) {
-        CDebug::collector()->collectException($e);
+        // Typo di REPL tinker, bukan bug produksi.
+        if (!($e instanceof \Psy\Exception\ParseErrorException)) {
+            CDebug::collector()->collectException($e);
+        }
     });
 }
 
