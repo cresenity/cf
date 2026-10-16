@@ -101,8 +101,6 @@ class CLogger_Reader_LogReader {
      * @return $this
      */
     public function exceptLevels($levels = null): self {
-        $levels = null;
-
         if (is_array($levels)) {
             $levels = array_map('strtolower', array_filter($levels));
             $levels = array_diff(self::getDefaultLevels(), $levels);

@@ -85,4 +85,16 @@ class LogReaderIndexTest extends TestCase {
         $this->assertSame(0, $missing->total());
         $this->assertSame([], $missing->items());
     }
+
+    public function testExceptLevelsExcludesTheGivenLevels() {
+        $path = $this->tempDir . '/d.log';
+        file_put_contents($path, "[2026-10-16 10:00:01] local.ERROR: satu\n[2026-10-16 10:00:02] local.INFO: dua\n[2026-10-16 10:00:03] local.ERROR: tiga\n");
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+        $reader->scan();
+
+        $this->assertSame(1, $reader->exceptLevels('error')->count());
+        $this->assertSame(1, $reader->except(['ERROR'])->count());
+        $this->assertSame(2, $reader->exceptLevels('info')->count());
+        $this->assertSame(3, $reader->exceptLevels(null)->count());
+    }
 }
