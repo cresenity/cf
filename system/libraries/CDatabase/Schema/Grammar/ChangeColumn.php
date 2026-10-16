@@ -3,16 +3,17 @@ class CDatabase_Schema_Grammar_ChangeColumn {
     /**
      * Compile a change column command into a series of SQL statements.
      *
-     * @param \CDatabase_Schema_Grammar   $grammar
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     * @param \CDatabase                  $connection
+     * $connection sebelumnya type-hint ke facade `CDatabase` (bukan `CDatabase_Connection`,
+     * yang method `getSchemaManager()`-nya sungguh dipakai persis di baris pertama method ini)
+     * - kelas ini sendiri tidak pernah dipanggil dari mana pun sebelum #-21866, jadi salah
+     * ketik itu tidak pernah ketahuan lewat jalur manapun. Diperbaiki di sini supaya benar-benar
+     * bisa dipanggil (SqliteGrammar::compileChange() sekarang memanggilnya).
      *
      * @throws \RuntimeException
      *
      * @return array
      */
-    public static function compile(CDatabase_Schema_Grammar $grammar, CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, CDatabase $connection) {
+    public static function compile(CDatabase_Schema_Grammar $grammar, CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, CDatabase_Connection $connection) {
         $schema = $connection->getSchemaManager();
         $databasePlatform = $schema->getDatabasePlatform();
         $databasePlatform->registerDoctrineTypeMapping('enum', 'string');
@@ -33,9 +34,7 @@ class CDatabase_Schema_Grammar_ChangeColumn {
     /**
      * Get the Doctrine table difference for the given changes.
      *
-     * @param \CDatabase_Schema_Grammar   $grammar
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CDatabase_Schema_Manager   $schema
+     * @param \CDatabase_Schema_Grammar $grammar
      *
      * @return \CDatabase_Schema_Table_Diff|bool
      */
@@ -50,9 +49,6 @@ class CDatabase_Schema_Grammar_ChangeColumn {
 
     /**
      * Get a copy of the given Doctrine table after making the column changes.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CDatabase_Schema_Table     $table
      *
      * @return \CDatabase_Schema_Table
      */
@@ -84,9 +80,6 @@ class CDatabase_Schema_Grammar_ChangeColumn {
     /**
      * Get the Doctrine column instance for a column change.
      *
-     * @param \CDatabase_Schema_Table $table
-     * @param \CBase_Fluent           $fluent
-     *
      * @return \CDatabase_Schema_Column
      */
     protected static function getDoctrineColumn(CDatabase_Schema_Table $table, CBase_Fluent $fluent) {
@@ -98,8 +91,6 @@ class CDatabase_Schema_Grammar_ChangeColumn {
 
     /**
      * Get the Doctrine column change options.
-     *
-     * @param \CBase_Fluent $fluent
      *
      * @return array
      */

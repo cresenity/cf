@@ -7,7 +7,6 @@ class CDatabase_Connection_Pdo_SqliteConnection extends CDatabase_Connection {
      * @param \PDO|\Closure $pdo
      * @param string        $database
      * @param string        $tablePrefix
-     * @param array         $config
      *
      * @return void
      */
@@ -76,8 +75,6 @@ class CDatabase_Connection_Pdo_SqliteConnection extends CDatabase_Connection {
     /**
      * Get the schema state for the connection.
      *
-     * @param null|callable $processFactory
-     *
      * @throws \RuntimeException
      */
     public function getSchemaState(?callable $processFactory = null) {
@@ -100,6 +97,24 @@ class CDatabase_Connection_Pdo_SqliteConnection extends CDatabase_Connection {
      */
     protected function getDoctrineDriver() {
         return new CDatabase_Doctrine_Driver_SqliteDriver();
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @return CDatabase_Platform_Sqlite
+     */
+    public function getDefaultDatabasePlatform() {
+        return new CDatabase_Platform_Sqlite();
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @return CDatabase_Schema_Manager_Sqlite
+     */
+    public function getSchemaManager() {
+        return new CDatabase_Schema_Manager_Sqlite($this);
     }
 
     /**

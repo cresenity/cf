@@ -17,6 +17,9 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile the query to determine if a table exists.
      *
+     * @param mixed $schema
+     * @param mixed $table
+     *
      * @return string
      */
     public function compileTableExists($schema, $table) {
@@ -37,9 +40,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a create table command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     *
      * @return string
      */
     public function compileCreate(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
@@ -55,8 +55,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Get the foreign key syntax for a table creation statement.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
      *
      * @return null|string
      */
@@ -106,8 +104,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Get the primary key syntax for a table creation statement.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     *
      * @return null|string
      */
     protected function addPrimaryKeys(CDatabase_Schema_Blueprint $blueprint) {
@@ -118,9 +114,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Compile alter table commands for adding columns.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
      *
      * @return array
      */
@@ -137,9 +130,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a unique key command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     *
      * @return string
      */
     public function compileUnique(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
@@ -153,9 +143,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Compile a plain index key command.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
      *
      * @return string
      */
@@ -171,9 +158,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a spatial index key command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     *
      * @throws \RuntimeException
      *
      * @return void
@@ -185,9 +169,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a foreign key command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     *
      * @return string
      */
     public function compileForeign(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
@@ -197,9 +178,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a drop table command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     *
      * @return string
      */
     public function compileDrop(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
@@ -208,9 +186,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Compile a drop table (if exists) command.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
      *
      * @return string
      */
@@ -266,33 +241,65 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a drop column command.
      *
-     * @param \CDatabase_Schema_Blueprint     $blueprint
-     * @param \CBase_Fluent                   $command
-     * @param \Illuminate\Database\Connection $connection
+     * `getDoctrineSchemaManager()`/`getDoctrineColumn()` mengembalikan objek vendor
+     * `Doctrine\DBAL\*` asli - `getDoctrineTableDiff()` mewajibkan `CDatabase_Schema_Manager`
+     * (kelas CF sendiri), jadi memanggilnya seperti itu selalu TypeError (dikonfirmasi
+     * langsung, bukan dugaan - lihat #-21866). Dipakai `getSchemaManager()` native di sini
+     * (CDatabase_Schema_Manager_Sqlite sejak #-21866) agar tipe-nya cocok sepenuhnya.
      *
      * @return array
      */
     public function compileDropColumn(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, CDatabase_Connection $connection) {
         $tableDiff = $this->getDoctrineTableDiff(
             $blueprint,
-            $schema = $connection->getDoctrineSchemaManager()
+            $schema = $connection->getSchemaManager()
         );
 
+        $table = $this->getTablePrefix() . $blueprint->getTable();
+        $existingColumns = $schema->listTableColumns($table);
+
         foreach ($command->columns as $name) {
-            $tableDiff->removedColumns[$name] = $connection->getDoctrineColumn(
-                $this->getTablePrefix() . $blueprint->getTable(),
-                $name
-            );
+            $tableDiff->removedColumns[$name] = carr::get($existingColumns, strtolower($name));
         }
 
         return (array) $schema->getDatabasePlatform()->getAlterTableSQL($tableDiff);
     }
 
     /**
-     * Compile a drop unique key command.
+     * Compile a rename column command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
+     * SQLite native (3.25+, dibundel semua PHP modern) - tidak perlu rebuild tabel sama sekali,
+     * beda dari change()/dropColumn() yang benar-benar butuh diffing (lihat #-21866).
+     *
+     * @return string
+     */
+    public function compileRenameColumn(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
+        return sprintf(
+            'alter table %s rename column %s to %s',
+            $this->wrapTable($blueprint),
+            $this->wrap($command->from),
+            $this->wrap($command->to)
+        );
+    }
+
+    /**
+     * Compile a change column command.
+     *
+     * SQLite tidak punya `CHANGE`/`MODIFY COLUMN` native - satu-satunya cara mengubah
+     * tipe/nullable/default kolom yang sudah ada adalah resep rebuild resmi SQLite (tabel baru,
+     * salin data, hapus tabel lama, ganti nama) yang diimplementasikan
+     * `CDatabase_Platform_Sqlite::getAlterTableSQL()`. `CDatabase_Schema_Grammar_ChangeColumn`
+     * (kelas lama, sebelumnya tidak pernah dipanggil di mana pun - lihat #-21866) yang menyusun
+     * diff-nya dari perubahan Blueprint.
+     *
+     * @return array
+     */
+    public function compileChange(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command, ?CDatabase_Connection $connection = null) {
+        return (array) CDatabase_Schema_Grammar_ChangeColumn::compile($this, $blueprint, $command, $connection);
+    }
+
+    /**
+     * Compile a drop unique key command.
      *
      * @return string
      */
@@ -305,9 +312,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a drop index command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     *
      * @return string
      */
     public function compileDropIndex(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
@@ -318,9 +322,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Compile a drop spatial index command.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
      *
      * @throws \RuntimeException
      *
@@ -333,9 +334,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a rename table command.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $command
-     *
      * @return string
      */
     public function compileRename(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
@@ -347,8 +345,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a rename index command.
      *
-     * @param \CDatabase_Schema_Blueprint     $blueprint
-     * @param \CBase_Fluent                   $command
      * @param \Illuminate\Database\Connection $connection
      *
      * @throws \RuntimeException
@@ -422,8 +418,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a char type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeChar(CBase_Fluent $column) {
@@ -432,8 +426,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a string type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -444,8 +436,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a tiny text type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeTinyText(CBase_Fluent $column) {
@@ -454,8 +444,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a text type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -466,8 +454,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a medium text type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeMediumText(CBase_Fluent $column) {
@@ -476,8 +462,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a long text type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -488,8 +472,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for an integer type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeInteger(CBase_Fluent $column) {
@@ -498,8 +480,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a big integer type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -510,8 +490,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a medium integer type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeMediumInteger(CBase_Fluent $column) {
@@ -520,8 +498,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a tiny integer type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -532,8 +508,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a small integer type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeSmallInteger(CBase_Fluent $column) {
@@ -542,8 +516,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a float type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -554,8 +526,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a double type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeDouble(CBase_Fluent $column) {
@@ -564,8 +534,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a decimal type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -576,8 +544,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a boolean type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeBoolean(CBase_Fluent $column) {
@@ -586,8 +552,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for an enumeration type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -602,8 +566,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a json type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeJson(CBase_Fluent $column) {
@@ -612,8 +574,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a jsonb type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -624,8 +584,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a date type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeDate(CBase_Fluent $column) {
@@ -634,8 +592,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a date-time type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -648,8 +604,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
      *
      * Note: "SQLite does not have a storage class set aside for storing dates and/or times."
      *
-     * @param \CBase_Fluent $column
-     *
      * @link https://www.sqlite.org/datatype3.html
      *
      * @return string
@@ -661,8 +615,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a time type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeTime(CBase_Fluent $column) {
@@ -671,8 +623,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a time (with time zone) type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -683,8 +633,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a timestamp type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeTimestamp(CBase_Fluent $column) {
@@ -693,8 +641,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a timestamp (with time zone) type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -705,8 +651,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a year type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeYear(CBase_Fluent $column) {
@@ -715,8 +659,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a binary type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -727,8 +669,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a uuid type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeUuid(CBase_Fluent $column) {
@@ -737,8 +677,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for an IP address type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -749,8 +687,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a MAC address type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     protected function typeMacAddress(CBase_Fluent $column) {
@@ -759,8 +695,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a spatial Geometry type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -771,8 +705,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a spatial Point type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     public function typePoint(CBase_Fluent $column) {
@@ -781,8 +713,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a spatial LineString type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -793,8 +723,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a spatial Polygon type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     public function typePolygon(CBase_Fluent $column) {
@@ -803,8 +731,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a spatial GeometryCollection type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -815,8 +741,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a spatial MultiPoint type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     public function typeMultiPoint(CBase_Fluent $column) {
@@ -825,8 +749,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a spatial MultiLineString type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @return string
      */
@@ -837,8 +759,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Create the column definition for a spatial MultiPolygon type.
      *
-     * @param \CBase_Fluent $column
-     *
      * @return string
      */
     public function typeMultiPolygon(CBase_Fluent $column) {
@@ -847,8 +767,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Create the column definition for a generated, computed column type.
-     *
-     * @param \CBase_Fluent $column
      *
      * @throws \RuntimeException
      *
@@ -860,9 +778,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Get the SQL for a generated virtual column modifier.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $column
      *
      * @return null|string
      */
@@ -883,9 +798,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Get the SQL for a generated stored column modifier.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $column
-     *
      * @return null|string
      */
     protected function modifyStoredAs(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $column) {
@@ -904,9 +816,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Get the SQL for a nullable column modifier.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $column
      *
      * @return null|string
      */
@@ -927,9 +836,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Get the SQL for a default column modifier.
      *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $column
-     *
      * @return null|string
      */
     protected function modifyDefault(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $column) {
@@ -940,9 +846,6 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
 
     /**
      * Get the SQL for an auto-increment column modifier.
-     *
-     * @param \CDatabase_Schema_Blueprint $blueprint
-     * @param \CBase_Fluent               $column
      *
      * @return null|string
      */
