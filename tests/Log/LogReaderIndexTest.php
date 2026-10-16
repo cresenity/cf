@@ -97,4 +97,17 @@ class LogReaderIndexTest extends TestCase {
         $this->assertSame(2, $reader->exceptLevels('info')->count());
         $this->assertSame(3, $reader->exceptLevels(null)->count());
     }
+
+    public function testDirectionSurvivesASearch() {
+        $path = $this->tempDir . '/e.log';
+        file_put_contents($path, $this->logLines(3));
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+
+        //pola CTrait_Controller_Application_Log_System: arah diset dulu, baru search
+        $logs = $reader->setDirection(CLogger_Reader_Direction::BACKWARD)->search('pesan')->scan()->get(3);
+
+        $this->assertCount(3, $logs);
+        $this->assertStringContainsString('pesan ke-3', $logs[0]->text);
+        $this->assertStringContainsString('pesan ke-1', $logs[2]->text);
+    }
 }

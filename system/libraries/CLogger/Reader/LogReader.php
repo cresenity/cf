@@ -222,6 +222,10 @@ class CLogger_Reader_LogReader {
         }
 
         $this->index()->setQuery($this->query);
+        // tiap query punya index sendiri, arah yang sudah diset harus ikut
+        if (isset($this->direction)) {
+            $this->index()->setDirection($this->direction);
+        }
 
         return $this;
     }
