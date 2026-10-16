@@ -14,7 +14,7 @@ final class CDatabase_Schema_Manager_Doctrine extends CDatabase_Schema_Manager {
      */
     private $doctrineManager;
 
-    public function __construct(CDatabase_Connection $conn, \Doctrine\DBAL\Schema\AbstractSchemaManager $doctrineManager, CDatabase_Platform $platform = null) {
+    public function __construct(CDatabase_Connection $conn, \Doctrine\DBAL\Schema\AbstractSchemaManager $doctrineManager, ?CDatabase_Platform $platform = null) {
         $this->db = $conn;
         $this->doctrineManager = $doctrineManager;
         $this->platform = $platform ?: $conn->getDatabasePlatform();
