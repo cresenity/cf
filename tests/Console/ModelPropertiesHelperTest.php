@@ -91,6 +91,17 @@ class ModelPropertiesHelperTest extends TestCase {
         $this->assertSame('null|int', CModel_Console_PropertiesHelper::getGenericTypeForFieldProperty(['type' => 'int']));
     }
 
+    public function testGenericTypeForWriteFallsBackToTypeWhenNoWriteType() {
+        $property = ['type' => 'int', 'notnull' => true];
+        $this->assertSame('int', CModel_Console_PropertiesHelper::getGenericTypeForFieldProperty($property, true), 'tanpa writeType, tulis sama dengan baca');
+    }
+
+    public function testGenericTypeForWriteUsesWriteTypeAndStillAddsNull() {
+        $property = ['type' => 'CCarbon|\Carbon\Carbon', 'writeType' => 'CCarbon|\Carbon\Carbon|string', 'notnull' => false];
+        $this->assertSame('null|CCarbon|\Carbon\Carbon', CModel_Console_PropertiesHelper::getGenericTypeForFieldProperty($property));
+        $this->assertSame('null|CCarbon|\Carbon\Carbon|string', CModel_Console_PropertiesHelper::getGenericTypeForFieldProperty($property, true));
+    }
+
     public function testModelAndTableNameConventions() {
         $this->assertSame('User', CModel_Console_PropertiesHelper::getModel('users'));
         $this->assertSame('Role', CModel_Console_PropertiesHelper::getModel('roles'));
@@ -148,7 +159,7 @@ class ModelPropertiesHelperTest extends TestCase {
     public function testFirstTypeTokenKeepsSpacesInsideGenerics() {
         $this->assertSame('int', CModel_Console_PropertiesHelper::firstTypeToken('int $x'));
         $this->assertSame('array<string, mixed>', CModel_Console_PropertiesHelper::firstTypeToken('array<string, mixed> $x desc'));
-        $this->assertSame('array{a: int, b: string}', CModel_Console_PropertiesHelper::firstTypeToken("  array{a: int, b: string} \$x"));
+        $this->assertSame('array{a: int, b: string}', CModel_Console_PropertiesHelper::firstTypeToken('  array{a: int, b: string} $x'));
         $this->assertSame('callable(int, int)', CModel_Console_PropertiesHelper::firstTypeToken('callable(int, int) ok'));
         $this->assertSame('null|CModel_Collection<int, Foo>', CModel_Console_PropertiesHelper::firstTypeToken('null|CModel_Collection<int, Foo> $foos'));
         $this->assertSame('string', CModel_Console_PropertiesHelper::firstTypeToken('string'), 'tanpa spasi: seluruh teks');
@@ -169,21 +180,21 @@ class ModelPropertiesHelperTest extends TestCase {
 
     public function testApplyPropertiesReplacesOldPropertyLinesInPlaceAndKeepsOtherText() {
         $content = "<?php\n\n/**\n * Deskripsi model.\n *\n * @mixin Bar\n * @property int \$old\n * @property-read Foo \$gone\n * @method static x()\n */\nclass TBModel_Foo extends TBModel {\n}\n";
-        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, " * @property int \$id");
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
 
         $this->assertSame("<?php\n\n/**\n * Deskripsi model.\n *\n * @mixin Bar\n * @property int \$id\n * @method static x()\n */\nclass TBModel_Foo extends TBModel {\n}\n", $result);
     }
 
     public function testApplyPropertiesAddsToADocblockThatHasNoPropertiesWithoutLosingItsText() {
         $content = "<?php\n\n/**\n * Deskripsi penting.\n *\n * @mixin Bar\n */\nclass TBModel_Foo extends TBModel {\n}\n";
-        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, " * @property int \$id");
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
 
         $this->assertSame("<?php\n\n/**\n * Deskripsi penting.\n *\n * @mixin Bar\n * @property int \$id\n */\nclass TBModel_Foo extends TBModel {\n}\n", $result);
     }
 
     public function testApplyPropertiesExpandsAOneLineDocblock() {
         $content = "<?php\n/** Model foo. */\nclass TBModel_Foo extends TBModel {\n}\n";
-        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, " * @property int \$id");
+        $result = CModel_Console_PropertiesHelper::applyPropertiesToDocblock($content, ' * @property int $id');
 
         $this->assertSame("<?php\n/**\n * Model foo.\n * @property int \$id\n */\nclass TBModel_Foo extends TBModel {\n}\n", $result);
     }
@@ -284,6 +295,48 @@ class ModelPropertiesHelperTest extends TestCase {
         $this->assertSame(['$id', '$type', '$name'], array_column($result, 'var'));
         $this->assertSame('null|string', $result[1]['type'], 'yang pertama menang');
         $this->assertSame([], CModel_Console_PropertiesHelper::uniqueByVariable([]));
+    }
+
+    public function testUniqueByVariableKeepsBothHalvesOfAReadWritePair() {
+        $result = CModel_Console_PropertiesHelper::uniqueByVariable([
+            ['prop' => '@property-read', 'var' => '$created', 'type' => 'CCarbon'],
+            ['prop' => '@property-write', 'var' => '$created', 'type' => 'CCarbon|string'],
+            ['prop' => '@property-read', 'var' => '$created', 'type' => 'CCarbon'],
+        ]);
+
+        $this->assertSame([
+            ['prop' => '@property-read', 'var' => '$created', 'type' => 'CCarbon'],
+            ['prop' => '@property-write', 'var' => '$created', 'type' => 'CCarbon|string'],
+        ], $result, 'pasangan read/write pada var yang sama tidak saling menghapus; duplikat tag yang sama tetap hilang');
+    }
+
+    public function testApplySplitFieldPropertiesAddsReadWritePairAndKeepsOthersUntouched() {
+        $properties = [
+            ['prop' => '@property', 'type' => 'int', 'var' => '$id', 'field' => 'id', 'desc' => ''],
+        ];
+        $result = CModel_Console_PropertiesHelper::applySplitFieldProperties($properties, [
+            'created' => ['readType' => 'CCarbon|\Carbon\Carbon', 'writeType' => 'CCarbon|\Carbon\Carbon|string'],
+        ]);
+
+        $this->assertSame([
+            ['prop' => '@property', 'type' => 'int', 'var' => '$id', 'field' => 'id', 'desc' => ''],
+            ['prop' => '@property-read', 'type' => 'CCarbon|\Carbon\Carbon', 'var' => '$created', 'field' => 'created', 'desc' => ''],
+            ['prop' => '@property-write', 'type' => 'CCarbon|\Carbon\Carbon|string', 'var' => '$created', 'field' => 'created', 'desc' => ''],
+        ], $result);
+    }
+
+    public function testApplySplitFieldPropertiesReplacesAnExistingSingleEntryAndKeepsItsDescription() {
+        $properties = [
+            ['prop' => '@property', 'type' => 'CCarbon|\Carbon\Carbon', 'var' => '$created', 'field' => 'created', 'desc' => 'dibuat kapan'],
+        ];
+        $result = CModel_Console_PropertiesHelper::applySplitFieldProperties($properties, [
+            'created' => ['readType' => 'CCarbon|\Carbon\Carbon', 'writeType' => 'CCarbon|\Carbon\Carbon|string'],
+        ]);
+
+        $this->assertSame([
+            ['prop' => '@property-read', 'type' => 'CCarbon|\Carbon\Carbon', 'var' => '$created', 'field' => 'created', 'desc' => 'dibuat kapan'],
+            ['prop' => '@property-write', 'type' => 'CCarbon|\Carbon\Carbon|string', 'var' => '$created', 'field' => 'created', 'desc' => 'dibuat kapan'],
+        ], $result, 'satu entri lama digantikan pasangannya, deskripsi yang sudah ditulis tangan tetap dipertahankan');
     }
 
     public function testWithoutPropertiesReindexesSoPositionsMatchArrayColumn() {

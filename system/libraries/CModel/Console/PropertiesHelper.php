@@ -1,8 +1,13 @@
 <?php
 
 class CModel_Console_PropertiesHelper {
-    public static function getGenericTypeForFieldProperty(array $property) {
-        $type = carr::get($property, 'type');
+    /**
+     * @param bool $write true: tipe sisi tulis (`writeType`, jatuh ke `type` bila tidak ada)
+     *
+     * @return string
+     */
+    public static function getGenericTypeForFieldProperty(array $property, $write = false) {
+        $type = $write ? carr::get($property, 'writeType', carr::get($property, 'type')) : carr::get($property, 'type');
         if (!carr::get($property, 'notnull')) {
             $type = 'null|' . $type;
         }
@@ -234,7 +239,13 @@ class CModel_Console_PropertiesHelper {
                 $type = 'string';
             }
             $type = carr::get($casts, $field, $type);
+            //kolom tanggal (lewat $dates ATAU $casts, keduanya lewat jalur setAttribute() yang sama di CF)
+            //boleh ditulis string - dinormalkan via fromDateTime() sebelum disimpan - tapi dibaca selalu
+            //CCarbon karena getAttribute() mencast ulang tiap kali. Baca dan tulis beda tipe, jadi dipisah
+            //@property-read/@property-write di pemanggil.
+            $isDateField = in_array($type, ['date', 'datetime'], true);
             $type = static::getType($type);
+            $writeType = $isDateField ? $type . '|string' : $type;
             $notnull = $column->getNotnull();
 
             //Accessor menang atas tipe kolom maupun casts: yang diterima
@@ -246,6 +257,7 @@ class CModel_Console_PropertiesHelper {
             $accessorType = static::getAccessorType($modelInstance, $field);
             if ($accessorType !== null) {
                 $type = $accessorType;
+                $writeType = $accessorType;
                 //nullability-nya ikut anotasi accessor itu sendiri, jadi
                 //jangan ditambahi `null|` lagi dari kolomnya
                 $notnull = true;
@@ -254,6 +266,7 @@ class CModel_Console_PropertiesHelper {
             if (!in_array($field, $excludedFields)) {
                 $properties[$field] = [
                     'type' => $type,
+                    'writeType' => $writeType,
                     'notnull' => $notnull,
                     'default' => $column->getDefault(),
                 ];
@@ -377,8 +390,7 @@ class CModel_Console_PropertiesHelper {
      * teks lain di docblock tetap, docblock tanpa `@property` ditambahi sebelum penutupnya, dan kelas tanpa docblock
      * mendapat docblock baru. Mengembalikan null bila tidak ada deklarasi kelas.
      *
-     * @param string $content         isi berkas model
-     * @param string $propertiesBlock baris ` * @property ...` dipisah "\n", kosong berarti hanya menghapus yang lama
+     * @param string $content isi berkas model
      *
      * @return null|string
      */
@@ -500,9 +512,11 @@ class CModel_Console_PropertiesHelper {
     }
 
     /**
-     * Satu anotasi per variabel; yang pertama menang. Docblock yang sudah terlanjur menggandakan properti sembuh sendiri.
+     * Satu anotasi per (tag, variabel); yang pertama menang. Docblock yang sudah terlanjur menggandakan properti
+     * sembuh sendiri. Kunci menyertakan tag (bukan hanya variabel) supaya pasangan `@property-read`/
+     * `@property-write` untuk kolom yang sama (mis. tanggal) tidak saling menghapus.
      *
-     * @param array $properties daftar ['var' => '$nama', ...]
+     * @param array $properties daftar ['prop' => '@property', 'var' => '$nama', ...]
      *
      * @return array
      */
@@ -511,10 +525,11 @@ class CModel_Console_PropertiesHelper {
         $result = [];
         foreach ($properties as $property) {
             $var = carr::get($property, 'var');
-            if ($var !== null && $var !== '' && isset($seen[$var])) {
+            $key = carr::get($property, 'prop') . '|' . $var;
+            if ($var !== null && $var !== '' && isset($seen[$key])) {
                 continue;
             }
-            $seen[$var] = true;
+            $seen[$key] = true;
             $result[] = $property;
         }
 
@@ -524,8 +539,7 @@ class CModel_Console_PropertiesHelper {
     /**
      * Buang properti yang `$isMissing`-nya true dan indeks ulang hasilnya supaya posisi array sama dengan array_column().
      *
-     * @param array    $properties
-     * @param callable $isMissing  menerima satu properti, true bila harus dibuang
+     * @param callable $isMissing menerima satu properti, true bila harus dibuang
      *
      * @return array
      */
@@ -533,6 +547,38 @@ class CModel_Console_PropertiesHelper {
         return array_values(array_filter($properties, function ($property) use ($isMissing) {
             return !$isMissing($property);
         }));
+    }
+
+    /**
+     * Ganti entri `$properties` untuk field bertipe baca/tulis berbeda dengan pasangan
+     * `@property-read`/`@property-write`. Dibuat sebagai operasi tersendiri (bukan di dalam loop pencarian
+     * posisi) supaya tidak mengubah indeks array selagi pemanggil masih mengandalkan posisi yang dihitung
+     * di awal (lihat CConsole_Command_Model_ModelUpdateCommand::updateFieldProperties()).
+     *
+     * @param array $splitFields field => ['readType' => string, 'writeType' => string]
+     *
+     * @return array
+     */
+    public static function applySplitFieldProperties(array $properties, array $splitFields) {
+        $descByField = [];
+        foreach ($properties as $property) {
+            $field = carr::get($property, 'field');
+            if (isset($splitFields[$field]) && carr::get($property, 'desc') && !isset($descByField[$field])) {
+                $descByField[$field] = carr::get($property, 'desc');
+            }
+        }
+
+        $properties = static::withoutProperties($properties, function ($property) use ($splitFields) {
+            return isset($splitFields[carr::get($property, 'field')]);
+        });
+
+        foreach ($splitFields as $field => $types) {
+            $desc = carr::get($descByField, $field, '');
+            $properties[] = ['prop' => '@property-read', 'type' => $types['readType'], 'var' => '$' . $field, 'field' => $field, 'desc' => $desc];
+            $properties[] = ['prop' => '@property-write', 'type' => $types['writeType'], 'var' => '$' . $field, 'field' => $field, 'desc' => $desc];
+        }
+
+        return $properties;
     }
 
     public static function getModel($table) {
