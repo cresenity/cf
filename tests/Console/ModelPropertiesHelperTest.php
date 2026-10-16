@@ -67,6 +67,14 @@ class UjiProps_AuditChild extends UjiProps_AuditBase {
 class UjiProps_NoAuditChild extends CModel {
 }
 
+class UjiPropsModel_WithDate extends CModel {
+    protected $table = 'uji_props_with_date';
+
+    protected $dates = ['created_at'];
+
+    protected $casts = ['meta' => 'array'];
+}
+
 class ModelPropertiesHelperTest extends TestCase {
     public function testGetTypeMapsDatabaseTypesToPhpDocTypes() {
         $this->assertSame('int', CModel_Console_PropertiesHelper::getType('bigint'));
@@ -115,6 +123,38 @@ class ModelPropertiesHelperTest extends TestCase {
 
     public function testSanitizeCastTypeCollapsesDateFormats() {
         $this->assertSame(['a' => 'datetime', 'b' => 'int', 'c' => 'datetime'], CModel_Console_PropertiesHelper::sanitizeCastType(['a' => 'date:Y-m-d', 'b' => 'int', 'c' => 'datetime']));
+    }
+
+    /**
+     * getFields() lewat koneksi sqlite: CDatabase_Connection_Pdo_SqliteConnection tidak punya getSchemaManager()
+     * sendiri (hanya MySQL yang punya) - getFields() jatuh ke getDoctrineSchemaManager() generik, lihat #-21854.
+     * Memverifikasi lintas driver sekaligus memverifikasi $dates/$casts-nya terbaca benar lewat jalur itu.
+     */
+    public function testGetFieldsFallsBackToDoctrineSchemaManagerOnSqlite() {
+        if (!extension_loaded('pdo_sqlite')) {
+            $this->markTestSkipped('butuh ekstensi pdo_sqlite');
+        }
+
+        $manager = CDatabase_Manager::instance();
+        $previous = $manager->getDefaultConnection();
+        $manager->addConnection(['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''], 'uji_props_sqlite');
+        $manager->setDefaultConnection('uji_props_sqlite');
+
+        try {
+            $manager->connection('uji_props_sqlite')->statement(
+                'create table uji_props_with_date (id integer primary key autoincrement, meta text null, created_at datetime null, amount decimal(10,2) null)'
+            );
+
+            $fields = CModel_Console_PropertiesHelper::getFields('uji_props_with_date', 'UjiProps', 'WithDate');
+
+            $this->assertSame('array', $fields['meta']['type'], '$casts dibaca lewat Doctrine schema manager sama seperti lewat MySQL');
+            $this->assertSame('CCarbon|\Carbon\Carbon', $fields['created_at']['type']);
+            $this->assertSame('CCarbon|\Carbon\Carbon|string', $fields['created_at']['writeType'], 'kolom tanggal tetap dipisah baca/tulis lewat jalur sqlite ini');
+            $this->assertSame('string', $fields['amount']['type'], 'decimal tetap string, sama seperti lewat MySQL');
+        } finally {
+            $manager->setDefaultConnection($previous);
+            $manager->purge('uji_props_sqlite');
+        }
     }
 
     public function testRelationTypeByReturnType() {

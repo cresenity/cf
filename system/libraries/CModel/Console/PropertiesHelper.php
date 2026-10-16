@@ -210,7 +210,16 @@ class CModel_Console_PropertiesHelper {
 
     public static function getFields($table, $prefix = '', $model = null) {
         $db = c::db();
-        $result = $db->getSchemaManager()->listTableColumns($table);
+
+        try {
+            $schemaManager = $db->getSchemaManager();
+        } catch (Exception $e) {
+            //hanya MySQL yang punya CDatabase_Schema_Manager sendiri; driver lain (sqlite, postgres, sqlserver)
+            //jatuh ke manajer skema Doctrine DBAL generik - bentuknya identik utk kebutuhan di sini
+            //(getType()->getName()/getNotnull()/getDefault())
+            $schemaManager = $db->getDoctrineSchemaManager();
+        }
+        $result = $schemaManager->listTableColumns($table);
 
         if (empty($result)) {
             throw new Exception('table ' . $table . ' not found');
