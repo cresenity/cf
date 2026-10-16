@@ -30,6 +30,8 @@ Mailer dibangun sekali per konfigurasi pengirim dan dipakai ulang.
 
 Hanya `CEmail::mailer()` yang memakai `MAIL_MAILER`. Akibatnya app yang mengisi `MAIL_MAILER=brevo` tetapi masih punya `app.smtp_host = 'smtp.sendgrid.net'` (misalnya sisa salinan dari app lain) tetap mengirim lewat SendGrid. Cara memperbaikinya: isi `driver` secara eksplisit pada config pengirim, atau hapus `smtp_*` yang basi dari `default/config/app.php`.
 
+**Satu pengecualian**: bila config pengirim tidak punya `driver` **dan** tidak punya `host`/`smtp_host` sama sekali (sebelumnya selalu melempar `CEmail_Exception_InvalidConfigException`), `CEmail::sender()` sekarang jatuh ke `email.mailers.<MAIL_MAILER>` — **hanya bila `MAIL_MAILER` diisi eksplisit di env**. App yang tidak mengisi config email apa pun (termasuk `MAIL_MAILER`) tetap mendapat exception seperti sebelumnya, bukan diam-diam terkirim lewat mailer bawaan `mail()`.
+
 Dua alat bantu mendeteksinya:
 
 - Saat provider ditebak dari `smtp_host` dan `MAIL_MAILER` diisi eksplisit dengan transport berbeda, framework menulis satu peringatan log per proses. Provider yang dipakai tidak berubah.
