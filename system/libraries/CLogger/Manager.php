@@ -15,6 +15,7 @@ use Monolog\Handler\FormattableHandlerInterface;
 
 class CLogger_Manager implements LoggerInterface {
     use CLogger_Concern_ParseLogConfigurationTrait;
+
     /**
      * The array of resolved channels.
      *
@@ -62,8 +63,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Build an on-demand log channel.
      *
-     * @param array $config
-     *
      * @return \Psr\Log\LoggerInterface
      */
     public function build(array $config) {
@@ -75,7 +74,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Create a new, on-demand aggregate logger instance.
      *
-     * @param array       $channels
      * @param null|string $channel
      *
      * @return \Psr\Log\LoggerInterface
@@ -151,8 +149,7 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Apply the configured taps for the logger.
      *
-     * @param string          $name
-     * @param \CLogger_Logger $logger
+     * @param string $name
      *
      * @return \CLogger_Logger
      */
@@ -213,6 +210,9 @@ class CLogger_Manager implements LoggerInterface {
         if (is_null($config)) {
             throw new InvalidArgumentException("Log [{$name}] is not defined.");
         }
+        if (!isset($config['driver'])) {
+            throw new InvalidArgumentException("Log [{$name}] has no driver.");
+        }
 
         if (isset($this->customCreators[$config['driver']])) {
             return $this->callCustomCreator($config);
@@ -229,8 +229,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Call a custom driver creator.
      *
-     * @param array $config
-     *
      * @return mixed
      */
     protected function callCustomCreator(array $config) {
@@ -239,8 +237,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Create a custom log driver instance.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -252,8 +248,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Create an aggregate log driver instance.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -284,8 +278,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Create an instance of the single file log driver.
      *
-     * @param array $config
-     *
      * @return \Psr\Log\LoggerInterface
      */
     protected function createSingleDriver(array $config) {
@@ -306,8 +298,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Create an instance of the daily file log driver.
      *
-     * @param array $config
-     *
      * @return \Psr\Log\LoggerInterface
      */
     protected function createDailyDriver(array $config) {
@@ -325,8 +315,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Create an instance of the Slack log driver.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -350,14 +338,12 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Create an instance of the syslog log driver.
      *
-     * @param array $config
-     *
      * @return \Psr\Log\LoggerInterface
      */
     protected function createSyslogDriver(array $config) {
         return new Monolog($this->parseChannel($config), [
             $this->prepareHandler(new SyslogHandler(
-                cstr::snake(CF::config('app.name'), '-'),
+                cstr::snake(CF::config('app.name') ?: (string) CF::appCode(), '-'),
                 isset($config['facility']) ? $config['facility'] : LOG_USER,
                 $this->level($config)
             ), $config),
@@ -366,8 +352,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Create an instance of the "error log" log driver.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -382,8 +366,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Create an instance of any handler available in Monolog.
-     *
-     * @param array $config
      *
      * @throws \InvalidArgumentException
      * @throws \CContainer_Exception_BindingResolutionException
@@ -412,8 +394,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Prepare the handlers for usage by Monolog.
      *
-     * @param array $handlers
-     *
      * @return array
      */
     protected function prepareHandlers(array $handlers) {
@@ -426,9 +406,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Prepare the handler for usage by Monolog.
-     *
-     * @param \Monolog\Handler\HandlerInterface $handler
-     * @param array                             $config
      *
      * @return \Monolog\Handler\HandlerInterface
      */
@@ -470,8 +447,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Share context across channels and stacks.
-     *
-     * @param array $context
      *
      * @return $this
      */
@@ -546,8 +521,7 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Register a custom driver creator Closure.
      *
-     * @param string   $driver
-     * @param \Closure $callback
+     * @param string $driver
      *
      * @return $this
      */
@@ -593,7 +567,6 @@ class CLogger_Manager implements LoggerInterface {
      * System is unusable.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -608,7 +581,6 @@ class CLogger_Manager implements LoggerInterface {
      * trigger the SMS alerts and wake you up.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -622,7 +594,6 @@ class CLogger_Manager implements LoggerInterface {
      * Example: Application component unavailable, unexpected exception.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -635,7 +606,6 @@ class CLogger_Manager implements LoggerInterface {
      * be logged and monitored.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -650,7 +620,6 @@ class CLogger_Manager implements LoggerInterface {
      * that are not necessarily wrong.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -662,7 +631,6 @@ class CLogger_Manager implements LoggerInterface {
      * Normal but significant events.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -676,7 +644,6 @@ class CLogger_Manager implements LoggerInterface {
      * Example: User logs in, SQL logs.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -688,7 +655,6 @@ class CLogger_Manager implements LoggerInterface {
      * Detailed debug information.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -701,7 +667,6 @@ class CLogger_Manager implements LoggerInterface {
      *
      * @param mixed  $level
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */

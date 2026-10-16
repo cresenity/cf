@@ -229,4 +229,53 @@ class LogManagerTest extends TestCase {
         CLogger_Manager::instance()->channel('cf-test-single');
         $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
     }
+
+    public function testNoticeCanBeCalledStatically() {
+        $this->defineChannel('cf-test-single', ['driver' => 'single', 'path' => $this->tempDir . '/notice.log']);
+        $originalDefault = CConfig::repository()->get('log.default');
+        CConfig::repository()->set('log.default', 'cf-test-single');
+
+        try {
+            CLogger::notice('pemberitahuan');
+        } finally {
+            CConfig::repository()->set('log.default', $originalDefault);
+        }
+
+        $this->assertStringContainsString('NOTICE: pemberitahuan', file_get_contents($this->tempDir . '/notice.log'));
+    }
+
+    public function testUnknownIntegerLevelIsRejected() {
+        $this->expectException(InvalidArgumentException::class);
+        CLogger::log(99, 'level aneh');
+    }
+
+    public function testSyslogIdentFallsBackToTheAppCode() {
+        $logger = CLogger_Manager::instance()->build(['driver' => 'syslog']);
+        $ident = new ReflectionProperty(get_class($logger->getHandlers()[0]), 'ident');
+        $ident->setAccessible(true);
+
+        $this->assertNotSame('', $ident->getValue($logger->getHandlers()[0]));
+        $this->assertSame(cstr::snake(CF::config('app.name') ?: CF::appCode(), '-'), $ident->getValue($logger->getHandlers()[0]));
+    }
+
+    public function testChannelWithoutADriverFallsBackToTheEmergencyLoggerWithoutAWarning() {
+        $this->defineChannel('cf-test-single', ['path' => $this->tempDir . '/x.log']);
+
+        $warnings = [];
+        set_error_handler(function ($errno, $errstr) use (&$warnings) {
+            $warnings[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $logger = CLogger_Manager::instance()->channel('cf-test-single');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $warnings);
+        $this->assertInstanceOf(CLogger_Logger::class, $logger);
+        $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
+    }
 }
