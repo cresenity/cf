@@ -69,4 +69,20 @@ class LogReaderIndexTest extends TestCase {
         $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
         $this->assertSame(1, $reader->scan()->count());
     }
+
+    public function testSearchByLogIndex() {
+        $path = $this->tempDir . '/c.log';
+        file_put_contents($path, $this->logLines(3));
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+        $reader->scan();
+
+        //indeks 0 ada di posisi byte 0 - tidak boleh dianggap tidak ditemukan
+        $first = $reader->search('log-index:0')->paginate(25, 1);
+        $this->assertSame(1, $first->total());
+        $this->assertStringContainsString('pesan ke-1', $first->items()[0]->text);
+
+        $missing = $reader->search('log-index:999999')->paginate(25, 1);
+        $this->assertSame(0, $missing->total());
+        $this->assertSame([], $missing->items());
+    }
 }

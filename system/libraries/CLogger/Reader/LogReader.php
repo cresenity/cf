@@ -415,6 +415,9 @@ class CLogger_Reader_LogReader {
      */
     public function getLogAtIndex($index) {
         $position = $this->index()->getPositionForIndex($index);
+        if (is_null($position)) {
+            return null;
+        }
 
         list($level, $text, $position) = $this->getLogText($index, $position);
 
@@ -470,8 +473,6 @@ class CLogger_Reader_LogReader {
     }
 
     /**
-     * @param int          $perPage
-     * @param null|int     $page
      * @param null|Closure $itemCallback
      *
      * @return CPagination_LengthAwarePaginator
@@ -480,9 +481,11 @@ class CLogger_Reader_LogReader {
         $page = $page ?: CPagination_Paginator::resolveCurrentPage('page');
 
         if (!is_null($this->onlyShowIndex)) {
+            $log = $this->reset()->getLogAtIndex($this->onlyShowIndex);
+
             return new CPagination_LengthAwarePaginator(
-                [$this->reset()->getLogAtIndex($this->onlyShowIndex)],
-                1,
+                $log ? [$log] : [],
+                $log ? 1 : 0,
                 $perPage,
                 $page
             );
