@@ -102,6 +102,58 @@ final class CDatabase_Schema_Manager_Doctrine extends CDatabase_Schema_Manager {
     }
 
     /**
+     * CF-only, tidak ada padanannya di Doctrine\DBAL\Schema\AbstractSchemaManager - SQL
+     * langsung per dialek, meniru CDatabase_Schema_Manager_Mysql::getDatabaseSize().
+     *
+     * @inheritdoc
+     */
+    public function getDatabaseSize() {
+        switch ($this->doctrineManager->getDatabasePlatform()->getName()) {
+            case 'postgresql':
+                return (int) $this->db->getValue('SELECT pg_database_size(current_database())');
+            case 'sqlite':
+                return (int) $this->db->getValue('SELECT (SELECT * FROM pragma_page_count()) * (SELECT * FROM pragma_page_size())');
+            case 'mssql':
+                return (int) $this->db->getValue('SELECT SUM(size) * 8 * 1024 FROM sys.database_files');
+            default:
+                return parent::getDatabaseSize();
+        }
+    }
+
+    /**
+     * CF-only - lihat getDatabaseSize().
+     *
+     * @inheritdoc
+     */
+    public function getDatabaseRowCount() {
+        switch ($this->doctrineManager->getDatabasePlatform()->getName()) {
+            case 'postgresql':
+                return (int) $this->db->getValue(
+                    'SELECT SUM(reltuples)::bigint FROM pg_class c LEFT JOIN pg_namespace n ON n.oid = c.relnamespace '
+                    . "WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') AND c.relkind = 'r'"
+                );
+            default:
+                return parent::getDatabaseRowCount();
+        }
+    }
+
+    /**
+     * CF-only - lihat getDatabaseSize().
+     *
+     * @inheritdoc
+     */
+    public function isSuperUser() {
+        switch ($this->doctrineManager->getDatabasePlatform()->getName()) {
+            case 'postgresql':
+                return (bool) $this->db->getValue('SELECT usesuper FROM pg_user WHERE usename = current_user');
+            case 'mssql':
+                return (bool) $this->db->getValue("SELECT IS_SRVROLEMEMBER('sysadmin')");
+            default:
+                return parent::isSuperUser();
+        }
+    }
+
+    /**
      * Tidak pernah dipanggil - method publik yang memakainya sudah dioverride di atas.
      *
      * @inheritdoc

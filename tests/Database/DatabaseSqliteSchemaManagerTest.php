@@ -197,4 +197,12 @@ class DatabaseSqliteSchemaManagerTest extends TestCase {
         $this->assertSame(['id', 'name'], array_keys($columns));
         $this->assertSame('x', $conn->table('uji_drop')->first()->name);
     }
+
+    public function testGetDatabaseSizeIsCfOnlyNotPartOfDoctrineButHandledPerDialect() {
+        $conn = $this->connection();
+        $conn->statement('create table uji_size (id integer primary key, name text)');
+        $conn->table('uji_size')->insert(['name' => str_repeat('x', 1000)]);
+
+        $this->assertGreaterThan(0, $conn->getSchemaManager()->getDatabaseSize());
+    }
 }
