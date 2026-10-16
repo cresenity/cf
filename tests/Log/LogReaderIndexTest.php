@@ -131,6 +131,40 @@ class LogReaderIndexTest extends TestCase {
         $this->assertSame(3, $reader->exceptLevels(null)->count());
     }
 
+    public function testLongLineIsNotSplitIntoAFakeLog() {
+        $path = $this->tempDir . '/long.log';
+        $prefix = '[2026-10-16 10:00:01] local.ERROR: ';
+        //potongan setelah 1023 byte pertama kebetulan diawali timestamp
+        file_put_contents($path, $prefix . str_repeat('x', 1023 - strlen($prefix)) . "[2026-10-16 10:00:02] local.INFO: bukan log baru\n");
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+
+        $this->assertSame(1, $reader->scan()->count());
+    }
+
+    public function testFileTimestampsCoverTheWholeFileEvenWhenScannedBySearch() {
+        $path = $this->tempDir . '/ts.log';
+        file_put_contents($path, $this->logLines(3));
+        $file = new CLogger_Reader_LogFile($path);
+        (new CLogger_Reader_LogReader($file))->search('ke-2')->scan();
+
+        $this->assertSame(strtotime('2026-10-16 10:00:01'), $file->earliestTimestamp());
+        $this->assertSame(strtotime('2026-10-16 10:00:03'), $file->latestTimestamp());
+    }
+
+    public function testSearchIndexKeepsTheLogNumberWhenTheLastLogDidNotMatch() {
+        $path = $this->tempDir . '/num.log';
+        file_put_contents($path, "[2026-10-16 10:00:01] local.ERROR: cocok satu\n[2026-10-16 10:00:02] local.ERROR: lain\n");
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+        $reader->search('cocok')->scan();
+
+        file_put_contents($path, "[2026-10-16 10:00:03] local.ERROR: cocok dua\n", FILE_APPEND);
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+        $reader->search('cocok')->scan();
+
+        //nomor log mengikuti urutan di berkas (0, 1, 2), jadi log-index:2 menunjuk 'cocok dua'
+        $this->assertSame([0, 2], array_keys($reader->index()->getFlatIndex()));
+    }
+
     public function testDirectionSurvivesASearch() {
         $path = $this->tempDir . '/e.log';
         file_put_contents($path, $this->logLines(3));

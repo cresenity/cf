@@ -283,7 +283,7 @@ class CLogger_Reader_LogReader {
         $lastPositionToScan = isset($maxBytesToScan) ? ($currentLogPosition + $maxBytesToScan) : null;
 
         while ((!isset($lastPositionToScan) || $currentLogPosition < $lastPositionToScan)
-            && ($line = fgets($this->fileHandle, 1024)) !== false
+            && ($line = fgets($this->fileHandle)) !== false
         ) {
             /**
              * $matches[0] - the full line being checked
@@ -333,8 +333,9 @@ class CLogger_Reader_LogReader {
         if ($currentLog !== '' && preg_match($logMatchPattern, $currentLog) === 1) {
             if ((is_null($this->query) || preg_match($this->query, $currentLog))) {
                 $logIndex->addToIndex($currentLogPosition, $currentTimestamp, $currentLogLevel, $currentIndex);
-                $currentIndex++;
             }
+            // nomor log ikut maju walau tidak cocok query, sama seperti di dalam loop
+            $currentIndex++;
         }
 
         $logIndex->setLastScannedIndex($currentIndex);
@@ -344,8 +345,9 @@ class CLogger_Reader_LogReader {
         $this->file->setMetadata('name', $this->file->name);
         $this->file->setMetadata('path', $this->file->path);
         $this->file->setMetadata('size', $this->file->size());
-        $this->file->setMetadata('earliest_timestamp', $this->index()->getEarliestTimestamp());
-        $this->file->setMetadata('latest_timestamp', $this->index()->getLatestTimestamp());
+        // dari seluruh baris yang dipindai, bukan dari index (yang untuk search hanya berisi log yang cocok)
+        $this->file->setMetadata('earliest_timestamp', $earliest_timestamp);
+        $this->file->setMetadata('latest_timestamp', $latest_timestamp);
         $this->file->setMetadata('last_scanned_file_position', ftell($this->fileHandle));
         $this->file->addRelatedIndex($logIndex);
 
