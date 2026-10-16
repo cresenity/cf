@@ -15,63 +15,63 @@ defined('SYSPATH') or die('No direct access allowed.');
  *
  * @mixin CDatabase_Query_Builder
  *
- * @method static              TModel         create($attributes = [])                                                  Find a model by its primary key.
- * @method mixed               value($column)                                                                           Get a single column's value from the first result of a query.
- * @method mixed               pluck($column, $key = null)                                                                           Get a single column's value from the first result of a query.
- * @method void                chunk($count, callable $callback)                                                        Chunk the results of the query.
- * @method \CCollection        lists($column, $key = null)                                                              Get an array with the values of a given column.
- * @method void                onDelete(Closure $callback)                                                              Register a replacement for the default delete function.
- * @method CModel[]            getModels($columns = null)                                                               Get the hydrated models without eager loading.
- * @method array               eagerLoadRelations(array $models)                                                        Eager load the relationships for the models.
- * @method array               loadRelation(array $models, $name, Closure $constraints)                                 Eagerly load the relationship on a set of models.
- * @method static              where($column, $operator = null, $value = null, $boolean = 'and')                        Add a basic where clause to the query.
- * @method static              whereHas($relation, Closure $callback = null, $operator = '>=', $count = 1)              Add a relationship count / exists condition to the query with where clauses.
- * @method static              orWhere($column, $operator = null, $value = null)                                        Add an "or where" clause to the query.
- * @method static              has($relation, $operator = '>=', $count = 1, $boolean = 'and', Closure $callback = null) Add a relationship count condition to the query.
- * @method static              whereRaw($sql, array $bindings = [], $boolean = 'and')
- * @method static              whereBetween($column, array $values, $boolean = 'and', $not = false)
- * @method static              whereNotBetween($column, array $values, $boolean = 'and')
- * @method static              whereNested(Closure $callback, $boolean = 'and')
- * @method static              addNestedWhereQuery($query, $boolean = 'and')
- * @method static              whereExists(Closure $callback, $boolean = 'and', $not = false)
- * @method static              whereNotExists(Closure $callback, $boolean = 'and')
- * @method static              whereIn($column, $values, $boolean = 'and', $not = false)
- * @method static              whereNotIn($column, $values, $boolean = 'and')
- * @method static              whereNull($columns, $boolean = 'and', $not = false)
- * @method static              whereNotNull($column, $boolean = 'and')
- * @method static              orWhereRaw($sql, array $bindings = [])
- * @method static              orWhereBetween($column, array $values)
- * @method static              orWhereNotBetween($column, array $values)
- * @method static              orWhereExists(Closure $callback, $not = false)
- * @method static              orWhereNotExists(Closure $callback)
- * @method static              orWhereIn($column, $values)
- * @method static              orWhereNotIn($column, $values)
- * @method static              orWhereNull($column)
- * @method static              orWhereNotNull($column)
- * @method static              whereDate($column, $operator, $value = null, $boolean = 'and')
- * @method static              whereDay($column, $operator, $value = null, $boolean = 'and')
- * @method static              whereMonth($column, $operator, $value = null, $boolean = 'and')
- * @method static              whereYear($column, $operator, $value = null, $boolean = 'and')
- * @method static              join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false)
- * @method static              select($columns = null, ...$args)
- * @method static              groupBy(...$groups)
- * @method static              newQuery()
- * @method static              withTrashed()
- * @method static              from($table, $as = null)
- * @method static              leftJoinSub($query, $as, $first, $operator = null, $second = null)
- * @method static              addSelect($column)
- * @method static              selectRaw($expression, array $bindings = [])
- * @method static              orderBy($column, $direction = 'asc')
- * @method static              orderByDesc($column)
- * @method static              skip($value)
- * @method static              offset($value)
- * @method static              take($value)
- * @method static              limit($value)
- * @method static              lockForUpdate()                                                                          Lock the selected rows in the table for updating.
- * @method bool                exists()                                                                                 Determine if any rows exist for the current query
- * @method mixed               sum($column)                                                                             Retrieve the sum of the values of a given column..
- * @method void                truncate()                                                                               Run a truncate statement on the table.
- * @method CDatabase_Result    insert(array $values)                                                                     Insert new records into the table.
+ * @method static TModel           create($attributes = [])                                                                 Find a model by its primary key.
+ * @method        mixed            value($column)                                                                           Get a single column's value from the first result of a query.
+ * @method        mixed            pluck($column, $key = null)                                                              Get a single column's value from the first result of a query.
+ * @method        void             chunk($count, callable $callback)                                                        Chunk the results of the query.
+ * @method        \CCollection     lists($column, $key = null)                                                              Get an array with the values of a given column.
+ * @method        void             onDelete(Closure $callback)                                                              Register a replacement for the default delete function.
+ * @method        CModel[]         getModels($columns = null)                                                               Get the hydrated models without eager loading.
+ * @method        array            eagerLoadRelations(array $models)                                                        Eager load the relationships for the models.
+ * @method        array            loadRelation(array $models, $name, Closure $constraints)                                 Eagerly load the relationship on a set of models.
+ * @method        static           where($column, $operator = null, $value = null, $boolean = 'and')                        Add a basic where clause to the query.
+ * @method        static           whereHas($relation, Closure $callback = null, $operator = '>=', $count = 1)              Add a relationship count / exists condition to the query with where clauses.
+ * @method        static           orWhere($column, $operator = null, $value = null)                                        Add an "or where" clause to the query.
+ * @method        static           has($relation, $operator = '>=', $count = 1, $boolean = 'and', Closure $callback = null) Add a relationship count condition to the query.
+ * @method        static           whereRaw($sql, array $bindings = [], $boolean = 'and')
+ * @method        static           whereBetween($column, array $values, $boolean = 'and', $not = false)
+ * @method        static           whereNotBetween($column, array $values, $boolean = 'and')
+ * @method        static           whereNested(Closure $callback, $boolean = 'and')
+ * @method        static           addNestedWhereQuery($query, $boolean = 'and')
+ * @method        static           whereExists(Closure $callback, $boolean = 'and', $not = false)
+ * @method        static           whereNotExists(Closure $callback, $boolean = 'and')
+ * @method        static           whereIn($column, $values, $boolean = 'and', $not = false)
+ * @method        static           whereNotIn($column, $values, $boolean = 'and')
+ * @method        static           whereNull($columns, $boolean = 'and', $not = false)
+ * @method        static           whereNotNull($column, $boolean = 'and')
+ * @method        static           orWhereRaw($sql, array $bindings = [])
+ * @method        static           orWhereBetween($column, array $values)
+ * @method        static           orWhereNotBetween($column, array $values)
+ * @method        static           orWhereExists(Closure $callback, $not = false)
+ * @method        static           orWhereNotExists(Closure $callback)
+ * @method        static           orWhereIn($column, $values)
+ * @method        static           orWhereNotIn($column, $values)
+ * @method        static           orWhereNull($column)
+ * @method        static           orWhereNotNull($column)
+ * @method        static           whereDate($column, $operator, $value = null, $boolean = 'and')
+ * @method        static           whereDay($column, $operator, $value = null, $boolean = 'and')
+ * @method        static           whereMonth($column, $operator, $value = null, $boolean = 'and')
+ * @method        static           whereYear($column, $operator, $value = null, $boolean = 'and')
+ * @method        static           join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false)
+ * @method        static           select($columns = null, ...$args)
+ * @method        static           groupBy(...$groups)
+ * @method        static           newQuery()
+ * @method        static           withTrashed()
+ * @method        static           from($table, $as = null)
+ * @method        static           leftJoinSub($query, $as, $first, $operator = null, $second = null)
+ * @method        static           addSelect($column)
+ * @method        static           selectRaw($expression, array $bindings = [])
+ * @method        static           orderBy($column, $direction = 'asc')
+ * @method        static           orderByDesc($column)
+ * @method        static           skip($value)
+ * @method        static           offset($value)
+ * @method        static           take($value)
+ * @method        static           limit($value)
+ * @method        static           lockForUpdate()                                                                          Lock the selected rows in the table for updating.
+ * @method        bool             exists()                                                                                 Determine if any rows exist for the current query
+ * @method        mixed            sum($column)                                                                             Retrieve the sum of the values of a given column..
+ * @method        void             truncate()                                                                               Run a truncate statement on the table.
+ * @method        CDatabase_Result insert(array $values)                                                                    Insert new records into the table.
  *
  * @property-read CModel_HigherOrderBuilderProxy $orWhere
  * @property-read CModel_HigherOrderBuilderProxy $whereNot
@@ -187,8 +187,6 @@ class CModel_Query {
     /**
      * Create a new Eloquent query builder instance.
      *
-     * @param CDatabase_Query_Builder $query
-     *
      * @return void
      */
     public function __construct(CDatabase_Query_Builder $query) {
@@ -197,8 +195,6 @@ class CModel_Query {
 
     /**
      * Create and return an un-saved model instance.
-     *
-     * @param array $attributes
      *
      * @return CModel
      */
@@ -247,8 +243,6 @@ class CModel_Query {
 
     /**
      * Remove all or passed registered global scopes.
-     *
-     * @param null|array $scopes
      *
      * @return $this
      */
@@ -472,7 +466,6 @@ class CModel_Query {
      *
      * @param mixed         $id
      * @param array|Closure $columns
-     * @param null|Closure  $callback
      *
      * @return null|CModel|CModel_Collection|mixed
      */
@@ -514,9 +507,6 @@ class CModel_Query {
     /**
      * Get the first record matching the attributes or instantiate it.
      *
-     * @param array $attributes
-     * @param array $values
-     *
      * @return CModel
      *
      * @phpstan-return TModel
@@ -532,9 +522,6 @@ class CModel_Query {
     /**
      * Get the first record matching the attributes or create it.
      *
-     * @param array $attributes
-     * @param array $values
-     *
      * @return CModel
      */
     public function firstOrCreate(array $attributes, array $values = []) {
@@ -549,9 +536,6 @@ class CModel_Query {
 
     /**
      * Create or update a record matching the attributes, and fill it with values.
-     *
-     * @param array $attributes
-     * @param array $values
      *
      * @return CModel
      */
@@ -582,7 +566,6 @@ class CModel_Query {
      * Execute the query and get the first result or call a callback.
      *
      * @param \Closure|array $columns
-     * @param null|\Closure  $callback
      *
      * @return CModel|static|mixed
      */
@@ -680,8 +663,6 @@ class CModel_Query {
     /**
      * Eager load the relationships for the models.
      *
-     * @param array $models
-     *
      * @return array
      */
     public function eagerLoadRelations(array $models) {
@@ -700,9 +681,7 @@ class CModel_Query {
     /**
      * Eagerly load the relationship on a set of models.
      *
-     * @param array    $models
-     * @param string   $name
-     * @param \Closure $constraints
+     * @param string $name
      *
      * @return array
      */
@@ -804,11 +783,6 @@ class CModel_Query {
 
     /**
      * Chunk the results of a query by comparing numeric IDs.
-     *
-     * @param int         $count
-     * @param callable    $callback
-     * @param string      $column
-     * @param null|string $alias
      *
      * @return bool
      */
@@ -993,8 +967,6 @@ class CModel_Query {
     /**
      * Save a new model and return the instance.
      *
-     * @param array $attributes
-     *
      * @return CModel|$this
      */
     public function create(array $attributes = []) {
@@ -1010,8 +982,6 @@ class CModel_Query {
     /**
      * Save a new model and return the instance. Allow mass-assignment.
      *
-     * @param array $attributes
-     *
      * @return \CModel|$this
      */
     public function forceCreate(array $attributes) {
@@ -1022,8 +992,6 @@ class CModel_Query {
 
     /**
      * Update a record in the database.
-     *
-     * @param array $values
      *
      * @return int
      */
@@ -1036,7 +1004,6 @@ class CModel_Query {
      *
      * @param string $column
      * @param int    $amount
-     * @param array  $extra
      *
      * @return int
      */
@@ -1053,7 +1020,6 @@ class CModel_Query {
      *
      * @param string $column
      * @param int    $amount
-     * @param array  $extra
      *
      * @return int
      */
@@ -1068,18 +1034,16 @@ class CModel_Query {
     /**
      * Add the "updated at" column to an array of values.
      *
-     * @param array $values
-     *
      * @return array
      */
     protected function addUpdatedAtColumn(array $values) {
-        if (! $this->model->usesTimestamps() || is_null($this->model->getUpdatedAtColumn())) {
+        if (!$this->model->usesTimestamps() || is_null($this->model->getUpdatedAtColumn())) {
             return $values;
         }
 
         $column = $this->model->getUpdatedAtColumn();
 
-        if (! array_key_exists($column, $values)) {
+        if (!array_key_exists($column, $values)) {
             $timestamp = $this->model->freshTimestampString();
 
             if ($this->model->hasSetMutator($column)
@@ -1096,7 +1060,7 @@ class CModel_Query {
 
         $segments = preg_split('/\s+as\s+/i', $this->query->from);
 
-        $qualifiedColumn = c::arrayLast($segments).'.'.$column;
+        $qualifiedColumn = c::arrayLast($segments) . '.' . $column;
 
         $values[$qualifiedColumn] = carr::get($values, $qualifiedColumn, $values[$column]);
 
@@ -1131,8 +1095,6 @@ class CModel_Query {
 
     /**
      * Register a replacement for the default delete function.
-     *
-     * @param \Closure $callback
      *
      * @return void
      */
@@ -1225,8 +1187,7 @@ class CModel_Query {
     /**
      * Apply the given scope on the current builder instance.
      *
-     * @param callable $scope
-     * @param array    $parameters
+     * @param array $parameters
      *
      * @return mixed
      */
@@ -1257,7 +1218,6 @@ class CModel_Query {
      * Apply the given named scope on the current builder instance.
      *
      * @param string $scope
-     * @param array  $parameters
      *
      * @return mixed
      */
@@ -1270,8 +1230,7 @@ class CModel_Query {
     /**
      * Nest where conditions by slicing them at the given where count.
      *
-     * @param \CDatabase_Query_Builder $query
-     * @param int                      $originalWhereCount
+     * @param int $originalWhereCount
      *
      * @return void
      */
@@ -1297,8 +1256,7 @@ class CModel_Query {
     /**
      * Slice where conditions at the given offset and add them to the query as a nested condition.
      *
-     * @param CDatabase_Query_Builder $query
-     * @param array                   $whereSlice
+     * @param array $whereSlice
      *
      * @return void
      */
@@ -1401,8 +1359,6 @@ class CModel_Query {
     /**
      * Parse a list of relations into individuals.
      *
-     * @param array $relations
-     *
      * @return array
      */
     protected function parseWithRelations(array $relations) {
@@ -1478,8 +1434,6 @@ class CModel_Query {
 
     /**
      * Combine an array of constraints into a single constraint.
-     *
-     * @param array $constraints
      *
      * @return \Closure
      */
@@ -1591,7 +1545,7 @@ class CModel_Query {
      *
      * @template TModelValue
      *
-     * @param  \Closure(): TModelValue  $scope
+     * @param \Closure(): TModelValue $scope
      *
      * @return TModelValue
      */
@@ -1624,8 +1578,6 @@ class CModel_Query {
     /**
      * Set the underlying query builder instance.
      *
-     * @param CDatabase_Query_Builder $query
-     *
      * @return $this
      */
     public function setQuery(CDatabase_Query_Builder $query) {
@@ -1655,8 +1607,6 @@ class CModel_Query {
     /**
      * Set the relationships being eagerly loaded.
      *
-     * @param array $eagerLoad
-     *
      * @return $this
      */
     public function setEagerLoads(array $eagerLoad) {
@@ -1667,8 +1617,6 @@ class CModel_Query {
 
     /**
      * Indicate that the given relationships should not be eagerly loaded.
-     *
-     * @param array $relations
      *
      * @return $this
      */
@@ -1707,8 +1655,6 @@ class CModel_Query {
 
     /**
      * Set a model instance for the model being queried.
-     *
-     * @param CModel $model
      *
      * @return $this
      */
@@ -1819,7 +1765,7 @@ class CModel_Query {
             return call_user_func_array($callable, $parameters);
         }
 
-        if (method_exists($this->model, $scope = 'scope' . ucfirst($method))) {
+        if ($this->model !== null && method_exists($this->model, $scope = 'scope' . ucfirst($method))) {
             return $this->callScope([$this->model, $scope], $parameters);
         }
 
