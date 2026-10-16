@@ -2,8 +2,9 @@
 
 /**
  * Mengumpulkan pemakaian API yang sudah @deprecated, mengikuti pola CDebug_Collector_Exception:
- * push ke devcloud (`collector.deprecatedPush`) lalu fallback ke berkas temp/collector/deprecated.
- * Satu entri per (api, pesan, berkas & baris pemanggil) per proses; dimatikan bila `collector.deprecated` false.
+ * dispatch() ke channel di `collector.deprecatedChannels` (default devcloud saja - push lalu
+ * fallback ke berkas temp/collector/deprecated). Satu entri per (api, pesan, berkas & baris
+ * pemanggil) per proses; dimatikan bila `collector.deprecated` false.
  */
 class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
     /**
@@ -40,11 +41,7 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
             }
             $this->collected[$key] = true;
 
-            $pushUrl = CF::config('collector.deprecatedPush');
-            $pushed = $pushUrl ? $this->pushToDevcloud($data, $pushUrl) : false;
-            if (!$pushed) {
-                $this->put($data);
-            }
+            $this->dispatch($data, 'collector.deprecatedPush', 'collector.deprecatedChannels');
 
             return $data;
         } catch (Throwable $collectException) {
@@ -58,7 +55,6 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
      * Payload deprecation: siapa yang deprecated, dari mana dipanggil, konteks app/request.
      *
      * @param string $message
-     * @param array  $context
      * @param array  $trace   hasil debug_backtrace()
      *
      * @return array
@@ -89,8 +85,6 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
     /**
      * Buang frame milik kolektor sendiri: collect(), collectDeprecated(), CDebug::collector(), CF::deprecated().
      *
-     * @param array $trace
-     *
      * @return array
      */
     protected function filterCollectorFrames(array $trace) {
@@ -108,8 +102,6 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
     /**
      * Pisahkan trace menjadi: fungsi deprecated yang memanggil collect (class::method), frame pemanggilnya
      * (berkas/baris di kode app), dan ringkasan 5 frame.
-     *
-     * @param array $trace
      *
      * @return array [deprecatedIn, callerFrame, frames]
      */
@@ -145,8 +137,6 @@ class CDebug_Collector_Deprecated extends CDebug_Collector_Exception {
 
     /**
      * Benar bila fungsi deprecated (frame pertama setelah kolektor) dipanggil langsung dari berkas di luar system/.
-     *
-     * @param array $trace
      *
      * @return bool
      */
