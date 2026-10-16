@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 use Monolog\Handler\TestHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\RotatingFileHandler;
+use Monolog\Handler\FingersCrossedHandler;
 
 /**
  * CLogger_Manager - padanan suite hulu untuk LogManager, dibatasi pada channel yang dibangun
@@ -39,7 +40,6 @@ class LogManagerTest extends TestCase {
 
     /**
      * @param string $name
-     * @param array  $config
      */
     private function defineChannel($name, array $config) {
         CConfig::repository()->set('log.channels.' . $name, $config);
@@ -195,6 +195,38 @@ class LogManagerTest extends TestCase {
         //kesalahan konfigurasi log tidak boleh menjatuhkan request: yang dikembalikan logger darurat
         $logger = CLogger_Manager::instance()->channel('cf-test-single');
         $this->assertInstanceOf(CLogger_Logger::class, $logger);
+        $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
+    }
+
+    public function testActionLevelWrapsTheHandlerInFingersCrossed() {
+        $this->defineChannel('cf-test-single', [
+            'driver' => 'single',
+            'path' => $this->tempDir . '/fingers.log',
+            'action_level' => 'error',
+        ]);
+
+        $logger = CLogger_Manager::instance()->channel('cf-test-single');
+        $this->assertArrayHasKey('cf-test-single', CLogger_Manager::instance()->getChannels(), 'bukan emergency logger');
+        $this->assertInstanceOf(FingersCrossedHandler::class, $logger->getHandlers()[0]);
+
+        //info ditahan sampai ada log selevel action_level
+        $logger->info('info tertahan');
+        $this->assertFileDoesNotExist($this->tempDir . '/fingers.log');
+
+        $logger->error('pemicu');
+        $content = file_get_contents($this->tempDir . '/fingers.log');
+        $this->assertStringContainsString('info tertahan', $content);
+        $this->assertStringContainsString('pemicu', $content);
+    }
+
+    public function testInvalidActionLevelFallsBackToTheEmergencyLogger() {
+        $this->defineChannel('cf-test-single', [
+            'driver' => 'single',
+            'path' => $this->tempDir . '/fingers.log',
+            'action_level' => 'tidak-ada',
+        ]);
+
+        CLogger_Manager::instance()->channel('cf-test-single');
         $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
     }
 }
