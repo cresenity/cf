@@ -303,6 +303,17 @@ class CElement_Component_Form_Field extends CElement_Component {
     }
 
     /**
+     * Alias setInfoText().
+     *
+     * @param string $helpText
+     *
+     * @return $this
+     */
+    public function setHelpText($helpText) {
+        return $this->setInfoText($helpText);
+    }
+
+    /**
      * @return $this
      */
     public function showLabel() {
