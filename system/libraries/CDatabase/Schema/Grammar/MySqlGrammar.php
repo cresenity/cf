@@ -322,6 +322,23 @@ class CDatabase_Schema_Grammar_MySqlGrammar extends CDatabase_Schema_Grammar {
     }
 
     /**
+     * Compile a change column command.
+     *
+     * @param CDatabase_Schema_Blueprint $blueprint
+     * @param CBase_Fluent               $command
+     *
+     * @return array
+     */
+    public function compileChange(CDatabase_Schema_Blueprint $blueprint, CBase_Fluent $command) {
+        $columns = [];
+        foreach ($blueprint->getChangedColumns() as $column) {
+            $columns[] = $this->getColumn($blueprint, $column);
+        }
+
+        return 'alter table ' . $this->wrapTable($blueprint) . ' modify ' . implode(', modify ', $columns);
+    }
+
+    /**
      * Compile a primary key command.
      *
      * @param CDatabase_Schema_Blueprint $blueprint

@@ -421,14 +421,28 @@ class DatabaseMySqlSchemaGrammarTest extends TestCase {
         $this->assertSame('SET FOREIGN_KEY_CHECKS=0;', $this->getGrammar()->compileDisableForeignKeyConstraints());
     }
 
-    public function testCompileChangeIsNotSupported() {
+    public function testChange() {
         $blueprint = new CDatabase_Schema_Blueprint('users');
-        $command = new CBase_Fluent(['name' => 'change']);
+        $blueprint->string('name', 100)->nullable()->change();
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('This database driver does not support modifying columns.');
+        $connection = $this->getConnection();
+        $statements = $blueprint->toSql($connection, $this->getGrammar($connection));
 
-        $this->getGrammar()->compileChange($blueprint, $command);
+        $this->assertSame('alter table `users` modify `name` varchar(100) null', $statements[0]);
+    }
+
+    public function testChangeMultipleColumnsInOneStatement() {
+        $blueprint = new CDatabase_Schema_Blueprint('users');
+        $blueprint->string('name', 100)->nullable()->change();
+        $blueprint->integer('votes')->default(0)->change();
+
+        $connection = $this->getConnection();
+        $statements = $blueprint->toSql($connection, $this->getGrammar($connection));
+
+        $this->assertSame(
+            "alter table `users` modify `name` varchar(100) null, modify `votes` int not null default '0'",
+            $statements[0]
+        );
     }
 
     public function testCreateDatabaseWithCharsetAndCollation() {
