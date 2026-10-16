@@ -63,8 +63,6 @@ class CDatabase_Connection_Pdo_PostgresConnection extends CDatabase_Connection {
     /**
      * Get the schema state for the connection.
      *
-     * @param null|callable $processFactory
-     *
      * @return \CDatabase_Schema_SchemaState_PostgresSchemaState
      */
     public function getSchemaState(?callable $processFactory = null) {
@@ -87,5 +85,33 @@ class CDatabase_Connection_Pdo_PostgresConnection extends CDatabase_Connection {
      */
     protected function getDoctrineDriver() {
         return new CDatabase_Doctrine_Driver_PostgresDriver();
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @return CDatabase_Platform_Doctrine
+     */
+    public function getDefaultDatabasePlatform() {
+        return new CDatabase_Platform_Doctrine($this->getDoctrineConnection()->getDatabasePlatform());
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @return CDatabase_Schema_Manager_Doctrine
+     */
+    public function getSchemaManager() {
+        return new CDatabase_Schema_Manager_Doctrine($this, $this->getDoctrineSchemaManager());
+    }
+
+    /**
+     * Postgres punya `ALTER COLUMN` native tanpa syarat versi - PostgresGrammar::compileChange()/
+     * compileRenameColumn() memakainya langsung, tanpa perlu diffing lewat getSchemaManager().
+     *
+     * @inheritdoc
+     */
+    public function usingNativeSchemaOperations() {
+        return true;
     }
 }

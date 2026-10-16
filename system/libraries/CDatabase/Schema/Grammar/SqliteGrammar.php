@@ -243,9 +243,8 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
      *
      * `getDoctrineSchemaManager()`/`getDoctrineColumn()` mengembalikan objek vendor
      * `Doctrine\DBAL\*` asli - `getDoctrineTableDiff()` mewajibkan `CDatabase_Schema_Manager`
-     * (kelas CF sendiri), jadi memanggilnya seperti itu selalu TypeError (dikonfirmasi
-     * langsung, bukan dugaan - lihat #-21866). Dipakai `getSchemaManager()` native di sini
-     * (CDatabase_Schema_Manager_Sqlite sejak #-21866) agar tipe-nya cocok sepenuhnya.
+     * (kelas CF sendiri), jadi memanggilnya seperti itu selalu TypeError. Dipakai
+     * `getSchemaManager()` di sini (`CDatabase_Schema_Manager_Doctrine`) agar tipenya cocok.
      *
      * @return array
      */
@@ -269,7 +268,7 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
      * Compile a rename column command.
      *
      * SQLite native (3.25+, dibundel semua PHP modern) - tidak perlu rebuild tabel sama sekali,
-     * beda dari change()/dropColumn() yang benar-benar butuh diffing (lihat #-21866).
+     * beda dari change()/dropColumn() yang benar-benar butuh diffing.
      *
      * @return string
      */
@@ -285,12 +284,9 @@ class CDatabase_Schema_Grammar_SqliteGrammar extends CDatabase_Schema_Grammar {
     /**
      * Compile a change column command.
      *
-     * SQLite tidak punya `CHANGE`/`MODIFY COLUMN` native - satu-satunya cara mengubah
-     * tipe/nullable/default kolom yang sudah ada adalah resep rebuild resmi SQLite (tabel baru,
-     * salin data, hapus tabel lama, ganti nama) yang diimplementasikan
-     * `CDatabase_Platform_Sqlite::getAlterTableSQL()`. `CDatabase_Schema_Grammar_ChangeColumn`
-     * (kelas lama, sebelumnya tidak pernah dipanggil di mana pun - lihat #-21866) yang menyusun
-     * diff-nya dari perubahan Blueprint.
+     * SQLite tidak punya `CHANGE`/`MODIFY COLUMN` native - `getAlterTableSQL()` (didelegasikan
+     * ke `Doctrine\DBAL\Platforms\SqlitePlatform` lewat `CDatabase_Platform_Doctrine`) menangani
+     * rebuild tabelnya; `CDatabase_Schema_Grammar_ChangeColumn` menyusun diff-nya dari Blueprint.
      *
      * @return array
      */

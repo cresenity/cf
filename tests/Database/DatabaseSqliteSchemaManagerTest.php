@@ -2,8 +2,8 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * CDatabase_Platform_Sqlite + CDatabase_Schema_Manager_Sqlite: introspeksi (PRAGMA-based) dan
- * rebuild DDL (change()/renameColumn()/dropColumn() lewat Schema Builder sungguhan) - #-21866.
+ * CDatabase_Platform_Doctrine + CDatabase_Schema_Manager_Doctrine untuk SQLite: introspeksi dan
+ * rebuild DDL (change()/renameColumn()/dropColumn() lewat Schema Builder sungguhan).
  */
 class DatabaseSqliteSchemaManagerTest extends TestCase {
     /**
@@ -38,11 +38,11 @@ class DatabaseSqliteSchemaManagerTest extends TestCase {
         return $this->manager->connection('uji_sqlite_schema');
     }
 
-    public function testGetSchemaManagerAndPlatformAreTheNativeSqliteClasses() {
+    public function testGetSchemaManagerAndPlatformDelegateToDoctrine() {
         $conn = $this->connection();
 
-        $this->assertInstanceOf(CDatabase_Schema_Manager_Sqlite::class, $conn->getSchemaManager());
-        $this->assertInstanceOf(CDatabase_Platform_Sqlite::class, $conn->getDatabasePlatform());
+        $this->assertInstanceOf(CDatabase_Schema_Manager_Doctrine::class, $conn->getSchemaManager());
+        $this->assertInstanceOf(CDatabase_Platform_Doctrine::class, $conn->getDatabasePlatform());
     }
 
     public function testListTableColumnsReadsTypesLengthDefaultAndSingleColumnAutoincrement() {
@@ -183,7 +183,6 @@ class DatabaseSqliteSchemaManagerTest extends TestCase {
     }
 
     public function testBlueprintDropColumnRebuildsCorrectlyEvenWithoutNativeDropColumnSupport() {
-        //bukti nyata kenapa removedColumns ikut memicu rebuild di CDatabase_Platform_Sqlite:
         //`ALTER TABLE ... DROP COLUMN` native baru ada sejak SQLite 3.35 - lingkungan test ini
         //sendiri terbukti punya sqlite lebih lama saat berkas ini ditulis (3.31.1)
         $conn = $this->connection();
