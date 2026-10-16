@@ -1,36 +1,32 @@
 <?php
 
 /**
- * Class to manage file deletion
- *
- * @package CLogger\Rotator
+ * Class to manage file deletion.
  */
 class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
     /**
-     * Current date & time for file comparison purposes
+     * Current date & time for file comparison purposes.
      *
      * @var DateTime
      */
     protected $now;
 
     /**
-     * Paths it is safe to perform recursive delete on
+     * Paths it is safe to perform recursive delete on.
      *
      * @var array
      */
     protected $safeRecursiveDeletePaths = [];
 
     /**
-     * Set the current date & time
-     *
-     * @param DateTime $dateTime
+     * Set the current date & time.
      */
     public function setNow(DateTime $dateTime) {
         $this->now = $dateTime;
     }
 
     /**
-     * Return current time
+     * Return current time.
      *
      * Defaults to current date, midnight
      *
@@ -41,11 +37,12 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
             $now = new DateTime();
             $this->now = new DateTime($now->format('Y-m-d') . ' 00:00:00');
         }
+
         return $this->now;
     }
 
     /**
-     * Add a folder path it is safe to perform recursive delete on
+     * Add a folder path it is safe to perform recursive delete on.
      *
      * If you don't do this you cannot recursively delete a folder, this is for safety!
      *
@@ -61,15 +58,13 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
     }
 
     /**
-     * Delete a file or a folder containing files
+     * Delete a file or a folder containing files.
      *
      * If you try to delete a folder containing files, you must add the path via addSafeRecursiveDeletePath()
      *
-     * @param $path
+     * @throws RotateException
      *
      * @return array Array of deleted files
-     *
-     * @throws RotateException
      */
     protected function delete($path) {
         if (is_dir($path)) {
@@ -78,21 +73,20 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
             if (!unlink($path)) {
                 throw new CLogger_Rotator_Exception_RotateException('Cannot delete file: ' . $path);
             }
+
             return [$path];
         }
     }
 
     /**
-     * Recursively delete a folder and its contents
+     * Recursively delete a folder and its contents.
      *
      * Warning: this can be dangerous, you must add paths that are safe to perform recursive deletion on via addSafeRecursiveDeletePath()
      * otherwise this function will fail
      *
-     * @param $folderPath
+     * @throws RotateException
      *
      * @return array Array of deleted files
-     *
-     * @throws RotateException
      */
     protected function recursiveDeleteFolder($folderPath) {
         $deleted = [];
@@ -102,7 +96,9 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
         }
         $safeToDelete = false;
         foreach ($this->safeRecursiveDeletePaths as $safePath) {
-            if (preg_match('!^' . preg_quote($safePath, '!') . '.+$!', $folderPath)) {
+            // harus di DALAM safe path: pembanding pakai realpath + pemisah, supaya log/ tidak meliputi logs-other/
+            $safePath = realpath($safePath);
+            if ($safePath !== false && strpos($folderPath, rtrim($safePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR) === 0) {
                 $safeToDelete = true;
             }
         }
@@ -132,20 +128,21 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
             $deleted[] = $folderPath;
         }
         unset($dir, $file);
+
         return $deleted;
     }
 
     /**
-     * Delete files by the filename time stored within the filename itself
+     * Delete files by the filename time stored within the filename itself.
      *
      * For example delete all files with a filename date pattern of payment.2016-01-01.log over 3 months old
      *
      * @param mixed $timePeriod DateInterval object, or time interval supported by DateInterval::createFromDateString, e.g. 3 months
      *
-     * @return array Array of deleted files
-     *
      * @throws FilenameFormatException
      * @throws RotateException
+     *
+     * @return array Array of deleted files
      */
     public function deleteByFilenameTime($timePeriod) {
         if (!$this->hasFilenameFormat()) {
@@ -164,7 +161,9 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
         foreach ($dir as $file) {
             /** @var CLogger_Rotator_DirectoryIterator $file */
             if (!$file->isDot() && $file->isMatch()) {
-                if ($file->getFilenameDate() < $oldestDate) {
+                // tanggal gagal di-parse (false) bukan berarti lebih tua - berkas itu dilewati
+                $filenameDate = $file->getFilenameDate();
+                if ($filenameDate instanceof DateTime && $filenameDate < $oldestDate) {
                     if (!$this->isDryRun()) {
                         $results = $this->delete($file->getPathname());
                         $deleted = array_merge($deleted, $results);
@@ -174,20 +173,21 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
                 }
             }
         }
+
         return $deleted;
     }
 
     /**
-     * Delete files by the last modified time of the filename
+     * Delete files by the last modified time of the filename.
      *
      * For example delete all files over 3 months old.
      *
      * @param mixed $timePeriod DateInterval object, or time interval supported by DateInterval::createFromDateString, e.g. 3 months
      *
-     * @return array Array of deleted files
-     *
      * @throws FilenameFormatException
      * @throws RotateException
+     *
+     * @return array Array of deleted files
      */
     public function deleteByFileModifiedDate($timePeriod) {
         if (!$this->hasFilenameFormat()) {
@@ -218,11 +218,12 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
                 }
             }
         }
+
         return $deleted;
     }
 
     /**
-     * Delete files by a custom callback function
+     * Delete files by a custom callback function.
      *
      * For example, do a database lookup on the order ID stored within the filename to ensure the order has been completed, if so delete the file.
      *
@@ -237,12 +238,10 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
      *     }
      * }
      *
-     * @param callable $callback
-     *
-     * @return array Array of deleted files
-     *
      * @throws FilenameFormatException
      * @throws RotateException
+     *
+     * @return array Array of deleted files
      */
     public function deleteByCallback(callable $callback) {
         if (!$this->hasFilenameFormat()) {
@@ -264,6 +263,7 @@ class CLogger_Rotator_Delete extends CLogger_Rotator_AbstractRotate {
                 }
             }
         }
+
         return $deleted;
     }
 }
