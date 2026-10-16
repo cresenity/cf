@@ -203,6 +203,38 @@ class LogReaderIndexTest extends TestCase {
         $this->assertSame('a. pesan', $log->text);
     }
 
+    public function testItemCallbackIsAppliedToALogIndexSearch() {
+        $path = $this->tempDir . '/cb.log';
+        file_put_contents($path, $this->logLines(3));
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+        $reader->scan();
+
+        $page = $reader->search('log-index:1')->paginate(25, 1, function (CLogger_Reader_Log $log) {
+            return ['text' => $log->text];
+        });
+
+        $this->assertSame([['text' => 'pesan ke-2']], $page->items());
+    }
+
+    public function testANormalSearchAfterALogIndexSearchShowsAllMatches() {
+        $path = $this->tempDir . '/again.log';
+        file_put_contents($path, $this->logLines(3));
+        //mtime di detik ini membuat requiresScan() menunda scan dalam request yang sama
+        touch($path, time() - 60);
+        $reader = new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path));
+        $reader->scan();
+        $reader->search('log-index:1')->paginate(25, 1);
+
+        //reader yang sama (LogReader::instance() di-cache per path) dipakai untuk search berikutnya
+        $this->assertSame(3, $reader->search('pesan')->scan()->paginate(25, 1)->total());
+    }
+
+    public function testSubFolderIsTheDirectoryEvenWhenItContainsTheFileName() {
+        $file = new CLogger_Reader_LogFile($this->tempDir . '/app.log.d/app.log');
+
+        $this->assertSame($this->tempDir . '/app.log.d', $file->subFolder);
+    }
+
     public function testDirectionSurvivesASearch() {
         $path = $this->tempDir . '/e.log';
         file_put_contents($path, $this->logLines(3));

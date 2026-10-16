@@ -37,8 +37,7 @@ class CLogger_Reader_LogFile {
         $this->identifier = CLogger_Reader_Util_Utils::shortMd5($path) . '-' . $this->name;
 
         // Let's remove the file name because we already know it.
-        $this->subFolder = str_replace($this->name, '', $path);
-        $this->subFolder = rtrim($this->subFolder, DIRECTORY_SEPARATOR);
+        $this->subFolder = dirname($path) === '.' ? '' : rtrim(dirname($path), DIRECTORY_SEPARATOR);
 
         $this->loadMetadata();
     }
@@ -88,11 +87,6 @@ class CLogger_Reader_LogFile {
         return c::response()->download($this->path);
     }
 
-    /**
-     * @param CLogger_Reader_LogIndex $logIndex
-     *
-     * @return void
-     */
     public function addRelatedIndex(CLogger_Reader_LogIndex $logIndex): void {
         $relatedIndices = c::collect($this->getMetadata('related_indices', []));
         $relatedIndices[$logIndex->identifier] = carr::only(
@@ -144,9 +138,6 @@ class CLogger_Reader_LogFile {
         return $this->logs()->search($query);
     }
 
-    /**
-     * @return void
-     */
     public function delete(): void {
         $this->clearCache();
         unlink($this->path);

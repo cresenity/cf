@@ -206,6 +206,8 @@ class CLogger_Reader_LogReader {
 
     public function setQuery(?string $query = null): self {
         $this->close();
+        // reader di-cache per path: log-index:N dari pencarian sebelumnya tidak boleh terbawa
+        $this->onlyShowIndex = null;
 
         if (!empty($query) && cstr::startsWith($query, 'log-index:')) {
             $this->query = null;
@@ -486,6 +488,9 @@ class CLogger_Reader_LogReader {
 
         if (!is_null($this->onlyShowIndex)) {
             $log = $this->reset()->getLogAtIndex($this->onlyShowIndex);
+            if ($log && $itemCallback != null) {
+                $log = $itemCallback($log);
+            }
 
             return new CPagination_LengthAwarePaginator(
                 $log ? [$log] : [],
