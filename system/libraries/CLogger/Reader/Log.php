@@ -41,7 +41,12 @@ class CLogger_Reader_Log {
         // sometimes, even the first line will have a HUGE exception with tons of debug data all in one line,
         // so in order to properly match, we must have a smaller first line...
         $firstLineSplit = str_split($firstLine, 1000);
-        preg_match(CLogger_Reader::logRegexPattern(), array_shift($firstLineSplit), $matches);
+        $firstLinePart = array_shift($firstLineSplit);
+        if (!preg_match(CLogger_Reader::logRegexPattern(), $firstLinePart, $matches)) {
+            // diawali [timestamp] tapi bukan format "env.LEVEL: pesan" (mis. keluaran cron): sisa baris jadi teks
+            preg_match('/^\[([^\]]+)\]\s*(.*)$/s', $firstLinePart, $fallback);
+            $matches = [1 => $fallback[1] ?? null, 7 => $fallback[2] ?? $firstLinePart];
+        }
 
         $this->time = CCarbon::parse($matches[1])->tz(
             CF::config('log.reader.timezone', CF::config('app.timezone', 'UTC'))
@@ -54,11 +59,15 @@ class CLogger_Reader_Log {
 
         // There might be something in the middle between the timestamp
         // and the environment/level. Let's put that at the beginning of the first line.
-        $middle = trim(rtrim($matches[4] ?? '', $this->environment . '.'));
+        $middle = $matches[4] ?? '';
+        if (cstr::endsWith($middle, $this->environment . '.')) {
+            $middle = substr($middle, 0, -strlen($this->environment . '.'));
+        }
+        $middle = trim($middle);
 
         $this->level = CLogger_Level::from(strtolower($matches[6] ?? ''));
 
-        $firstLineText = $matches[7];
+        $firstLineText = $matches[7] ?? '';
 
         if (!empty($middle)) {
             $firstLineText = $middle . ' ' . $firstLineText;

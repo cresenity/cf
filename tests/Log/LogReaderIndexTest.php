@@ -165,6 +165,44 @@ class LogReaderIndexTest extends TestCase {
         $this->assertSame([0, 2], array_keys($reader->index()->getFlatIndex()));
     }
 
+    /**
+     * @param string $content
+     *
+     * @return CLogger_Reader_Log
+     */
+    private function firstLog($content) {
+        $path = $this->tempDir . '/parse-' . uniqid() . '.log';
+        file_put_contents($path, $content);
+
+        return (new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path)))->scan()->get(1)[0];
+    }
+
+    public function testLineWithoutEnvironmentAndLevelIsReadWithoutWarnings() {
+        $warnings = [];
+        set_error_handler(function ($errno, $errstr) use (&$warnings) {
+            $warnings[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $log = $this->firstLog("[2026-10-16 10:00:01] cron finished ok\n");
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $warnings);
+        $this->assertSame('cron finished ok', $log->text);
+        $this->assertSame('2026-10-16 10:00:01', $log->time->format('Y-m-d H:i:s'));
+    }
+
+    public function testMiddleTextKeepsItsTrailingDot() {
+        $log = $this->firstLog("[2026-10-16 10:00:01] a.local.ERROR: pesan\n");
+
+        $this->assertSame('local', $log->environment);
+        $this->assertSame('a. pesan', $log->text);
+    }
+
     public function testDirectionSurvivesASearch() {
         $path = $this->tempDir . '/e.log';
         file_put_contents($path, $this->logLines(3));
