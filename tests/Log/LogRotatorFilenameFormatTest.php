@@ -71,4 +71,26 @@ class LogRotatorFilenameFormatTest extends TestCase {
         $this->assertFileExists($path . '.1');
         $this->assertFileDoesNotExist($path);
     }
+
+    public function testOldestCopyIsDeletedOnceKeepIsReached() {
+        $path = $this->tempDir . '/cron.log';
+        for ($run = 1; $run <= 4; $run++) {
+            file_put_contents($path, 'run ' . $run);
+            $rotated = CLogger_Rotator::createRotate($path)->keep(3)->run(false);
+        }
+
+        //run ke-4: .3 (berisi run 1) dihapus dulu sebelum .2 digeser ke .3
+        $this->assertContains($path . '.3', $rotated);
+        $this->assertSame('run 4', file_get_contents($path . '.1'));
+        $this->assertSame('run 3', file_get_contents($path . '.2'));
+        $this->assertSame('run 2', file_get_contents($path . '.3'));
+        $this->assertFileDoesNotExist($path . '.4');
+    }
+
+    public function testFilenamePartWithASlashIsRejected() {
+        $format = new CLogger_Rotator_FilenameFormat($this->tempDir . '/cron.log');
+
+        $this->expectException(CLogger_Rotator_Exception_FilenameFormatException::class);
+        $format->extractRegex('a/b.log');
+    }
 }

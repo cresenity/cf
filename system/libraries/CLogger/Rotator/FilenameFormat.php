@@ -60,7 +60,7 @@ class CLogger_Rotator_FilenameFormat {
      * @return string Regex pattern for matching files (with the ungreedy modifier set)
      */
     public function extractRegex($filename) {
-        if (strpos('/', $filename) !== false) {
+        if (strpos($filename, '/') !== false) {
             throw new CLogger_Rotator_Exception_FilenameFormatException("Filename part cannot contain '/' character");
         }
         // bagian literal di-preg_quote, nama log CCron/CDaemon bisa berisi ( ) [ ] dll

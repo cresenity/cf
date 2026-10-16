@@ -21,8 +21,6 @@ class CLogger_Rotator_Rotate extends CLogger_Rotator_AbstractRotate {
     /**
      * Set the number of old copies to keep.
      *
-     * @param $number
-     *
      * @return CLogger_Rotator_Rotate
      */
     public function keep($number) {
@@ -134,7 +132,7 @@ class CLogger_Rotator_Rotate extends CLogger_Rotator_AbstractRotate {
                     }
                 }
                 // Rotate files
-                for ($x = $this->keepNumber; $x--; $x > 0) {
+                for ($x = $this->keepNumber; $x > 0; $x--) {
                     $fileToRotate = $file->getPath() . '/' . $file->getRotatedFilename($x);
                     if (!file_exists($fileToRotate)) {
                         continue;
