@@ -57,6 +57,39 @@ class LogReaderIndexTest extends TestCase {
         $this->assertSame(1, $index->count());
     }
 
+    /**
+     * 5 log, 2 per chunk: ts 10, 11 | 500, 501 | 502.
+     *
+     * @return CLogger_Reader_LogIndex
+     */
+    private function chunkedIndex() {
+        $index = new CLogger_Reader_LogIndex(new CLogger_Reader_LogFile($this->tempDir . '/chunked-' . uniqid() . '.log'));
+        $index->setMaxChunkSize(2);
+        foreach ([10, 11, 500, 501, 502] as $i => $timestamp) {
+            $index->addToIndex($i * 10, $timestamp, 'info', $i);
+        }
+
+        return $index;
+    }
+
+    public function testDateFilterIsRespectedWhenSkippingChunks() {
+        $index = $this->chunkedIndex();
+        $index->forDateRange(500)->skip(2);
+        $this->assertSame([4 => 40], $index->getFlatIndex());
+
+        $index = $this->chunkedIndex();
+        $index->forDateRange(11, 500)->skip(1);
+        $this->assertSame([2 => 20], $index->getFlatIndex());
+        $this->assertSame([500 => ['info' => [2 => 20]]], $index->get());
+    }
+
+    public function testCountRespectsTheDateFilter() {
+        $this->assertSame(3, $this->chunkedIndex()->forDateRange(500)->count());
+        $this->assertSame(2, $this->chunkedIndex()->forDateRange(11, 500)->count());
+        $this->assertSame(0, $this->chunkedIndex()->forDateRange(600)->count());
+        $this->assertSame(5, $this->chunkedIndex()->count());
+    }
+
     public function testRescanAfterTheFileShrinksDropsTheOldEntries() {
         $path = $this->tempDir . '/b.log';
         file_put_contents($path, $this->logLines(3));

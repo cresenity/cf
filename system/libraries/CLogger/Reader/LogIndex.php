@@ -43,8 +43,7 @@ class CLogger_Reader_LogIndex {
     protected $query;
 
     /**
-     * @param CLogger_Reader_LogFile $file
-     * @param null|string            $query
+     * @param null|string $query
      */
     public function __construct(CLogger_Reader_LogFile $file, $query = null) {
         $this->file = $file;
@@ -114,7 +113,10 @@ class CLogger_Reader_LogIndex {
         $this->sortKeys($chunkDefinitions);
 
         foreach ($chunkDefinitions as $chunkDefinition) {
-            if (isset($skip)) {
+            if ($this->chunkIsOutsideDateFilter($chunkDefinition)) {
+                continue;
+            }
+            if (isset($skip) && $this->chunkIsWithinDateFilter($chunkDefinition)) {
                 $relevantItemsInChunk = $this->getRelevantItemsInChunk($chunkDefinition);
 
                 if ($relevantItemsInChunk <= $skip) {
@@ -195,7 +197,10 @@ class CLogger_Reader_LogIndex {
         $this->sortKeys($chunkDefinitions);
 
         foreach ($chunkDefinitions as $chunkDefinition) {
-            if (isset($skip)) {
+            if ($this->chunkIsOutsideDateFilter($chunkDefinition)) {
+                continue;
+            }
+            if (isset($skip) && $this->chunkIsWithinDateFilter($chunkDefinition)) {
                 $relevantItemsInChunk = $this->getRelevantItemsInChunk($chunkDefinition);
 
                 if ($relevantItemsInChunk <= $skip) {
@@ -292,9 +297,22 @@ class CLogger_Reader_LogIndex {
 
     public function count(): int {
         return array_reduce($this->getChunkDefinitions(), function ($sum, $chunkDefinition) {
-            foreach ($chunkDefinition['level_counts'] as $level => $count) {
-                if (!isset($this->filterLevels) || in_array($level, $this->filterLevels)) {
-                    $sum += $count;
+            if ($this->chunkIsOutsideDateFilter($chunkDefinition)) {
+                return $sum;
+            }
+            if ($this->chunkIsWithinDateFilter($chunkDefinition)) {
+                return $sum + $this->getRelevantItemsInChunk($chunkDefinition);
+            }
+
+            // chunk hanya sebagian masuk filter tanggal: hitung dari isinya
+            foreach ($this->getChunkData($chunkDefinition['index']) ?? [] as $timestamp => $tsIndex) {
+                if ((isset($this->filterFrom) && $timestamp < $this->filterFrom) || (isset($this->filterTo) && $timestamp > $this->filterTo)) {
+                    continue;
+                }
+                foreach ($tsIndex as $level => $levelIndex) {
+                    if (!isset($this->filterLevels) || in_array($level, $this->filterLevels)) {
+                        $sum += count($levelIndex);
+                    }
                 }
             }
 
