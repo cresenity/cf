@@ -4,6 +4,8 @@ defined('SYSPATH') or die('No direct script access.');
 
 /**
  * File log writer. Writes out messages and stores them in a YYYY/MM directory.
+ *
+ * @deprecated 1.9 warisan Kohana, tidak dipakai CLogger; pakai driver single/daily. Dihapus di 2.0
  */
 class CLogger_Writer_File extends CLogger_Writer {
     /**
@@ -55,8 +57,6 @@ class CLogger_Writer_File extends CLogger_Writer {
      * year, MM is the current month, and DD is the current day.
      *
      *     $writer->write($messages);
-     *
-     * @param array $messages
      *
      * @return void
      */

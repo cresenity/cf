@@ -32,24 +32,11 @@ class CLogger {
     ];
 
     /**
-     * @var array list of added messages
-     */
-    protected $messages = [];
-
-    protected static $writeOnAdd = false;
-
-    protected $threshold;
-
-    protected $writers = [];
-
-    /**
      * @var CLogger Singleton instance container
      */
     private static $instance = null;
 
     private function __construct() {
-        $options['path'] = 'system';
-        $this->threshold = CF::config('log.threshold', static::DEBUG);
     }
 
     /**
