@@ -6,6 +6,7 @@ use Monolog\Handler\TestHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\FingersCrossedHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
 
 /**
  * CLogger_Manager - padanan suite hulu untuk LogManager, dibatasi pada channel yang dibangun
@@ -277,5 +278,44 @@ class LogManagerTest extends TestCase {
         $this->assertSame([], $warnings);
         $this->assertInstanceOf(CLogger_Logger::class, $logger);
         $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
+    }
+
+    public function testReplacePlaceholders() {
+        $manager = CLogger_Manager::instance();
+        $manager->build(['driver' => 'single', 'path' => $this->tempDir . '/ph.log', 'replace_placeholders' => true])
+            ->info('halo {name}', ['name' => 'budi']);
+        $manager->build(['driver' => 'daily', 'path' => $this->tempDir . '/ph-daily.log', 'replace_placeholders' => true])
+            ->info('halo {name}', ['name' => 'ani']);
+        $manager->build(['driver' => 'single', 'path' => $this->tempDir . '/raw.log'])
+            ->info('halo {name}', ['name' => 'budi']);
+        $manager->forgetChannel('ondemand');
+
+        $this->assertStringContainsString('halo budi', file_get_contents($this->tempDir . '/ph.log'));
+        $this->assertStringContainsString('halo ani', file_get_contents($this->tempDir . '/ph-daily-' . date('Y-m-d') . '.log'));
+        $this->assertStringContainsString('halo {name}', file_get_contents($this->tempDir . '/raw.log'));
+    }
+
+    public function testMonologDriverAcceptsProcessors() {
+        $logger = CLogger_Manager::instance()->build([
+            'driver' => 'monolog',
+            'handler' => TestHandler::class,
+            'processors' => [
+                PsrLogMessageProcessor::class,
+                ['processor' => PsrLogMessageProcessor::class, 'with' => ['removeUsedContextFields' => true]],
+            ],
+        ]);
+        CLogger_Manager::instance()->forgetChannel('ondemand');
+
+        $processors = $logger->getLogger()->getProcessors();
+        $this->assertCount(2, $processors);
+        $this->assertContainsOnlyInstancesOf(PsrLogMessageProcessor::class, $processors);
+    }
+
+    public function testErrorlogDriverHonoursTheChannelConfig() {
+        $logger = CLogger_Manager::instance()->build(['driver' => 'errorlog', 'action_level' => 'error', 'replace_placeholders' => true]);
+        CLogger_Manager::instance()->forgetChannel('ondemand');
+
+        $this->assertInstanceOf(FingersCrossedHandler::class, $logger->getHandlers()[0]);
+        $this->assertCount(1, $logger->getLogger()->getProcessors());
     }
 }

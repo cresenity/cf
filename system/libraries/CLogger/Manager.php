@@ -11,6 +11,7 @@ use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\SlackWebhookHandler;
 use Monolog\Handler\FingersCrossedHandler;
 use Monolog\Handler\WhatFailureGroupHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
 use Monolog\Handler\FormattableHandlerInterface;
 
 class CLogger_Manager implements LoggerInterface {
@@ -287,7 +288,7 @@ class CLogger_Manager implements LoggerInterface {
 
         return new Monolog($this->parseChannel($config), [
             $this->prepareHandler($handler, $config),
-        ]);
+        ], $this->placeholderProcessors($config));
     }
 
     /**
@@ -309,7 +310,7 @@ class CLogger_Manager implements LoggerInterface {
 
         return new Monolog($this->parseChannel($config), [
             $this->prepareHandler($handler, $config),
-        ]);
+        ], $this->placeholderProcessors($config));
     }
 
     /**
@@ -331,7 +332,7 @@ class CLogger_Manager implements LoggerInterface {
                 isset($config['bubble']) ? $config['bubble'] : true,
                 isset($config['exclude_fields']) ? $config['exclude_fields'] : []
             ), $config),
-        ]);
+        ], $this->placeholderProcessors($config));
     }
 
     /**
@@ -346,7 +347,7 @@ class CLogger_Manager implements LoggerInterface {
                 isset($config['facility']) ? $config['facility'] : LOG_USER,
                 $this->level($config)
             ), $config),
-        ]);
+        ], $this->placeholderProcessors($config));
     }
 
     /**
@@ -359,8 +360,8 @@ class CLogger_Manager implements LoggerInterface {
             $this->prepareHandler(new ErrorLogHandler(
                 isset($config['type']) ? $config['type'] : ErrorLogHandler::OPERATING_SYSTEM,
                 $this->level($config)
-            )),
-        ]);
+            ), $config),
+        ], $this->placeholderProcessors($config));
     }
 
     /**
@@ -384,10 +385,25 @@ class CLogger_Manager implements LoggerInterface {
             isset($config['handler_with']) ? $config['handler_with'] : []
         );
 
+        $processors = c::collect(isset($config['processors']) ? $config['processors'] : [])->map(function ($processor) {
+            return is_array($processor)
+                ? CContainer::getInstance()->make($processor['processor'], isset($processor['with']) ? $processor['with'] : [])
+                : CContainer::getInstance()->make($processor);
+        })->all();
+
         return new Monolog($this->parseChannel($config), [$this->prepareHandler(
             CContainer::getInstance()->make($config['handler'], $with),
             $config
-        )]);
+        )], $processors);
+    }
+
+    /**
+     * Processor {placeholder} bila channel men-set replace_placeholders.
+     *
+     * @return array
+     */
+    protected function placeholderProcessors(array $config) {
+        return empty($config['replace_placeholders']) ? [] : [new PsrLogMessageProcessor()];
     }
 
     /**
