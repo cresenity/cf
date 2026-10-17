@@ -137,12 +137,6 @@ class CLogger_Manager implements LoggerInterface {
                     'exception' => $e,
                 ]);
             });
-        } catch (Exception $e) {
-            return c::tap($this->createEmergencyLogger(), function ($logger) use ($e) {
-                $logger->emergency('Unable to create configured logger. Using emergency logger.', [
-                    'exception' => $e,
-                ]);
-            });
         }
     }
 
@@ -281,17 +275,18 @@ class CLogger_Manager implements LoggerInterface {
      * @return \Psr\Log\LoggerInterface
      */
     protected function createSingleDriver(array $config) {
+        $args = [
+            $this->level($config),
+            isset($config['bubble']) ? $config['bubble'] : true,
+            isset($config['permission']) ? $config['permission'] : null,
+            isset($config['locking']) ? $config['locking'] : false,
+        ];
+        $handler = isset($config['monthly_directory'])
+            ? new CLogger_Handler_MonthlyStreamHandler($config['monthly_directory'], basename($config['path']), ...$args)
+            : new StreamHandler($config['path'], ...$args);
+
         return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(
-                new StreamHandler(
-                    $config['path'],
-                    $this->level($config),
-                    isset($config['bubble']) ? $config['bubble'] : true,
-                    isset($config['permission']) ? $config['permission'] : null,
-                    isset($config['locking']) ? $config['locking'] : false
-                ),
-                $config
-            ),
+            $this->prepareHandler($handler, $config),
         ]);
     }
 
@@ -301,15 +296,19 @@ class CLogger_Manager implements LoggerInterface {
      * @return \Psr\Log\LoggerInterface
      */
     protected function createDailyDriver(array $config) {
+        $args = [
+            isset($config['days']) ? $config['days'] : 7,
+            $this->level($config),
+            isset($config['bubble']) ? $config['bubble'] : true,
+            isset($config['permission']) ? $config['permission'] : null,
+            isset($config['locking']) ? $config['locking'] : false,
+        ];
+        $handler = isset($config['monthly_directory'])
+            ? new CLogger_Handler_MonthlyRotatingFileHandler($config['monthly_directory'], basename($config['path']), ...$args)
+            : new RotatingFileHandler($config['path'], ...$args);
+
         return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(new RotatingFileHandler(
-                $config['path'],
-                isset($config['days']) ? $config['days'] : 7,
-                $this->level($config),
-                isset($config['bubble']) ? $config['bubble'] : true,
-                isset($config['permission']) ? $config['permission'] : null,
-                isset($config['locking']) ? $config['locking'] : false
-            ), $config),
+            $this->prepareHandler($handler, $config),
         ]);
     }
 
@@ -500,10 +499,9 @@ class CLogger_Manager implements LoggerInterface {
         $config = CF::config("log.channels.{$name}");
         $driver = carr::get($config, 'driver');
         if (in_array($driver, ['single', 'daily']) && carr::get($config, 'path') == null) {
-            // Set the yearly directory name
-            $date = date('Y-m');
-            list($year, $month) = explode('-', $date);
-            $config['path'] = DOCROOT . 'logs' . DS . CF::appCode() . DS . $year . DS . $month . DS . 'log.log';
+            // logs/<appCode>/<Y>/<m>/log.log, folder bulan diikuti handler monthly
+            $config['monthly_directory'] = DOCROOT . 'logs' . DS . CF::appCode();
+            $config['path'] = CLogger_Handler_MonthlyStreamHandler::monthlyPath($config['monthly_directory'], 'log.log');
         }
 
         return $config;
