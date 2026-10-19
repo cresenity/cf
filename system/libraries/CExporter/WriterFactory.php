@@ -11,14 +11,14 @@ class CExporter_WriterFactory {
 
     /**
      * @param string      $writerType
-     * @param Spreadsheet $spreadsheet
      * @param object      $export
+     * @param null|string $filePath   target file name, a .tsv gets a tab delimiter
      *
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      *
      * @return IWriter
      */
-    public static function make($writerType, Spreadsheet $spreadsheet, $export) {
+    public static function make($writerType, Spreadsheet $spreadsheet, $export, $filePath = null) {
         $writer = IOFactory::createWriter($spreadsheet, $writerType);
 
         if (static::includesCharts($export)) {
@@ -36,7 +36,10 @@ class CExporter_WriterFactory {
                 static::applyCsvSettings($export->getCsvSettings());
             }
 
-            $writer->setDelimiter(static::$delimiter);
+            // CExporter::TSV is the Csv writer; the delimiter comes from the file name (upstream 3.1.68).
+            // Set on the writer only, the static settings outlive this export (queue worker)
+            $isTsv = $filePath && static::isTsvFile($filePath) && !($export instanceof CExporter_Concern_WithCustomCsvSettings);
+            $writer->setDelimiter($isTsv ? "\t" : static::$delimiter);
             $writer->setEnclosure(static::$enclosure);
             $writer->setLineEnding(static::$lineEnding);
             $writer->setUseBOM(static::$useBom);
@@ -53,8 +56,6 @@ class CExporter_WriterFactory {
     }
 
     /**
-     * @param $export
-     *
      * @return bool
      */
     private static function includesCharts($export) {
@@ -71,5 +72,14 @@ class CExporter_WriterFactory {
         }
 
         return false;
+    }
+
+    /**
+     * @param string $filePath
+     *
+     * @return bool
+     */
+    private static function isTsvFile($filePath) {
+        return strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'tsv';
     }
 }

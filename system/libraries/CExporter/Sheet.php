@@ -34,9 +34,6 @@ class CExporter_Sheet {
      */
     private $worksheet;
 
-    /**
-     * @param Worksheet $worksheet
-     */
     public function __construct(Worksheet $worksheet) {
         $this->worksheet = $worksheet;
         $this->chunkSize = CExporter::config()->get('exports.chunk_size', 100);
@@ -44,8 +41,7 @@ class CExporter_Sheet {
     }
 
     /**
-     * @param Spreadsheet $spreadsheet
-     * @param string|int  $index
+     * @param string|int $index
      *
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws SheetNotFoundException
@@ -61,8 +57,7 @@ class CExporter_Sheet {
     }
 
     /**
-     * @param Spreadsheet $spreadsheet
-     * @param int         $index
+     * @param int $index
      *
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws SheetNotFoundException
@@ -78,8 +73,7 @@ class CExporter_Sheet {
     }
 
     /**
-     * @param Spreadsheet $spreadsheet
-     * @param string      $name
+     * @param string $name
      *
      * @throws SheetNotFoundException
      *
@@ -120,7 +114,7 @@ class CExporter_Sheet {
             $this->worksheet->setTitle($title);
         }
 
-        if (($sheetExport instanceof CExporter_Concern_FromQuery || $sheetExport instanceof CExporter_Concern_FromCollection || $sheetExport instanceof CExporter_Concern_FromArray) && $sheetExport instanceof CExporter_Concern_FromView && $sheetExport instanceof CExporter_Concern_FromSql) {
+        if (($sheetExport instanceof CExporter_Concern_FromQuery || $sheetExport instanceof CExporter_Concern_FromCollection || $sheetExport instanceof CExporter_Concern_FromArray || $sheetExport instanceof CExporter_Concern_FromSql) && $sheetExport instanceof CExporter_Concern_FromView) {
             throw CExporter_Exception_ConcernConflictException::queryOrCollectionAndView();
         }
 
@@ -136,13 +130,6 @@ class CExporter_Sheet {
             );
         }
 
-        if ($sheetExport instanceof CExporter_Concern_WithCharts) {
-            $this->addCharts($sheetExport->charts());
-        }
-
-        if ($sheetExport instanceof CExporter_Concern_WithDrawings) {
-            $this->addDrawings($sheetExport->drawings());
-        }
     }
 
     /**
@@ -321,6 +308,15 @@ class CExporter_Sheet {
     public function close($sheetExport) {
         $this->exportable = $sheetExport;
 
+        //setelah data ditulis (upstream 3.1.59): drawing/chart di open() bisa tertimpa append
+        if ($sheetExport instanceof CExporter_Concern_WithCharts) {
+            $this->addCharts($sheetExport->charts());
+        }
+
+        if ($sheetExport instanceof CExporter_Concern_WithDrawings) {
+            $this->addDrawings($sheetExport->drawings());
+        }
+
         if ($sheetExport instanceof CExporter_Concern_WithColumnFormatting) {
             foreach ($sheetExport->columnFormats() as $column => $format) {
                 // a column with no detected format keeps General; NumberFormat::setFormatCode() is string-typed since PhpSpreadsheet 1.30
@@ -377,6 +373,8 @@ class CExporter_Sheet {
             }
         }
         $this->raise(new CExporter_Event_AfterSheet($this, $this->exportable));
+
+        $this->clearListeners();
     }
 
     /**
@@ -421,64 +419,42 @@ class CExporter_Sheet {
         $temporaryFile->delete();
     }
 
-    /**
-     * @param CExporter_Concern_FromQuery $sheetExport
-     * @param Worksheet                   $worksheet
-     */
     public function fromQuery(CExporter_Concern_FromQuery $sheetExport, Worksheet $worksheet) {
-        $sheetExport->query()->chunk($this->getChunkSize($sheetExport), function ($chunk) use ($sheetExport, $worksheet) {
+        //chunk() menambah limit/offset/order ke builder; query milik export tidak ikut berubah
+        $query = clone $sheetExport->query();
+        $query->chunk($this->getChunkSize($sheetExport), function ($chunk) use ($sheetExport, $worksheet) {
             $this->appendRows($chunk, $sheetExport);
         });
     }
 
-    /**
-     * @param CExporter_Concern_FromSql $sheetExport
-     * @param Worksheet                 $worksheet
-     */
     public function fromSql(CExporter_Concern_FromSql $sheetExport, Worksheet $worksheet) {
         CExporter_Helper_SqlHelper::chunkSqlResult($sheetExport->sql(), $this->getChunkSize($sheetExport), function ($chunk) use ($sheetExport, $worksheet) {
             $this->appendRows($chunk, $sheetExport);
         });
     }
 
-    /**
-     * @param CExporter_Concern_FromCollection $sheetExport
-     */
     public function fromCollection(CExporter_Concern_FromCollection $sheetExport) {
         $this->appendRows($sheetExport->collection()->all(), $sheetExport);
     }
 
-    /**
-     * @param CExporter_Concern_FromDataTable $sheetExport
-     */
     public function fromDataTable(CExporter_Concern_FromDataTable $sheetExport) {
         $dataTable = $sheetExport->dataTable();
         $this->appendRows($dataTable->getCollection()->all(), $sheetExport);
     }
 
-    /**
-     * @param CExporter_Concern_FromArray $sheetExport
-     */
     public function fromArray(CExporter_Concern_FromArray $sheetExport) {
         $this->appendRows($sheetExport->getArray(), $sheetExport);
     }
 
-    /**
-     * @param CExporter_Concern_FromIterator $sheetExport
-     */
     public function fromIterator(CExporter_Concern_FromIterator $sheetExport) {
         $this->appendRows($sheetExport->iterator(), $sheetExport);
     }
 
-    /**
-     * @param CExporter_Concern_FromGenerator $sheetExport
-     */
     public function fromGenerator(CExporter_Concern_FromGenerator $sheetExport) {
         $this->appendRows($sheetExport->generator(), $sheetExport);
     }
 
     /**
-     * @param array       $rows
      * @param null|string $startCell
      * @param bool        $strictNullComparison
      */
@@ -578,7 +554,9 @@ class CExporter_Sheet {
         if (method_exists($sheetExport, 'prepareRows')) {
             $rows = $sheetExport->prepareRows($rows);
         }
-        $rows = (new CCollection($rows))->flatMap(function ($row) use ($sheetExport) {
+        $rows = $rows instanceof CCollection_LazyCollection ? $rows : new CCollection($rows);
+
+        $rows->flatMap(function ($row) use ($sheetExport) {
             if ($sheetExport instanceof CExporter_Concern_WithMapping) {
                 $row = $sheetExport->map($row);
             }
@@ -589,13 +567,14 @@ class CExporter_Sheet {
             return CExporter_Helper_ArrayHelper::ensureMultipleRows(
                 static::mapArraybleRow($row)
             );
-        })->toArray();
-
-        $this->append(
-            $rows,
-            $sheetExport instanceof CExporter_Concern_WithCustomStartCell ? $sheetExport->startCell() : null,
-            $this->hasStrictNullComparison($sheetExport)
-        );
+        })->chunk(1000)->each(function ($rows) use ($sheetExport) {
+            //per 1000 baris (upstream 3.1.52), hasil map tidak dimaterialisasi sekaligus
+            $this->append(
+                array_values($rows->toArray()),
+                $sheetExport instanceof CExporter_Concern_WithCustomStartCell ? $sheetExport->startCell() : null,
+                $this->hasStrictNullComparison($sheetExport)
+            );
+        });
     }
 
     /**
@@ -623,8 +602,6 @@ class CExporter_Sheet {
     }
 
     /**
-     * @param $sheetImport
-     *
      * @return int
      */
     public function getStartRow($sheetImport) {

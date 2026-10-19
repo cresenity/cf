@@ -5,41 +5,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class CExporter {
     use CExporter_Trait_RegistersCustomConcernsTrait;
 
-    /**
-     * Ganti CExporter dan CImporter dengan pencatat untuk test; lihat CExporter_Fake untuk assertion-nya.
-     *
-     * @return CExporter_Fake
-     */
-    public static function fake() {
-        return static::$fake = new CExporter_Fake();
-    }
-
-    /**
-     * @return void
-     */
-    public static function forgetFake() {
-        static::$fake = null;
-    }
-
-    /**
-     * @return null|CExporter_Fake
-     */
-    public static function getFake() {
-        return static::$fake;
-    }
-
-    /**
-     * @return bool
-     */
-    public static function hasFake() {
-        return static::$fake !== null;
-    }
-
-    /**
-     * @var null|CExporter_Fake
-     */
-    protected static $fake;
-
     const ACTION_STORE = 'store';
 
     const ACTION_DOWNLOAD = 'download';
@@ -92,10 +57,45 @@ class CExporter {
 
     const DATA_TYPE_PERCENTAGE_00 = 'percentage00';
 
+    /**
+     * @var null|CExporter_Fake
+     */
+    protected static $fake;
+
     protected static $externalWriter = [
         self::SNAPPYPDF => CExporter_PhpSpreadsheet_SnappyPdf::class,
         self::SNAPPYIMAGE => CExporter_PhpSpreadsheet_SnappyImage::class,
     ];
+
+    /**
+     * Ganti CExporter dan CImporter dengan pencatat untuk test; lihat CExporter_Fake untuk assertion-nya.
+     *
+     * @return CExporter_Fake
+     */
+    public static function fake() {
+        return static::$fake = new CExporter_Fake();
+    }
+
+    /**
+     * @return void
+     */
+    public static function forgetFake() {
+        static::$fake = null;
+    }
+
+    /**
+     * @return null|CExporter_Fake
+     */
+    public static function getFake() {
+        return static::$fake;
+    }
+
+    /**
+     * @return bool
+     */
+    public static function hasFake() {
+        return static::$fake !== null;
+    }
 
     public static function isExternalWriter($writerType) {
         return in_array($writerType, array_keys(self::$externalWriter));
@@ -149,7 +149,6 @@ class CExporter {
      * @param object      $export
      * @param null|string $fileName
      * @param string      $writerType
-     * @param array       $headers
      *
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
@@ -172,7 +171,6 @@ class CExporter {
      * @param object      $export
      * @param null|string $fileName
      * @param string      $writerType
-     * @param array       $headers
      *
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
@@ -209,7 +207,7 @@ class CExporter {
             CExporter::registerWriter($writerType);
         }
 
-        return static::writer()->export($export, $writerType);
+        return static::writer()->export($export, $writerType, $fileName);
     }
 
     /**
@@ -217,14 +215,13 @@ class CExporter {
      * (CExporter_Cache_FileCache) alih-alih array di memori; cache dikembalikan ke
      * keadaan sebelumnya setelahnya, apa pun hasil $callback.
      *
-     * @param callable $callback
-     *
      * @return mixed
      */
     public static function runWithDiskCellCache(callable $callback) {
         $previousCache = \PhpOffice\PhpSpreadsheet\Settings::getCache();
         $diskCache = new CExporter_Cache_FileCache();
         \PhpOffice\PhpSpreadsheet\Settings::setCache($diskCache);
+
         try {
             return $callback();
         } finally {
