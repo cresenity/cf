@@ -109,6 +109,13 @@ class CApp implements CInterface_Responsable, Renderable, Jsonable {
     protected $js = '';
 
     /**
+     * Whether the app output has already been rendered. Set by CApp_Concern_RendererTrait.
+     *
+     * @var bool
+     */
+    protected $rendered = false;
+
+    /**
      * @var string
      */
     private $custom_js = '';
@@ -182,13 +189,6 @@ class CApp implements CInterface_Responsable, Renderable, Jsonable {
      * @var null|CApp_Visitor
      */
     private $visitor;
-
-    /**
-     * Whether the app output has already been rendered. Set by CApp_Concern_RendererTrait.
-     *
-     * @var bool
-     */
-    protected $rendered = false;
 
     /**
      * @param null|string $domain
@@ -404,11 +404,6 @@ class CApp implements CInterface_Responsable, Renderable, Jsonable {
     }
 
     /**
-     * @param array $data
-     * @param array $rules
-     * @param array $messages
-     * @param array $customAttributes
-     *
      * @return array
      */
     public function validate(array $data, array $rules, array $messages = [], array $customAttributes = []) {
@@ -779,7 +774,6 @@ class CApp implements CInterface_Responsable, Renderable, Jsonable {
     }
 
     /**
-     * @param Exception   $exception
      * @param null|string $email
      *
      * @return void
@@ -823,7 +817,7 @@ class CApp implements CInterface_Responsable, Renderable, Jsonable {
             return c::response()->json($this->toArray());
         }
 
-        return CHTTP::createResponse($this->render());
+        return CHTTP::createResponse($this->toHtml());
     }
 
     /**

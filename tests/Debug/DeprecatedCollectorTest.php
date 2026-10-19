@@ -5,16 +5,24 @@ use PHPUnit\Framework\TestCase;
  * Kolektor yang menangkap put()/push alih-alih menulis berkas atau membuka socket.
  */
 class UjiDebug_DeprecatedCollector extends CDebug_Collector_Deprecated {
-    /** @var array */
+    /**
+     * @var array
+     */
     public $stored = [];
 
-    /** @var array */
+    /**
+     * @var array
+     */
     public $pushed = [];
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $pushSucceeds = true;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $failPut = false;
 
     public function put($data) {
@@ -53,10 +61,14 @@ class UjiDebug_LegacyApi {
  * dimatikan lewat config, dan tidak pernah melempar.
  */
 class DeprecatedCollectorTest extends TestCase {
-    /** @var UjiDebug_DeprecatedCollector */
+    /**
+     * @var UjiDebug_DeprecatedCollector
+     */
     protected $collector;
 
-    /** @var array */
+    /**
+     * @var array
+     */
     protected $originalConfig = [];
 
     protected function setUp(): void {
@@ -167,6 +179,7 @@ class DeprecatedCollectorTest extends TestCase {
     public function testCemailSenderAndLinkedinDriverReportThemselves() {
         $originalSwitch = CConfig::repository()->get('email.legacy_sender_via_mailer');
         CConfig::repository()->set('email.legacy_sender_via_mailer', false);
+
         try {
             CEmail::sender(['driver' => 'null']);
             CEmail::sender(['smtp_host' => 'smtp.sendgrid.net', 'smtp_password' => 'k']);
@@ -190,6 +203,7 @@ class DeprecatedCollectorTest extends TestCase {
     public function testSenderThroughTheMailerAdapterOnlyReportsTheFacade() {
         $originalSwitch = CConfig::repository()->get('email.legacy_sender_via_mailer');
         CConfig::repository()->set('email.legacy_sender_via_mailer', true);
+
         try {
             CEmail::sender(['driver' => 'null']);
         } finally {
@@ -244,5 +258,25 @@ class DeprecatedCollectorTest extends TestCase {
         $decoded = json_decode(end($lines), true);
         $this->assertSame('UjiDebug_LegacyApi::oldWay', $decoded['api']);
         $this->assertSame(__FILE__, $decoded['file']);
+    }
+
+    public function testAppRenderCalledFromAppCodeIsDeprecatedButToHtmlAndToResponseAreNot() {
+        CApp::resetInstances();
+        $line = __LINE__ + 1;
+        $html = CApp::instance()->render();
+
+        $this->assertIsString($html);
+        $this->assertCount(1, $this->collector->stored);
+        $this->assertSame('CApp::render()', $this->collector->stored[0]['api']);
+        $this->assertSame(__FILE__, $this->collector->stored[0]['file']);
+        $this->assertSame($line, $this->collector->stored[0]['line']);
+
+        CApp::resetInstances();
+        $this->assertSame($html, CApp::instance()->toHtml(), 'toHtml() = isi render() yang sama');
+        CApp::resetInstances();
+        $response = CApp::instance()->toResponse(c::request());
+        $this->assertInstanceOf(Symfony\Component\HttpFoundation\Response::class, $response);
+        $this->assertCount(1, $this->collector->stored, 'toHtml() dan return $app; (toResponse dari system/) tidak tercatat');
+        CApp::resetInstances();
     }
 }

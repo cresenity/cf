@@ -100,7 +100,12 @@ class Controller_App_User extends CController {
 }
 ```
 
-> **Note:** Using `echo $app->render()` is deprecated. Always use `return $app`.
+> **Note:** Using `echo $app->render()` is deprecated (reported by the deprecation collector since 1.9). Always use `return $app`.
+> When you need the page as an HTML string instead (a PDF, an email body), use `$app->toHtml()`:
+>
+> ```php
+> $dompdf->loadHtml($app->toHtml());
+> ```
 
 #### Plain Response
 
