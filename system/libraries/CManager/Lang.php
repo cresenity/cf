@@ -1,7 +1,9 @@
 <?php
 
 /**
- * Description of CManager_Lang
+ * Description of CManager_Lang.
+ *
+ * @deprecated 1.9 jalur bahasa lama, pakai CTranslation; dihapus di 2.0
  */
 class CManager_Lang implements CManager_LangInterface {
     const LANG_SESSION_NAME = '_CAPP_LANG';
@@ -27,6 +29,7 @@ class CManager_Lang implements CManager_LangInterface {
         if ($lang == null) {
             $lang = static::DEFAULT_LANG;
         }
+
         return $lang;
     }
 
@@ -35,6 +38,7 @@ class CManager_Lang implements CManager_LangInterface {
         if (static::getLangName($langKey) !== null) {
             $lang = $session->set(static::LANG_SESSION_NAME, $langKey);
         }
+
         return $lang;
     }
 
@@ -54,6 +58,7 @@ class CManager_Lang implements CManager_LangInterface {
         if (is_array($params)) {
             $translation = strtr($translation, $params);
         }
+
         return $translation;
     }
 
@@ -64,6 +69,7 @@ class CManager_Lang implements CManager_LangInterface {
             'ms' => 'Malaysia',
             'zh' => 'Chinese',
         ];
+
         return $langAvailable;
     }
 
@@ -76,6 +82,7 @@ class CManager_Lang implements CManager_LangInterface {
             $langKey = static::getLang();
         }
         $langAvailable = static::getLangAvailable();
+
         return carr::get($langAvailable, $langKey, null);
     }
 }

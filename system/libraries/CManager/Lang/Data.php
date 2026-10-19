@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @deprecated 1.9 data jalur bahasa lama (CManager_Lang), pakai CTranslation; dihapus di 2.0
+ */
 class CManager_Lang_Data {
     /**
      * The language data.
@@ -23,6 +26,7 @@ class CManager_Lang_Data {
                 $char = '_';
             }
         }
+
         return $char;
     }
 
@@ -31,6 +35,7 @@ class CManager_Lang_Data {
         if (!is_dir($dir)) {
             mkdir($dir);
         }
+
         return $dir;
     }
 
@@ -38,7 +43,7 @@ class CManager_Lang_Data {
      * Get the language file for the given message.
      *
      * @param string      $message
-     * @param string|null $lang
+     * @param null|string $lang
      *
      * @return string
      */
@@ -61,9 +66,9 @@ class CManager_Lang_Data {
     /**
      * Check if the language data exists for the given message.
      *
-     * @param string      $lang
-     * @param string      $char
-     * @param string      $message
+     * @param string $lang
+     * @param string $char
+     * @param string $message
      *
      * @return bool
      */
@@ -78,8 +83,8 @@ class CManager_Lang_Data {
     /**
      * Check if the language data is loaded for the given character.
      *
-     * @param string      $lang
-     * @param string      $char
+     * @param string $lang
+     * @param string $char
      *
      * @return bool
      */
@@ -93,6 +98,7 @@ class CManager_Lang_Data {
         if (!isset(static::$langData[$lang][$char])) {
             return false;
         }
+
         return true;
     }
 
@@ -103,8 +109,10 @@ class CManager_Lang_Data {
             static::load($char, $lang);
             //$message = addslashes($message);
             static::$langData[$lang][$char][$message] = $translation;
+
             return static::save($lang, $char);
         }
+
         return false;
     }
 
@@ -114,6 +122,7 @@ class CManager_Lang_Data {
         static::load($char, $lang);
         //$message = addslashes($message);
         static::$langData[$lang][$char][$message] = $translation;
+
         return static::save($lang, $char);
     }
 
@@ -138,6 +147,7 @@ class CManager_Lang_Data {
         if (isset(static::$langData[$lang][$char][$message])) {
             $translation = static::$langData[$lang][$char][$message];
         }
+
         return $translation;
     }
 

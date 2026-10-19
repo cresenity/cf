@@ -25,6 +25,7 @@ existing code depends on them, but they should not be used in new code.
 | `ctransform` | 1.6 | `c::transform()` |
 | `cuser` | 1.2 | `c::app()->user()` |
 | `cvalid` | 1.6 | `CValidation` |
+| `CManager::lang()` / `CManager_Lang` | 1.9 | `CTranslation` (pindahkan file `default/lang/` dulu; `c::__` tidak membacanya) |
 
 ## Common equivalents
 

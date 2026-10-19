@@ -329,9 +329,13 @@ final class CManager {
     }
 
     /**
+     * @deprecated 1.9 jalur bahasa lama (file default/lang/<lang>/<huruf>.php); pakai CTranslation.
+     *             c::__ bukan pengganti drop-in: file terjemahan harus dipindah ke CTranslation dulu
+     *
      * @return CManager_Lang
      */
     public static function lang() {
+        CF::deprecated(__METHOD__, 'CTranslation (pindahkan file terjemahan, c::__ tidak membaca file lama)', '1.9', null, true);
         if (self::$langObjectCallback != null) {
             return call_user_func(self::$langObjectCallback);
         }
@@ -340,8 +344,6 @@ final class CManager {
     }
 
     /**
-     * @param callable $callback
-     *
      * @return void
      */
     public static function setLangObjectCallback(callable $callback) {
@@ -349,8 +351,7 @@ final class CManager {
     }
 
     /**
-     * @param string   $method
-     * @param callable $callback
+     * @param string $method
      *
      * @return bool
      */
@@ -361,8 +362,7 @@ final class CManager {
     }
 
     /**
-     * @param string   $method
-     * @param callable $callback
+     * @param string $method
      *
      * @return bool
      */

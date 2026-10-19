@@ -342,4 +342,17 @@ class DeprecatedCollectorTest extends TestCase {
         $this->assertCount(1, $this->collector->stored, 'tulis berkas murah, tidak ditunda');
         $this->assertSame(0, $this->collector->finished);
     }
+
+    public function testCManagerLangCalledFromAppCodeIsDeprecatedButNotThroughClang() {
+        $line = __LINE__ + 1;
+        CManager::lang();
+
+        $this->assertCount(1, $this->collector->stored);
+        $this->assertSame('CManager::lang', $this->collector->stored[0]['api']);
+        $this->assertSame($line, $this->collector->stored[0]['line']);
+
+        //clang::__ (system/helpers) memanggil CManager::lang(): hanya clang::__ sendiri yang tercatat
+        clang::__('x');
+        $this->assertSame(['CManager::lang', 'clang::__'], array_column($this->collector->stored, 'api'));
+    }
 }
