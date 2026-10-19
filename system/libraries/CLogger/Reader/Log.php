@@ -113,8 +113,9 @@ class CLogger_Reader_Log {
             return true;
         }
 
-        if (!cstr::endsWith($query, '/i')) {
-            $query = '/' . $query . '/i';
+        // keyword mentah, atau regex yang sudah dibangun LogReader::setQuery()
+        if (!(cstr::startsWith($query, '~') && cstr::endsWith($query, '~i'))) {
+            $query = CLogger_Reader_Util_Utils::searchRegex($query);
         }
 
         return (bool) preg_match($query, $this->fullText);

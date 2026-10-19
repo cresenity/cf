@@ -62,6 +62,19 @@ class CLogger_Reader_Util_Utils {
         return true;
     }
 
+    /**
+     * Regex pencarian dari keyword: regex bila valid, selain itu teks literal.
+     *
+     * @param string $query
+     *
+     * @return string
+     */
+    public static function searchRegex($query) {
+        $regex = '~' . $query . '~i';
+
+        return self::validateRegex($regex, false) ? $regex : '~' . preg_quote($query, '~') . '~i';
+    }
+
     public static function shortMd5($content, $length = 8) {
         if ($length > 32) {
             $length = 32;

@@ -128,9 +128,7 @@ class CLogger_Reader_LogFile {
     }
 
     /**
-     * @param null|string $query
-     *
-     * @throws CLogger_Reader_Exception_InvalidRegularExpression
+     * @param null|string $query regex, atau teks literal bila bukan regex valid
      *
      * @return CLogger_Reader_LogReader
      */

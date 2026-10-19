@@ -214,11 +214,7 @@ class CLogger_Reader_LogReader {
             $this->only(null);
             $this->onlyShow(intval(explode(':', $query)[1]));
         } elseif (!empty($query)) {
-            $query = '/' . $query . '/i';
-
-            CLogger_Reader_Util_Utils::validateRegex($query);
-
-            $this->query = $query;
+            $this->query = CLogger_Reader_Util_Utils::searchRegex($query);
         } else {
             $this->query = null;
         }

@@ -247,4 +247,28 @@ class LogReaderIndexTest extends TestCase {
         $this->assertStringContainsString('pesan ke-3', $logs[0]->text);
         $this->assertStringContainsString('pesan ke-1', $logs[2]->text);
     }
+
+    public function testKeywordIsARegexOrLiteralTextWhenItIsNotAValidRegex() {
+        $path = $this->tempDir . '/kw.log';
+        file_put_contents($path, "[2026-10-16 10:00:01] local.ERROR: gagal di app/Http/Kernel.php\n"
+            . "[2026-10-16 10:00:02] local.ERROR: Undefined index [x\n"
+            . "[2026-10-16 10:00:03] local.INFO: selesai (ok)\n");
+        $count = function ($keyword) use ($path) {
+            return (new CLogger_Reader_LogReader(new CLogger_Reader_LogFile($path)))->search($keyword)->scan()->count();
+        };
+
+        $this->assertSame(1, $count('app/Http'));
+        $this->assertSame(1, $count('index [x'));
+        $this->assertSame(1, $count('(ok'));
+        $this->assertSame(2, $count('kernel|selesai'));
+        $this->assertSame(0, $count('index [y'));
+    }
+
+    public function testFullTextMatchesAcceptsAnInvalidRegexKeyword() {
+        $log = $this->firstLog("[2026-10-16 10:00:01] local.ERROR: Undefined index [x\n");
+
+        $this->assertTrue($log->fullTextMatches('index [x'));
+        $this->assertTrue($log->fullTextMatches('undefined|nope'));
+        $this->assertFalse($log->fullTextMatches('index [y'));
+    }
 }
