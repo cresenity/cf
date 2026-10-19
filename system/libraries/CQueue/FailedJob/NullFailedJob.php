@@ -2,7 +2,7 @@
 
 defined('SYSPATH') or die('No direct access allowed.');
 
-class CQueue_FailedJob_NullFailedJob extends CQueue_AbstractFailedJob {
+class CQueue_FailedJob_NullFailedJob extends CQueue_AbstractFailedJob implements CQueue_Contract_CountableFailedJobInterface {
     /**
      * Log a failed job into storage.
      *
@@ -47,10 +47,33 @@ class CQueue_FailedJob_NullFailedJob extends CQueue_AbstractFailedJob {
     }
 
     /**
+     * Get the IDs of all of the failed jobs.
+     *
+     * @param null|string $queue
+     *
+     * @return array
+     */
+    public function ids($queue = null) {
+        return [];
+    }
+
+    /**
      * Flush all of the failed jobs from storage.
+     *
+     * @param null|int $hours
      *
      * @return void
      */
-    public function flush() {
+    public function flush($hours = null) {
+    }
+
+    /**
+     * @param null|string $connection
+     * @param null|string $queue
+     *
+     * @return int
+     */
+    public function count($connection = null, $queue = null) {
+        return 0;
     }
 }
