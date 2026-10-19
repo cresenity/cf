@@ -195,8 +195,8 @@ class CManager_Asset_Compiler {
                     }
                 }
 
-                //`;` menutup berkas js yang berakhir tanpa titik koma, agar tidak menyambung ke berkas berikutnya
-                $separator = $this->type == 'js' ? ';' . $this->separator : $this->separator;
+                //`;` menutup berkas js yang berakhir tanpa titik koma; diawali baris baru supaya tidak tertelan komentar baris (`//# sourceMappingURL=...`) di akhir berkas sebelumnya
+                $separator = $this->type == 'js' ? "\n;" . $this->separator : $this->separator;
                 file_put_contents($tempFile, $separator . $compiledOutput, FILE_APPEND);
             }
 
