@@ -25,6 +25,21 @@ class UjiDebug_DeprecatedCollector extends CDebug_Collector_Deprecated {
      */
     public $failPut = false;
 
+    /**
+     * @var int berapa kali payload lengkap disusun
+     */
+    public $built = 0;
+
+    /**
+     * @var bool anggap request web (push ditunda)
+     */
+    public $deferWeb = false;
+
+    /**
+     * @var int
+     */
+    public $finished = 0;
+
     public function put($data) {
         if ($this->failPut) {
             throw new RuntimeException('disk penuh');
@@ -38,6 +53,20 @@ class UjiDebug_DeprecatedCollector extends CDebug_Collector_Deprecated {
         $this->pushed[] = ['url' => $url, 'data' => $data];
 
         return $this->pushSucceeds;
+    }
+
+    protected function buildData($message, array $context, array $resolvedFrames) {
+        $this->built++;
+
+        return parent::buildData($message, $context, $resolvedFrames);
+    }
+
+    protected function shouldDeferDispatch($pushConfigKey) {
+        return $this->deferWeb ? (bool) CF::config($pushConfigKey) : parent::shouldDeferDispatch($pushConfigKey);
+    }
+
+    protected function finishRequest() {
+        $this->finished++;
     }
 }
 
@@ -278,5 +307,39 @@ class DeprecatedCollectorTest extends TestCase {
         $this->assertInstanceOf(Symfony\Component\HttpFoundation\Response::class, $response);
         $this->assertCount(1, $this->collector->stored, 'toHtml() dan return $app; (toResponse dari system/) tidak tercatat');
         CApp::resetInstances();
+    }
+
+    public function testARepeatedCallSiteDoesNotBuildThePayloadAgain() {
+        for ($i = 0; $i < 3; $i++) {
+            UjiDebug_LegacyApi::oldWay();
+        }
+
+        $this->assertCount(1, $this->collector->stored);
+        $this->assertSame(1, $this->collector->built, 'dedup sebelum uuid/konteks app & request disusun');
+    }
+
+    public function testPushIsSentAfterTheResponseOnAWebRequest() {
+        CConfig::repository()->set('collector.deprecatedPush', 'https://devcloud.test/v1/deprecations');
+        $this->collector->deferWeb = true;
+
+        UjiDebug_LegacyApi::oldWay();
+        $this->assertSame([], $this->collector->pushed, 'tidak ada koneksi di tengah request');
+        $this->assertSame(0, $this->collector->finished);
+
+        $this->collector->dispatchPending();
+        $this->assertSame(1, $this->collector->finished, 'respons ditutup dulu');
+        $this->assertCount(1, $this->collector->pushed);
+        $this->assertSame('UjiDebug_LegacyApi::oldWay', $this->collector->pushed[0]['data']['api']);
+
+        $this->collector->dispatchPending();
+        $this->assertCount(1, $this->collector->pushed, 'antrean dikosongkan');
+    }
+
+    public function testWithoutPushTheFileIsWrittenRightAway() {
+        $this->collector->deferWeb = true;
+
+        UjiDebug_LegacyApi::oldWay();
+        $this->assertCount(1, $this->collector->stored, 'tulis berkas murah, tidak ditunda');
+        $this->assertSame(0, $this->collector->finished);
     }
 }
