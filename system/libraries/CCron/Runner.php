@@ -7,7 +7,10 @@ class CCron_Runner {
 
     protected $startedAt;
 
+    protected static $shutdownReporterRegistered = false;
+
     public function run(?OutputInterface $output = null) {
+        static::registerShutdownReporter();
         $this->eventsRan = false;
         $this->startedAt = c::now();
         foreach (c::cron()->dueEvents() as $event) {
@@ -91,6 +94,43 @@ class CCron_Runner {
             $this->writeError($event, $e);
         }
         CCron::unsetEvent();
+    }
+
+    /**
+     * Catat event yang membuat proses berhenti sebelum selesai (fatal, exit, die), yang tidak tertangkap try/catch di runEvent().
+     *
+     * @return void
+     */
+    protected static function registerShutdownReporter() {
+        if (static::$shutdownReporterRegistered) {
+            return;
+        }
+        static::$shutdownReporterRegistered = true;
+        register_shutdown_function([static::class, 'reportDiedEvent']);
+    }
+
+    /**
+     * @return void
+     */
+    public static function reportDiedEvent() {
+        $event = CCron::getRunningEvent();
+        if ($event === null) {
+            return;
+        }
+        $error = error_get_last();
+        $isFatal = $error !== null && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE]);
+        $reason = $isFatal
+            ? $error['message'] . ' (' . $error['file'] . ':' . $error['line'] . ')'
+            : 'proses berhenti sebelum job selesai (exit/die)';
+
+        try {
+            $event->log('Died scheduled job : ' . $event->getSummaryForDisplay() . ' - ' . $reason);
+            // Fatal sudah dilaporkan HandleExceptionBootstrapper::handleShutdown(), exit/die tidak dilaporkan siapa pun.
+            if (!$isFatal) {
+                CException::exceptionHandler()->report(new RuntimeException('Cron event berhenti sebelum selesai: ' . $event->getSummaryForDisplay()));
+            }
+        } catch (Throwable $e) {
+        }
     }
 
     private function writeError($event, $exception) {
