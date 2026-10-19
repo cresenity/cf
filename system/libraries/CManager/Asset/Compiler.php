@@ -45,7 +45,7 @@ class CManager_Asset_Compiler {
     protected $separator = "\n";
 
     /**
-     * @var string|null
+     * @var null|string
      */
     protected $charset;
 
@@ -209,6 +209,8 @@ class CManager_Asset_Compiler {
                 @unlink($tempFile);
             }
             clearstatcache(true, $this->outFile);
+            //server lain di belakang load balancer bisa menyusun bundel ini dari manifestnya
+            CManager_Asset_BundleManifest::remember($this->outFile, $this->files);
         }
 
         return $this->outFile . $this->versionQuery();

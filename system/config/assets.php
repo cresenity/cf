@@ -7,6 +7,11 @@ return [
     // 'git' = gabungan revisi git framework dan aplikasi, string lain dipakai apa adanya.
     'release' => null,
 
+    // Nama koneksi Redis bersama (database.redis.<nama>) untuk manifest bundel compiled: server
+    // di belakang load balancer yang belum punya bundel menyusunnya sendiri saat diminta,
+    // alih-alih 404. null = mati (bundel hanya ada di server yang me-render halamannya).
+    'bundle_manifest_redis' => null,
+
     'css' => [
         'compile' => false,
         'disk' => 'local',

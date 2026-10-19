@@ -49,6 +49,8 @@ CApp::registerBlade();
 CManager::registerBlade();
 
 CApp::registerControl();
+//bundel compiled yang belum ada di server ini (di belakang load balancer), lihat CManager_Asset_BundleManifest
+CManager_Asset_BundleManifest::registerRoute();
 CFBenchmark::stop('capp:bootstrap');
 if (!CF::isCli()) {
     if (CHTTP::request()->cookie('capp-profiler')) {
