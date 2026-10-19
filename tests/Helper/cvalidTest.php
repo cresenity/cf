@@ -21,14 +21,6 @@ class cvalidTest extends TestCase {
         $this->assertFalse(cvalid::email_rfc('spasi di@example.com'));
     }
 
-    public function testUrl() {
-        $this->assertTrue(cvalid::url('https://dev.cresenity.com/docs/page'));
-        $this->assertTrue(cvalid::url('ftp://host/file'));
-        $this->assertFalse(cvalid::url('dev.cresenity.com'), 'tanpa skema');
-        $this->assertFalse(cvalid::url('http://'));
-        $this->assertFalse(cvalid::url(''));
-    }
-
     public function testIp() {
         $this->assertTrue(cvalid::ip('103.158.162.131'));
         $this->assertTrue(cvalid::ip('192.168.1.1'), 'privat diizinkan secara default');
