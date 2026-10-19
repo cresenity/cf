@@ -29,7 +29,8 @@ class CDaemon_Supervisor_Queue_JobPayload implements ArrayAccess {
     public function __construct($value) {
         $this->value = $value;
 
-        $this->decoded = json_decode($value, true);
+        $decoded = json_decode($value, true);
+        $this->decoded = is_array($decoded) ? $decoded : [];
     }
 
     /**
@@ -38,7 +39,7 @@ class CDaemon_Supervisor_Queue_JobPayload implements ArrayAccess {
      * @return string
      */
     public function id() {
-        return $this->decoded['uuid'] ?? $this->decoded['id'];
+        return carr::get($this->decoded, 'uuid', carr::get($this->decoded, 'id'));
     }
 
     /**
