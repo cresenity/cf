@@ -297,7 +297,13 @@ class CDaemon_Supervisor_Supervisor implements CDaemon_Contract_PausableInterfac
      * @return void
      */
     protected function ensureParentIsRunning() {
-        if ($this->options->parentId > 1 && posix_getppid() <= 1) {
+        if ($this->options->parentId <= 1) {
+            return;
+        }
+        //lewat php-worker-wrapper.sh induk langsungnya shell wrapper yang tetap
+        //hidup saat master mati, jadi ppid saja tidak cukup - cek PID master (ESRCH = 3)
+        $masterGone = !posix_kill($this->options->parentId, 0) && posix_get_last_error() === 3;
+        if (posix_getppid() <= 1 || $masterGone) {
             $this->terminate();
         }
     }
