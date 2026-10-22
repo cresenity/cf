@@ -18,13 +18,14 @@ $id = uniqid();
 <script>
 
     window.redisMetric = function() {
+        // Chart di luar state Alpine: proxy reaktif pada objek Chart membuat chart.update() rekursi tanpa henti.
+        let chart = null;
+        let collection = null;
 
         return {
-            collection : null,
             interval: null,
             maxData:20,
             datasets: @json($datasets),
-            chart:null,
             pollingUrl: '{{ $pollingUrl }}',
             init() {
                 if(window.cresenity) {
@@ -43,7 +44,7 @@ $id = uniqid();
 
             },
             initChart() {
-                this.chart = new Chart(document.getElementById('{{ $id }}').getContext("2d"), {
+                chart = new Chart(document.getElementById('{{ $id }}').getContext("2d"), {
                     type: 'line',
                     data: [],
 
@@ -86,22 +87,22 @@ $id = uniqid();
             },
             async fillData () {
                 let response = await this.getData();
-                if(this.collection==null) {
-                    this.collection = {
+                if(collection==null) {
+                    collection = {
                         labels: [],
                         datasets: [],
                     }
 
                 }
-                this.collection.labels.push(this.time());
-                if(this.collection.labels.length>this.maxData) {
-                    this.collection.labels = this.collection.labels.slice(-1 * this.maxData);
+                collection.labels.push(this.time());
+                if(collection.labels.length>this.maxData) {
+                    collection.labels = collection.labels.slice(-1 * this.maxData);
                 }
                 let index = 0;
                 for(let i in this.datasets) {
 
-                    if(this.collection.datasets.length < index+1) {
-                        this.collection.datasets[index] = {
+                    if(collection.datasets.length < index+1) {
+                        collection.datasets[index] = {
                             label: this.datasets[i].key,
                             fill: false,
                             backgroundColor: this.datasets[i].color,
@@ -109,16 +110,16 @@ $id = uniqid();
                             data:[],
                         }
                     }
-                    this.collection.datasets[index].data.push(response[this.datasets[i].key]);
-                    if(this.collection.datasets[index].data.length>this.maxData) {
-                        this.collection.datasets[index].data = this.collection.datasets[index].data.slice(-1 * this.maxData);
+                    collection.datasets[index].data.push(response[this.datasets[i].key]);
+                    if(collection.datasets[index].data.length>this.maxData) {
+                        collection.datasets[index].data = collection.datasets[index].data.slice(-1 * this.maxData);
                     }
                     index++;
                 }
 
-                this.chart.data.labels = this.collection.labels;
-                this.chart.data.datasets = this.collection.datasets;
-                this.chart.update();
+                chart.data.labels = collection.labels;
+                chart.data.datasets = collection.datasets;
+                chart.update();
             },
             async getData() {
                 return new Promise((resolve, reject) => {
