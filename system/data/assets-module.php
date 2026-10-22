@@ -788,7 +788,9 @@ return [
 
     'redoc' => [
         'js' => [
+            'plugins/redoc/redoc-mobx-before.js',
             'plugins/redoc/redoc.standalone.min.js',
+            'plugins/redoc/redoc-mobx-after.js',
         ],
     ],
     'hljs' => [
