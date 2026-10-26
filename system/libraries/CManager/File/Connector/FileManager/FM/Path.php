@@ -424,6 +424,9 @@ class CManager_File_Connector_FileManager_FM_Path {
             throw new \Exception('File failed to upload. Error code: ' . $file->getError());
         }
         $newFileName = $this->getNewName($file);
+        if (CFile::isDangerousFilename($file->getClientOriginalName()) || CFile::isDangerousFilename($newFileName)) {
+            throw new \Exception('File type not allowed');
+        }
         $onDuplicate = $this->fm->input('on_duplicate');
         if ($this->setName($newFileName)->exists()
             && !$this->fm->config('over_write_on_duplicate')

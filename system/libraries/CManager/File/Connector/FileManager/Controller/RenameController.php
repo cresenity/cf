@@ -29,6 +29,9 @@ class CManager_File_Connector_FileManager_Controller_RenameController extends CM
                         $new_name = str_replace('.' . $extension, '', $new_name) . '.' . $extension;
                     }
                 }
+                if (!$is_directory && CFile::isDangerousFilename($new_name)) {
+                    throw new \Exception('File type not allowed');
+                }
                 $new_file = $fm->path()->setName($new_name)->path('absolute');
                 if ($is_directory) {
                     $fm->dispatch(new CManager_File_Connector_FileManager_Event_FolderIsRenaming($old_file->path(), $new_file));
