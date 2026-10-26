@@ -1337,6 +1337,29 @@ class HttpClientTest extends TestCase {
         $this->factory->get('http://foo.com/api')->throwUnlessStatus(200);
     }
 
+    public function testThrowIfStatusThrowsEvenWhenTheMatchedStatusIsNotAFailure() {
+        // #-21065: throwIfStatus delegated to throw(), which only throws when
+        // failed() is true - a 200 status (never a failure) matching the
+        // requested code silently did not throw.
+        $this->factory->fake(['*' => CHTTP_Client::response('', 200)]);
+        $response = $this->factory->get('http://foo.com/api');
+
+        $this->assertSame($response, $response->throwIfStatus(404), 'status tidak cocok - tidak boleh melempar');
+
+        $this->expectException(CHTTP_Client_Exception_RequestException::class);
+        $response->throwIfStatus(200);
+    }
+
+    public function testThrowUnlessStatusThrowsEvenWhenTheActualStatusIsNotAFailure() {
+        $this->factory->fake(['*' => CHTTP_Client::response('', 200)]);
+        $response = $this->factory->get('http://foo.com/api');
+
+        $this->assertSame($response, $response->throwUnlessStatus(200), 'status cocok - tidak boleh melempar');
+
+        $this->expectException(CHTTP_Client_Exception_RequestException::class);
+        $response->throwUnlessStatus(404);
+    }
+
     public function testItCanEnforceFaking() {
         $this->factory->preventStrayRequests();
         $this->factory->fake(['https://vapor.example.com' => CHTTP_Client::response('ok', 200)]);

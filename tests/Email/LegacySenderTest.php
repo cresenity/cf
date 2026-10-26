@@ -5,14 +5,25 @@ use PHPUnit\Framework\TestCase;
  * SmtpDriver dengan koneksi palsu: perintah SMTP dicatat, data ditulis ke php://memory.
  */
 class UjiEmail_RecordingSmtpDriver extends CEmail_Driver_SmtpDriver {
-    /** @var string[] */
+    /**
+     * @var string[]
+     */
     public $commands = [];
 
-    /** @var array */
+    /**
+     * @var array
+     */
     public $responses = [];
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $rejectLogin = false;
+
+    /**
+     * @var string
+     */
+    public $transmitted = '';
 
     protected function smtpConnect($smtpHost, $smtpPort, $smtpOptions = []) {
         $this->commands[] = 'CONNECT ' . $smtpHost . ':' . $smtpPort . ' ' . $this->config->getProtocol() . '/' . ($this->config->getEncryption() ?: 'none');
@@ -29,9 +40,6 @@ class UjiEmail_RecordingSmtpDriver extends CEmail_Driver_SmtpDriver {
 
         return '250 OK';
     }
-
-    /** @var string */
-    public $transmitted = '';
 
     protected function smtpDisconnect() {
         $this->commands[] = 'QUIT';
@@ -54,7 +62,9 @@ class UjiEmail_RecordingSmtpDriver extends CEmail_Driver_SmtpDriver {
  * format alamat, dan pesan/perintah yang dibangun CEmail_Driver_SmtpDriver — tanpa jaringan.
  */
 class LegacySenderTest extends TestCase {
-    /** @var array */
+    /**
+     * @var array
+     */
     protected $originalApp = [];
 
     protected function setUp(): void {
@@ -121,9 +131,46 @@ class LegacySenderTest extends TestCase {
     }
 
     public function testMissingDriverAndHostThrowsAnInformativeException() {
-        $this->expectException(CEmail_Exception_InvalidConfigException::class);
-        $this->expectExceptionMessage('smtp_host');
-        new CEmail_Config(['smtp_username' => 'u']);
+        //phpunit.xml men-set MAIL_MAILER=array utk suite ini (lihat ConfigMailerConflictTest) - tes ini
+        //secara khusus menguji kasus TANPA MAIL_MAILER eksplisit sama sekali, jadi kosongkan sementara.
+        //$_ENV/$_SERVER (diisi phpunit.xml langsung ke superglobal, bukan process env sungguhan) disimpan
+        //terpisah dari getenv() - persis seperti ConfigMailerConflictTest::setUp()/tearDown().
+        $originalGetenv = getenv('MAIL_MAILER');
+        $hadEnvEntry = array_key_exists('MAIL_MAILER', $_ENV);
+        $envOriginal = $hadEnvEntry ? $_ENV['MAIL_MAILER'] : null;
+        $hadServerEntry = array_key_exists('MAIL_MAILER', $_SERVER);
+        $serverOriginal = $hadServerEntry ? $_SERVER['MAIL_MAILER'] : null;
+
+        putenv('MAIL_MAILER');
+        unset($_ENV['MAIL_MAILER'], $_SERVER['MAIL_MAILER']);
+
+        try {
+            $this->expectException(CEmail_Exception_InvalidConfigException::class);
+            $this->expectExceptionMessage('smtp_host');
+            new CEmail_Config(['smtp_username' => 'u']);
+        } finally {
+            putenv($originalGetenv === false ? 'MAIL_MAILER' : 'MAIL_MAILER=' . $originalGetenv);
+            if ($hadEnvEntry) {
+                $_ENV['MAIL_MAILER'] = $envOriginal;
+            } else {
+                unset($_ENV['MAIL_MAILER']);
+            }
+            if ($hadServerEntry) {
+                $_SERVER['MAIL_MAILER'] = $serverOriginal;
+            } else {
+                unset($_SERVER['MAIL_MAILER']);
+            }
+        }
+    }
+
+    /**
+     * MAIL_MAILER=array disetel phpunit.xml utk seluruh suite - tanpa driver/host sama sekali, config
+     * sekarang jatuh ke mailer 'array' itu (lihat ConfigMailerConflictTest utk kasus MAIL_MAILER kosong).
+     */
+    public function testMissingDriverAndHostFallsBackToTheSuitesMailMailer() {
+        $config = new CEmail_Config(['smtp_username' => 'u']);
+
+        $this->assertSame('array', $config->toMailerConfig()['transport']);
     }
 
     public function testFromResolutionOrderIsSharedBySenderAndConfig() {

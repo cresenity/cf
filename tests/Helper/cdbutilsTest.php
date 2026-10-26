@@ -2,18 +2,17 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * cdbutils - pembantu query mentah di atas SQLite in-memory. Hanya metode berbasis
- * $db->select() (get_row, get_array) yang bisa diuji di sini: get_value/get_list/row_exists/
- * get_row_count_from_base_query memakai $db->query() → CDatabase_ResultData yang membaca
- * PDOStatement::rowCount(), dan untuk SELECT rowCount() hanya diisi driver MySQL (SQLite
- * mengembalikan 0 → hasil kosong). table_exists()/empty_table()/get_table_list() memakai
- * sintaks MySQL (SHOW TABLES, ALTER ... AUTO_INCREMENT). Semua app CF memakai MySQL, jadi
- * di sini perilaku SQLite itu hanya dikunci sebagai catatan.
+ * cdbutils - pembantu query mentah di atas SQLite in-memory. get_value/get_list/row_exists/
+ * get_row_count_from_base_query memakai $db->query() → CDatabase_ResultData, yang mem-buffer
+ * baris SELECT bila driver tidak mengisi rowCount() (SQLite). table_exists()/empty_table()/
+ * get_table_list() memakai sintaks MySQL (SHOW TABLES, ALTER ... AUTO_INCREMENT).
  */
 class cdbutilsTest extends TestCase {
     const CONNECTION = 'uji_dbutils';
 
-    /** @var CDatabase_Connection */
+    /**
+     * @var CDatabase_Connection
+     */
     protected $db;
 
     protected function setUp(): void {
@@ -36,13 +35,33 @@ class cdbutilsTest extends TestCase {
         CDatabase_Manager::instance()->purge(static::CONNECTION);
     }
 
-    public function testQueryBasedHelpersSeeNoRowsOnSqlite() {
-        // dokumentasi keterbatasan driver, bukan bug cdbutils: rowCount() SELECT = 0 di SQLite
-        $this->assertSame(0, $this->db->query('select * from item')->count());
-        $this->assertNull(cdbutils::get_value('select count(*) from item', $this->db));
-        $this->assertSame([], cdbutils::get_list('select code, name from item', $this->db));
-        $this->assertFalse(cdbutils::row_exists('item', ['code' => 'A'], $this->db));
-        $this->assertEquals(0, cdbutils::get_row_count_from_base_query('select * from item', $this->db));
+    public function testQueryBasedHelpersSeeTheRowsOnSqlite() {
+        // rowCount() SELECT = 0 di SQLite; CDatabase_ResultData mem-buffer barisnya (#-14721)
+        $this->assertSame(3, $this->db->query('select * from item')->count());
+        $this->assertEquals(3, cdbutils::get_value('select count(*) from item', $this->db));
+        $this->assertSame(['A' => 'Apel', 'B' => 'Beras', 'C' => 'Cabai'], cdbutils::get_list('select code, name from item order by code', $this->db));
+        $this->assertTrue(cdbutils::row_exists('item', ['code' => 'A'], $this->db));
+        $this->assertFalse(cdbutils::row_exists('item', ['code' => 'Z'], $this->db));
+        $this->assertEquals(3, cdbutils::get_row_count_from_base_query('select * from item', $this->db));
+    }
+
+    public function testQueryResultDataOnABufferedDriver() {
+        $result = $this->db->query('select code, price from item order by code');
+
+        $this->assertSame('A', $result[0]->code);
+        $this->assertSame('C', $result[2]->code);
+        $this->assertTrue(isset($result[2]));
+        $this->assertFalse(isset($result[3]));
+        $codes = [];
+        foreach ($result as $i => $row) {
+            $codes[$i] = $row->code;
+        }
+        $this->assertSame(['A', 'B', 'C'], $codes);
+        $this->assertEquals(['code' => 'B', 'price' => 200], $result->result(false)[1], 'PHP 7.4 + SQLite memberi angka sebagai string');
+        $this->assertCount(3, $result->resultArray(false));
+        $this->assertSame('A', $result->resultArray(true)[0]->code);
+        $this->assertSame(0, $this->db->query("select * from item where code = 'Z'")->count());
+        $this->assertSame([], $this->db->query("select * from item where code = 'Z'")->resultArray());
     }
 
     public function testGetRowReturnsOneRowOrNull() {
@@ -57,9 +76,6 @@ class cdbutilsTest extends TestCase {
         $this->assertSame(['A', 'B', 'C'], cdbutils::get_array('select code, name from item order by code', $this->db));
         $this->assertSame([], cdbutils::get_array("select code from item where code = 'Z'", $this->db));
     }
-
-
-
 
     /**
      * Dokumentasi, bukan perbaikan: parse_column_type() menyusun $result lalu tidak pernah

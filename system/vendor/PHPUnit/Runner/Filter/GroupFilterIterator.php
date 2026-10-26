@@ -43,6 +43,7 @@ abstract class GroupFilterIterator extends RecursiveFilterIterator
         }
     }
 
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         $test = $this->getInnerIterator()->current();

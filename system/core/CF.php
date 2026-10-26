@@ -1597,6 +1597,14 @@ final class CF {
                 if (in_array(strtolower($ext), ['php', 'sh', 'htm', 'pht'])) {
                     die('Not Allowed X_X');
                 }
+                // phar, shtml, cgi, x.php.png, a.php. dsb (insiden saberpos 25 Okt 2026)
+                // dipanggil sebelum autoloader terdaftar
+                if (!class_exists('CFile', false)) {
+                    require_once SYSPATH . 'libraries/CFile' . EXT;
+                }
+                if (CFile::isDangerousFilename($name, false)) {
+                    die('Not Allowed X_X');
+                }
             } else {
                 static::validateFileNamesArray($name);
             }

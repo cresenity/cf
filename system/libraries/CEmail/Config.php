@@ -86,6 +86,13 @@ class CEmail_Config {
     ];
 
     /**
+     * Konflik yang sudah dilaporkan di proses ini.
+     *
+     * @var array
+     */
+    protected static $reportedConflicts = [];
+
+    /**
      * Provider yang ditebak dari host SMTP, null bila host tidak dikenali.
      *
      * @param string $host
@@ -97,11 +104,31 @@ class CEmail_Config {
     }
 
     /**
-     * Konflik yang sudah dilaporkan di proses ini.
+     * Konversi config `email.mailers.<name>` (bentuk modern: transport + field spesifik transport itu)
+     * ke bentuk array config pengirim lama (`driver` + host/port/username/password/secure, field lain
+     * dibawa apa adanya supaya toMailerConfig()->getOption() tetap bisa membacanya - key/secret/region/
+     * token/domain/dst). `driver` diisi nama transport-nya sendiri (bukan nama mailer) - transportForDriver()
+     * memetakannya balik secara identitas untuk semua transport yang ada di email.mailers bawaan.
      *
-     * @var array
+     * @param string $mailerName
+     *
+     * @return null|array null bila mailer tidak dikenal atau tidak punya transport
      */
-    protected static $reportedConflicts = [];
+    public static function mailerConfigToLegacyOptions($mailerName) {
+        $mailerConfig = CF::config('email.mailers.' . $mailerName);
+        if (!is_array($mailerConfig) || c::blank(carr::get($mailerConfig, 'transport'))) {
+            return null;
+        }
+
+        $options = $mailerConfig;
+        $options['driver'] = $mailerConfig['transport'];
+        if (!isset($options['secure'])) {
+            //config smtp modern memakai 'encryption' (tls/ssl), bukan 'secure'
+            $options['secure'] = carr::get($mailerConfig, 'encryption');
+        }
+
+        return $options;
+    }
 
     /**
      * Pesan bila provider yang ditebak dari smtp_host berbeda dari MAIL_MAILER yang diisi eksplisit di env
@@ -170,7 +197,21 @@ class CEmail_Config {
             CF::deprecated('CEmail_Config smtp_* options', "'driver' => '<smtp|sendgrid|...>' + host/port/username/password (bentuk email.mailers.<name>)", '1.9');
             $smtpHost = carr::get($config, 'host', carr::get($config, 'smtp_host'));
             if ($smtpHost == null) {
-                throw new CEmail_Exception_InvalidConfigException('Konfigurasi email tidak punya driver maupun host SMTP; isi salah satu dari: driver, host/smtp_host, app.email.host, app.smtp_host');
+                //driver maupun host sama-sama kosong. Fallback ke email.mailers.<MAIL_MAILER> HANYA bila
+                //MAIL_MAILER eksplisit diisi developer di env - email.default sendiri berdefault 'mail'
+                //walau env kosong total, jadi membaca CF::config('email.default') di sini akan diam-diam
+                //memilih transport mail() untuk app yang tidak mengisi config email apa pun sama sekali.
+                $mailer = c::env('MAIL_MAILER');
+                $fallbackOptions = c::blank($mailer) ? null : static::mailerConfigToLegacyOptions($mailer);
+                if ($fallbackOptions === null) {
+                    throw new CEmail_Exception_InvalidConfigException('Konfigurasi email tidak punya driver maupun host SMTP; isi salah satu dari: driver, host/smtp_host, app.email.host, app.smtp_host');
+                }
+
+                $newConfig = $fallbackOptions;
+                $newConfig['from'] = carr::get($config, 'from', carr::get($config, 'smtp_from'));
+                $newConfig['from_name'] = carr::get($config, 'from_name', carr::get($config, 'smtp_from_name'));
+
+                return $newConfig;
             }
 
             $driver = carr::get(static::$smtpHostToDriverMap, $smtpHost, 'smtp');
@@ -224,9 +265,6 @@ class CEmail_Config {
      * Alamat pengirim: from → smtp_from → config pengirim → app.email.from → app.smtp_from. Satu-satunya
      * urutan yang dipakai Sender dan Config.
      *
-     * @param array             $options
-     * @param null|CEmail_Config $config
-     *
      * @return null|string
      */
     public static function resolveFrom(array $options, CEmail_Config $config = null) {
@@ -244,9 +282,6 @@ class CEmail_Config {
 
     /**
      * Nama pengirim: from_name → smtp_from_name → config pengirim → app.email.from_name → app.smtp_from_name.
-     *
-     * @param array             $options
-     * @param null|CEmail_Config $config
      *
      * @return null|string
      */
@@ -287,7 +322,7 @@ class CEmail_Config {
      * mailersend→mailersend, mailgun→mailgun, kirimemail→kirimemail, mail→mail, null→array,
      * elasticemail→smtp, postmarkapp→postmark.
      *
-     * @param null|string $name nama mailer; default `legacy-<driver>`
+     * @param mixed $driver
      *
      * @return array
      */

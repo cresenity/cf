@@ -75,7 +75,12 @@ class CDaemon {
         }
         $output = new Symfony\Component\Console\Output\ConsoleOutput();
         $supervisor->handleOutputUsing(function ($type, $line) use ($output) {
-            $output->writeln($type . ':' . $line);
+            try {
+                $output->writeln($type . ':' . $line);
+            } catch (Symfony\Component\Console\Exception\RuntimeException $e) {
+                //pipe ke master sudah putus (master mati/restart) - output dibuang,
+                //ensureParentIsRunning() yang menghentikan supervisor ini
+            }
         });
 
         $supervisor->working = !carr::get($config, 'paused');

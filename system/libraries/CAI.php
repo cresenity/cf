@@ -29,6 +29,42 @@ class CAI {
     }
 
     /**
+     * @param array $options
+     *
+     * @return CAI_Service_Gemini
+     */
+    public static function gemini($options = []) {
+        return CAI_Manager::instance()->createGemini($options);
+    }
+
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_DeepSeek
+     */
+    public static function deepSeek($options = []) {
+        return CAI_Manager::instance()->createDeepSeek($options);
+    }
+
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_ElevenLabs
+     */
+    public static function elevenLabs($options = []) {
+        return CAI_Manager::instance()->createElevenLabs($options);
+    }
+
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_Qwen
+     */
+    public static function qwen($options = []) {
+        return CAI_Manager::instance()->createQwen($options);
+    }
+
+    /**
      * @param string $name
      * @param string $version
      *

@@ -214,10 +214,12 @@ class c {
     /**
      * Call the given Closure with the given value then return the value.
      *
-     * @param mixed         $value
+     * @template TValue
+     *
+     * @param TValue        $value
      * @param null|callable $callback
      *
-     * @return mixed
+     * @return ($callback is null ? CBase_HigherOrderTapProxy<TValue> : TValue)
      */
     public static function tap($value, $callback = null) {
         if (is_null($callback)) {
@@ -1071,7 +1073,7 @@ class c {
      *
      * @param null|string $guard
      *
-     * @return CAuth_Manager|CAuth_Contract_GuardInterface|CAuth_Contract_StatefulGuardInterface
+     * @return ($guard is null ? CAuth_Manager : CAuth_Contract_GuardInterface&CAuth_Contract_StatefulGuardInterface)
      */
     public static function auth($guard = null) {
         if (is_null($guard)) {

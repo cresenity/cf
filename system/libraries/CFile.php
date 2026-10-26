@@ -8,6 +8,59 @@ use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
 
 class CFile {
     /**
+     * Dijalankan server bila muncul di segmen mana pun (x.php.png, x.phar).
+     */
+    const EXECUTABLE_ANY_SEGMENT_EXTENSIONS = [
+        'php', 'php2', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8', 'phtml', 'pht', 'phps', 'phar', 'pgif',
+        'shtml', 'shtm', 'cgi', 'asp', 'aspx', 'jsp', 'jspx',
+    ];
+
+    /**
+     * Berbahaya sebagai ekstensi terakhir: skrip, konfigurasi server, biner.
+     */
+    const EXECUTABLE_LAST_EXTENSIONS = [
+        'pl', 'py', 'rb', 'sh', 'bash', 'cfm', 'cfc', 'htaccess', 'htpasswd', 'ini', 'inc',
+        'exe', 'dll', 'bat', 'cmd', 'vbs', 'ps1',
+    ];
+
+    /**
+     * Konten web yang bisa XSS/phishing bila disajikan dari domain aplikasi.
+     */
+    const WEB_CONTENT_EXTENSIONS = ['svg', 'svgz', 'html', 'htm', 'xhtml', 'xht', 'js', 'mjs', 'swf', 'hta', 'xml', 'xsl'];
+
+    /**
+     * Nama berkas unggahan yang tidak boleh disimpan.
+     *
+     * @param string $filename
+     * @param bool   $includeWebContent ikut tolak svg/html/js/xml
+     *
+     * @return bool
+     */
+    public static function isDangerousFilename($filename, $includeWebContent = true) {
+        $name = strtolower(basename(str_replace('\\', '/', (string) $filename)));
+        if (strpos($name, "\0") !== false) {
+            return true;
+        }
+        $name = rtrim($name, " .\t\r\n");
+        $parts = explode('.', $name);
+        array_shift($parts);
+        if (count($parts) == 0) {
+            return false;
+        }
+        foreach ($parts as $part) {
+            if (in_array(trim($part), static::EXECUTABLE_ANY_SEGMENT_EXTENSIONS, true)) {
+                return true;
+            }
+        }
+        $last = trim(end($parts));
+        if (in_array($last, static::EXECUTABLE_LAST_EXTENSIONS, true)) {
+            return true;
+        }
+
+        return $includeWebContent && in_array($last, static::WEB_CONTENT_EXTENSIONS, true);
+    }
+
+    /**
      * Check if a file exists in a path or url.
      *
      * @param string $file → path or file url

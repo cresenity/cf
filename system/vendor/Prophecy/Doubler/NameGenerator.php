@@ -31,7 +31,7 @@ class NameGenerator
      *
      * @return string
      */
-    public function name(ReflectionClass $class = null, array $interfaces)
+    public function name(?ReflectionClass $class, array $interfaces)
     {
         $parts = array();
 

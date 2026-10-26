@@ -55,6 +55,7 @@ final class NameFilterIterator extends RecursiveFilterIterator
     /**
      * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
      */
+    #[\ReturnTypeWillChange]
     public function accept()
     {
         $test = $this->getInnerIterator()->current();

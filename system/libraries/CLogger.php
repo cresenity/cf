@@ -32,24 +32,11 @@ class CLogger {
     ];
 
     /**
-     * @var array list of added messages
-     */
-    protected $messages = [];
-
-    protected static $writeOnAdd = false;
-
-    protected $threshold;
-
-    protected $writers = [];
-
-    /**
      * @var CLogger Singleton instance container
      */
     private static $instance = null;
 
     private function __construct() {
-        $options['path'] = 'system';
-        $this->threshold = CF::config('log.threshold', static::DEBUG);
     }
 
     /**
@@ -89,7 +76,6 @@ class CLogger {
      * System is unusable.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -104,7 +90,6 @@ class CLogger {
      * trigger the SMS alerts and wake you up.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -118,7 +103,6 @@ class CLogger {
      * Example: Application component unavailable, unexpected exception.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -131,7 +115,6 @@ class CLogger {
      * be logged and monitored.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -146,7 +129,6 @@ class CLogger {
      * that are not necessarily wrong.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -158,11 +140,10 @@ class CLogger {
      * Normal but significant events.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
-    public function notice($message, array $context = []) {
+    public static function notice($message, array $context = []) {
         self::channel()->notice($message, $context);
     }
 
@@ -172,7 +153,6 @@ class CLogger {
      * Example: User logs in, SQL logs.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -184,7 +164,6 @@ class CLogger {
      * Detailed debug information.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -197,7 +176,8 @@ class CLogger {
      *
      * @param mixed  $level
      * @param string $message
-     * @param array  $context
+     *
+     * @throws InvalidArgumentException level int yang tidak dikenal
      *
      * @return void
      */
@@ -213,7 +193,10 @@ class CLogger {
                 CLogger::INFO => 'info',
                 CLogger::DEBUG => 'debug',
             ];
-            $level = carr::get($levelMap, $level, 'critical');
+            if (!isset($levelMap[$level])) {
+                throw new InvalidArgumentException('Invalid log level: ' . $level);
+            }
+            $level = $levelMap[$level];
         }
         self::channel()->log($level, $message, $context);
     }

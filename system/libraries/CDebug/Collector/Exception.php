@@ -15,8 +15,6 @@ class CDebug_Collector_Exception extends CDebug_CollectorAbstract {
      * process may not have) must never cost the original exception its record - a
      * degraded write beats a silently dropped one.
      *
-     * @param Throwable $exception
-     *
      * @return array
      */
     public function collect(Throwable $exception) {
@@ -27,17 +25,54 @@ class CDebug_Collector_Exception extends CDebug_CollectorAbstract {
         if ($this->shouldCollect($exception)) {
             try {
                 $data = $this->getDataFromException($exception);
-                $pushUrl = CF::config('collector.exceptionPush');
-                $pushed = $pushUrl ? $this->pushToDevcloud($data, $pushUrl) : false;
-                if (!$pushed) {
-                    $this->put($data);
-                }
+                $this->dispatch($data, 'collector.exceptionPush', 'collector.exceptionChannels');
             } catch (Throwable $collectException) {
                 $this->logCollectFailure($collectException, $exception);
             }
         }
 
         return $data;
+    }
+
+    /**
+     * Kirim $data ke setiap channel yang dikonfigurasi di $channelsConfigKey - kosong/tidak diisi
+     * berarti ['devcloud'] (perilaku sebelum channel bisa dikonfigurasi, dipertahankan persis: channel
+     * 'devcloud' TIDAK dibungkus try/catch di sini, supaya kegagalannya tetap menjalar ke collect()
+     * seperti sebelumnya - put()/pushToDevcloud() gagal berarti collect() gagal total, bukan hal baru).
+     * Channel lain (non-devcloud) didelegasikan ke CDebug_Collector_Channel_ChannelAbstract::make()
+     * dan diisolasi masing-masing: kegagalan satu tidak menggagalkan channel lain atau collect().
+     * Konsekuensi dari ini: kalau 'devcloud' gagal DAN ada channel lain setelahnya di daftar, channel
+     * setelahnya tidak ikut dicoba (bukan bug - devcloud gagal historisnya selalu fatal utk collect()
+     * ini, bukan sesuatu yang baru diperkenalkan fitur channel).
+     *
+     * @param array  $data
+     * @param string $pushConfigKey     mis. 'collector.exceptionPush'
+     * @param string $channelsConfigKey mis. 'collector.exceptionChannels'
+     *
+     * @return void
+     */
+    protected function dispatch($data, $pushConfigKey, $channelsConfigKey) {
+        $channels = CF::config($channelsConfigKey);
+        if (!is_array($channels) || count($channels) === 0) {
+            $channels = ['devcloud'];
+        }
+        foreach ($channels as $channel) {
+            if ($channel === 'devcloud') {
+                $pushUrl = CF::config($pushConfigKey);
+                $pushed = $pushUrl ? $this->pushToDevcloud($data, $pushUrl) : false;
+                if (!$pushed) {
+                    $this->put($data);
+                }
+
+                continue;
+            }
+
+            try {
+                CDebug_Collector_Channel_ChannelAbstract::make($channel)->send($data);
+            } catch (Throwable $channelException) {
+                $this->logChannelFailure($channelException, $channel, $data);
+            }
+        }
     }
 
     /**
@@ -200,12 +235,38 @@ class CDebug_Collector_Exception extends CDebug_CollectorAbstract {
      * @return void
      */
     protected function logCollectFailure($collectException, $original) {
-        $message = sprintf(
+        $this->logFailure(sprintf(
             'CDebug_Collector_Exception gagal mengumpulkan "%s: %s" - %s',
             get_class($original),
             $original->getMessage(),
             $collectException->getMessage()
-        );
+        ));
+    }
+
+    /**
+     * @param Throwable $channelException
+     * @param string    $channel
+     * @param array     $data
+     *
+     * @return void
+     */
+    protected function logChannelFailure($channelException, $channel, $data) {
+        $this->logFailure(sprintf(
+            '%s gagal kirim ke channel "%s" untuk "%s: %s" - %s',
+            get_class($this),
+            $channel,
+            carr::get($data, 'error', '?'),
+            carr::get($data, 'message', ''),
+            $channelException->getMessage()
+        ));
+    }
+
+    /**
+     * @param string $message
+     *
+     * @return void
+     */
+    protected function logFailure($message) {
         if (CDaemon::isDaemon()) {
             CDaemon::log($message);
         } else {

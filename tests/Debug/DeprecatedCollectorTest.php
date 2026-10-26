@@ -5,17 +5,40 @@ use PHPUnit\Framework\TestCase;
  * Kolektor yang menangkap put()/push alih-alih menulis berkas atau membuka socket.
  */
 class UjiDebug_DeprecatedCollector extends CDebug_Collector_Deprecated {
-    /** @var array */
+    /**
+     * @var array
+     */
     public $stored = [];
 
-    /** @var array */
+    /**
+     * @var array
+     */
     public $pushed = [];
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $pushSucceeds = true;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     public $failPut = false;
+
+    /**
+     * @var int berapa kali payload lengkap disusun
+     */
+    public $built = 0;
+
+    /**
+     * @var bool anggap request web (push ditunda)
+     */
+    public $deferWeb = false;
+
+    /**
+     * @var int
+     */
+    public $finished = 0;
 
     public function put($data) {
         if ($this->failPut) {
@@ -30,6 +53,20 @@ class UjiDebug_DeprecatedCollector extends CDebug_Collector_Deprecated {
         $this->pushed[] = ['url' => $url, 'data' => $data];
 
         return $this->pushSucceeds;
+    }
+
+    protected function buildData($message, array $context, array $resolvedFrames) {
+        $this->built++;
+
+        return parent::buildData($message, $context, $resolvedFrames);
+    }
+
+    protected function shouldDeferDispatch($pushConfigKey) {
+        return $this->deferWeb ? (bool) CF::config($pushConfigKey) : parent::shouldDeferDispatch($pushConfigKey);
+    }
+
+    protected function finishRequest() {
+        $this->finished++;
     }
 }
 
@@ -53,10 +90,14 @@ class UjiDebug_LegacyApi {
  * dimatikan lewat config, dan tidak pernah melempar.
  */
 class DeprecatedCollectorTest extends TestCase {
-    /** @var UjiDebug_DeprecatedCollector */
+    /**
+     * @var UjiDebug_DeprecatedCollector
+     */
     protected $collector;
 
-    /** @var array */
+    /**
+     * @var array
+     */
     protected $originalConfig = [];
 
     protected function setUp(): void {
@@ -167,6 +208,7 @@ class DeprecatedCollectorTest extends TestCase {
     public function testCemailSenderAndLinkedinDriverReportThemselves() {
         $originalSwitch = CConfig::repository()->get('email.legacy_sender_via_mailer');
         CConfig::repository()->set('email.legacy_sender_via_mailer', false);
+
         try {
             CEmail::sender(['driver' => 'null']);
             CEmail::sender(['smtp_host' => 'smtp.sendgrid.net', 'smtp_password' => 'k']);
@@ -190,6 +232,7 @@ class DeprecatedCollectorTest extends TestCase {
     public function testSenderThroughTheMailerAdapterOnlyReportsTheFacade() {
         $originalSwitch = CConfig::repository()->get('email.legacy_sender_via_mailer');
         CConfig::repository()->set('email.legacy_sender_via_mailer', true);
+
         try {
             CEmail::sender(['driver' => 'null']);
         } finally {
@@ -244,5 +287,72 @@ class DeprecatedCollectorTest extends TestCase {
         $decoded = json_decode(end($lines), true);
         $this->assertSame('UjiDebug_LegacyApi::oldWay', $decoded['api']);
         $this->assertSame(__FILE__, $decoded['file']);
+    }
+
+    public function testAppRenderCalledFromAppCodeIsDeprecatedButToHtmlAndToResponseAreNot() {
+        CApp::resetInstances();
+        $line = __LINE__ + 1;
+        $html = CApp::instance()->render();
+
+        $this->assertIsString($html);
+        $this->assertCount(1, $this->collector->stored);
+        $this->assertSame('CApp::render()', $this->collector->stored[0]['api']);
+        $this->assertSame(__FILE__, $this->collector->stored[0]['file']);
+        $this->assertSame($line, $this->collector->stored[0]['line']);
+
+        CApp::resetInstances();
+        $this->assertSame($html, CApp::instance()->toHtml(), 'toHtml() = isi render() yang sama');
+        CApp::resetInstances();
+        $response = CApp::instance()->toResponse(c::request());
+        $this->assertInstanceOf(Symfony\Component\HttpFoundation\Response::class, $response);
+        $this->assertCount(1, $this->collector->stored, 'toHtml() dan return $app; (toResponse dari system/) tidak tercatat');
+        CApp::resetInstances();
+    }
+
+    public function testARepeatedCallSiteDoesNotBuildThePayloadAgain() {
+        for ($i = 0; $i < 3; $i++) {
+            UjiDebug_LegacyApi::oldWay();
+        }
+
+        $this->assertCount(1, $this->collector->stored);
+        $this->assertSame(1, $this->collector->built, 'dedup sebelum uuid/konteks app & request disusun');
+    }
+
+    public function testPushIsSentAfterTheResponseOnAWebRequest() {
+        CConfig::repository()->set('collector.deprecatedPush', 'https://devcloud.test/v1/deprecations');
+        $this->collector->deferWeb = true;
+
+        UjiDebug_LegacyApi::oldWay();
+        $this->assertSame([], $this->collector->pushed, 'tidak ada koneksi di tengah request');
+        $this->assertSame(0, $this->collector->finished);
+
+        $this->collector->dispatchPending();
+        $this->assertSame(1, $this->collector->finished, 'respons ditutup dulu');
+        $this->assertCount(1, $this->collector->pushed);
+        $this->assertSame('UjiDebug_LegacyApi::oldWay', $this->collector->pushed[0]['data']['api']);
+
+        $this->collector->dispatchPending();
+        $this->assertCount(1, $this->collector->pushed, 'antrean dikosongkan');
+    }
+
+    public function testWithoutPushTheFileIsWrittenRightAway() {
+        $this->collector->deferWeb = true;
+
+        UjiDebug_LegacyApi::oldWay();
+        $this->assertCount(1, $this->collector->stored, 'tulis berkas murah, tidak ditunda');
+        $this->assertSame(0, $this->collector->finished);
+    }
+
+    public function testCManagerLangCalledFromAppCodeIsDeprecatedButNotThroughClang() {
+        $line = __LINE__ + 1;
+        CManager::lang();
+
+        $this->assertCount(1, $this->collector->stored);
+        $this->assertSame('CManager::lang', $this->collector->stored[0]['api']);
+        $this->assertSame($line, $this->collector->stored[0]['line']);
+
+        //clang::__ (system/helpers) memanggil CManager::lang(): hanya clang::__ sendiri yang tercatat
+        clang::__('x');
+        $this->assertSame(['CManager::lang', 'clang::__'], array_column($this->collector->stored, 'api'));
     }
 }

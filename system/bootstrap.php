@@ -16,6 +16,10 @@ CBootstrap::instance()->addBootstrapper([
     CApp_Bootstrapper_DependencyChecker::class,
 ]);
 
+// Header response aman untuk semua app di semua environment (lihat SecurityHeaders.php
+// utk kenapa X-Frame-Options/HSTS tidak ikut di sini - keduanya opt-in per app).
+CMiddleware::manager()->pushMiddleware(CHTTP_Middleware_SecurityHeaders::class);
+
 $domain = CF::domain();
 
 CException::init();
@@ -27,7 +31,10 @@ if (CF::config('collector.exception')) {
     //justru galat yang paling perlu terlihat (TypeError dan kerabatnya) tidak
     //pernah terkumpul.
     CException::exceptionHandler()->reportable(function (Throwable $e) {
-        CDebug::collector()->collectException($e);
+        // Typo di REPL tinker, bukan bug produksi.
+        if (!($e instanceof \Psy\Exception\ParseErrorException)) {
+            CDebug::collector()->collectException($e);
+        }
     });
 }
 
@@ -42,6 +49,8 @@ CApp::registerBlade();
 CManager::registerBlade();
 
 CApp::registerControl();
+//bundel compiled yang belum ada di server ini (di belakang load balancer), lihat CManager_Asset_BundleManifest
+CManager_Asset_BundleManifest::registerRoute();
 CFBenchmark::stop('capp:bootstrap');
 if (!CF::isCli()) {
     if (CHTTP::request()->cookie('capp-profiler')) {

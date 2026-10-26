@@ -11,10 +11,12 @@ use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\SlackWebhookHandler;
 use Monolog\Handler\FingersCrossedHandler;
 use Monolog\Handler\WhatFailureGroupHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
 use Monolog\Handler\FormattableHandlerInterface;
 
 class CLogger_Manager implements LoggerInterface {
     use CLogger_Concern_ParseLogConfigurationTrait;
+
     /**
      * The array of resolved channels.
      *
@@ -62,8 +64,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Build an on-demand log channel.
      *
-     * @param array $config
-     *
      * @return \Psr\Log\LoggerInterface
      */
     public function build(array $config) {
@@ -75,7 +75,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Create a new, on-demand aggregate logger instance.
      *
-     * @param array       $channels
      * @param null|string $channel
      *
      * @return \Psr\Log\LoggerInterface
@@ -139,20 +138,13 @@ class CLogger_Manager implements LoggerInterface {
                     'exception' => $e,
                 ]);
             });
-        } catch (Exception $e) {
-            return c::tap($this->createEmergencyLogger(), function ($logger) use ($e) {
-                $logger->emergency('Unable to create configured logger. Using emergency logger.', [
-                    'exception' => $e,
-                ]);
-            });
         }
     }
 
     /**
      * Apply the configured taps for the logger.
      *
-     * @param string          $name
-     * @param \CLogger_Logger $logger
+     * @param string $name
      *
      * @return \CLogger_Logger
      */
@@ -213,6 +205,9 @@ class CLogger_Manager implements LoggerInterface {
         if (is_null($config)) {
             throw new InvalidArgumentException("Log [{$name}] is not defined.");
         }
+        if (!isset($config['driver'])) {
+            throw new InvalidArgumentException("Log [{$name}] has no driver.");
+        }
 
         if (isset($this->customCreators[$config['driver']])) {
             return $this->callCustomCreator($config);
@@ -229,8 +224,6 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Call a custom driver creator.
      *
-     * @param array $config
-     *
      * @return mixed
      */
     protected function callCustomCreator(array $config) {
@@ -239,8 +232,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Create a custom log driver instance.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -252,8 +243,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Create an aggregate log driver instance.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -284,49 +273,48 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Create an instance of the single file log driver.
      *
-     * @param array $config
-     *
      * @return \Psr\Log\LoggerInterface
      */
     protected function createSingleDriver(array $config) {
+        $args = [
+            $this->level($config),
+            isset($config['bubble']) ? $config['bubble'] : true,
+            isset($config['permission']) ? $config['permission'] : null,
+            isset($config['locking']) ? $config['locking'] : false,
+        ];
+        $handler = isset($config['monthly_directory'])
+            ? new CLogger_Handler_MonthlyStreamHandler($config['monthly_directory'], basename($config['path']), ...$args)
+            : new StreamHandler($config['path'], ...$args);
+
         return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(
-                new StreamHandler(
-                    $config['path'],
-                    $this->level($config),
-                    isset($config['bubble']) ? $config['bubble'] : true,
-                    isset($config['permission']) ? $config['permission'] : null,
-                    isset($config['locking']) ? $config['locking'] : false
-                ),
-                $config
-            ),
-        ]);
+            $this->prepareHandler($handler, $config),
+        ], $this->placeholderProcessors($config));
     }
 
     /**
      * Create an instance of the daily file log driver.
      *
-     * @param array $config
-     *
      * @return \Psr\Log\LoggerInterface
      */
     protected function createDailyDriver(array $config) {
+        $args = [
+            isset($config['days']) ? $config['days'] : 7,
+            $this->level($config),
+            isset($config['bubble']) ? $config['bubble'] : true,
+            isset($config['permission']) ? $config['permission'] : null,
+            isset($config['locking']) ? $config['locking'] : false,
+        ];
+        $handler = isset($config['monthly_directory'])
+            ? new CLogger_Handler_MonthlyRotatingFileHandler($config['monthly_directory'], basename($config['path']), ...$args)
+            : new RotatingFileHandler($config['path'], ...$args);
+
         return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(new RotatingFileHandler(
-                $config['path'],
-                isset($config['days']) ? $config['days'] : 7,
-                $this->level($config),
-                isset($config['bubble']) ? $config['bubble'] : true,
-                isset($config['permission']) ? $config['permission'] : null,
-                isset($config['locking']) ? $config['locking'] : false
-            ), $config),
-        ]);
+            $this->prepareHandler($handler, $config),
+        ], $this->placeholderProcessors($config));
     }
 
     /**
      * Create an instance of the Slack log driver.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -344,30 +332,26 @@ class CLogger_Manager implements LoggerInterface {
                 isset($config['bubble']) ? $config['bubble'] : true,
                 isset($config['exclude_fields']) ? $config['exclude_fields'] : []
             ), $config),
-        ]);
+        ], $this->placeholderProcessors($config));
     }
 
     /**
      * Create an instance of the syslog log driver.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
     protected function createSyslogDriver(array $config) {
         return new Monolog($this->parseChannel($config), [
             $this->prepareHandler(new SyslogHandler(
-                cstr::snake(CF::config('app.name'), '-'),
+                cstr::snake(CF::config('app.name') ?: (string) CF::appCode(), '-'),
                 isset($config['facility']) ? $config['facility'] : LOG_USER,
                 $this->level($config)
             ), $config),
-        ]);
+        ], $this->placeholderProcessors($config));
     }
 
     /**
      * Create an instance of the "error log" log driver.
-     *
-     * @param array $config
      *
      * @return \Psr\Log\LoggerInterface
      */
@@ -376,14 +360,12 @@ class CLogger_Manager implements LoggerInterface {
             $this->prepareHandler(new ErrorLogHandler(
                 isset($config['type']) ? $config['type'] : ErrorLogHandler::OPERATING_SYSTEM,
                 $this->level($config)
-            )),
-        ]);
+            ), $config),
+        ], $this->placeholderProcessors($config));
     }
 
     /**
      * Create an instance of any handler available in Monolog.
-     *
-     * @param array $config
      *
      * @throws \InvalidArgumentException
      * @throws \CContainer_Exception_BindingResolutionException
@@ -403,16 +385,29 @@ class CLogger_Manager implements LoggerInterface {
             isset($config['handler_with']) ? $config['handler_with'] : []
         );
 
+        $processors = c::collect(isset($config['processors']) ? $config['processors'] : [])->map(function ($processor) {
+            return is_array($processor)
+                ? CContainer::getInstance()->make($processor['processor'], isset($processor['with']) ? $processor['with'] : [])
+                : CContainer::getInstance()->make($processor);
+        })->all();
+
         return new Monolog($this->parseChannel($config), [$this->prepareHandler(
             CContainer::getInstance()->make($config['handler'], $with),
             $config
-        )]);
+        )], $processors);
+    }
+
+    /**
+     * Processor {placeholder} bila channel men-set replace_placeholders.
+     *
+     * @return array
+     */
+    protected function placeholderProcessors(array $config) {
+        return empty($config['replace_placeholders']) ? [] : [new PsrLogMessageProcessor()];
     }
 
     /**
      * Prepare the handlers for usage by Monolog.
-     *
-     * @param array $handlers
      *
      * @return array
      */
@@ -426,9 +421,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Prepare the handler for usage by Monolog.
-     *
-     * @param \Monolog\Handler\HandlerInterface $handler
-     * @param array                             $config
      *
      * @return \Monolog\Handler\HandlerInterface
      */
@@ -470,8 +462,6 @@ class CLogger_Manager implements LoggerInterface {
 
     /**
      * Share context across channels and stacks.
-     *
-     * @param array $context
      *
      * @return $this
      */
@@ -525,10 +515,9 @@ class CLogger_Manager implements LoggerInterface {
         $config = CF::config("log.channels.{$name}");
         $driver = carr::get($config, 'driver');
         if (in_array($driver, ['single', 'daily']) && carr::get($config, 'path') == null) {
-            // Set the yearly directory name
-            $date = date('Y-m');
-            list($year, $month) = explode('-', $date);
-            $config['path'] = DOCROOT . 'logs' . DS . CF::appCode() . DS . $year . DS . $month . DS . 'log.log';
+            // logs/<appCode>/<Y>/<m>/log.log, folder bulan diikuti handler monthly
+            $config['monthly_directory'] = DOCROOT . 'logs' . DS . CF::appCode();
+            $config['path'] = CLogger_Handler_MonthlyStreamHandler::monthlyPath($config['monthly_directory'], 'log.log');
         }
 
         return $config;
@@ -546,8 +535,7 @@ class CLogger_Manager implements LoggerInterface {
     /**
      * Register a custom driver creator Closure.
      *
-     * @param string   $driver
-     * @param \Closure $callback
+     * @param string $driver
      *
      * @return $this
      */
@@ -593,7 +581,6 @@ class CLogger_Manager implements LoggerInterface {
      * System is unusable.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -608,7 +595,6 @@ class CLogger_Manager implements LoggerInterface {
      * trigger the SMS alerts and wake you up.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -622,7 +608,6 @@ class CLogger_Manager implements LoggerInterface {
      * Example: Application component unavailable, unexpected exception.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -635,7 +620,6 @@ class CLogger_Manager implements LoggerInterface {
      * be logged and monitored.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -650,7 +634,6 @@ class CLogger_Manager implements LoggerInterface {
      * that are not necessarily wrong.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -662,7 +645,6 @@ class CLogger_Manager implements LoggerInterface {
      * Normal but significant events.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -676,7 +658,6 @@ class CLogger_Manager implements LoggerInterface {
      * Example: User logs in, SQL logs.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -688,7 +669,6 @@ class CLogger_Manager implements LoggerInterface {
      * Detailed debug information.
      *
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */
@@ -701,7 +681,6 @@ class CLogger_Manager implements LoggerInterface {
      *
      * @param mixed  $level
      * @param string $message
-     * @param array  $context
      *
      * @return void
      */

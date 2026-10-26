@@ -271,7 +271,7 @@ trait CModel_Resource_ResourceTrait {
     public function getContent($conversionName = '') {
         $disk = CStorage::instance()->disk($this->disk);
 
-        return $disk->get($this->getPath($conversionName));
+        return $disk->get($this->getPathRelativeToRoot($conversionName));
     }
 
     public function getImageGenerators() {

@@ -59,6 +59,7 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
         foreach ($files as $file) {
             $model = basename($file, EXT);
             $class = $this->prefix . 'Model_' . $model;
+
             try {
                 if (!class_exists($class) || !(new ReflectionClass($class))->isInstantiable()) {
                     $skipped[] = $model;
@@ -160,8 +161,18 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
     public function updateFieldProperties($properties) {
         $fields = Helper::getFields($this->getTable(), $this->prefix, $this->currentModel);
         $currentPropertyFields = array_column($properties, 'field');
+        $splitFields = [];
         foreach ($fields as $field => $fieldProperty) {
             $type = Helper::getGenericTypeForFieldProperty($fieldProperty);
+            $writeType = Helper::getGenericTypeForFieldProperty($fieldProperty, true);
+            if ($writeType !== $type) {
+                //baca dan tulis beda tipe (kolom tanggal, lihat PropertiesHelper::getFields()) - diproses
+                //terpisah di bawah supaya tidak mengubah indeks $properties selagi loop ini masih membaca
+                //$currentPropertyFields yang dihitung sebelum loop dimulai
+                $splitFields[$field] = ['readType' => $type, 'writeType' => $writeType];
+
+                continue;
+            }
             $i = array_search($field, $currentPropertyFields);
             if ($i === false) {
                 $properties[] = [
@@ -180,6 +191,11 @@ class CConsole_Command_Model_ModelUpdateCommand extends CConsole_Command_AppComm
                 }
             }
         }
+
+        if (!empty($splitFields)) {
+            $properties = Helper::applySplitFieldProperties($properties, $splitFields);
+        }
+
         $fieldsKey = array_keys($fields);
         $classMethods = get_class_methods($this->prefix . 'Model_' . $this->currentModel);
 

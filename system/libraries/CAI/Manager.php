@@ -41,6 +41,42 @@ class CAI_Manager {
         return new CAI_Service_Fal($options);
     }
 
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_Gemini
+     */
+    public function createGemini($options = []) {
+        return new CAI_Service_Gemini($options);
+    }
+
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_DeepSeek
+     */
+    public function createDeepSeek($options = []) {
+        return new CAI_Service_DeepSeek($options);
+    }
+
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_ElevenLabs
+     */
+    public function createElevenLabs($options = []) {
+        return new CAI_Service_ElevenLabs($options);
+    }
+
+    /**
+     * @param array $options
+     *
+     * @return CAI_Service_Qwen
+     */
+    public function createQwen($options = []) {
+        return new CAI_Service_Qwen($options);
+    }
+
     public function createOllamaService() {
     }
 

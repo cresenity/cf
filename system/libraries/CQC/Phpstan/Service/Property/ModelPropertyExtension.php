@@ -9,10 +9,10 @@ use PHPStan\Type\IntegerType;
 use PHPStan\Type\TypeCombinator;
 use PHPStan\PhpDoc\TypeStringResolver;
 use PHPStan\Reflection\ClassReflection;
-use PHPStan\Reflection\ExtendedMethodReflection;
 use PHPStan\Reflection\PropertyReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\Generic\GenericObjectType;
+use PHPStan\Reflection\ExtendedMethodReflection;
 use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Reflection\PropertiesClassReflectionExtension;
 
@@ -220,10 +220,7 @@ final class CQC_Phpstan_Service_Property_ModelPropertyExtension implements Prope
             $readable = $this->stringResolver->resolve($typeString);
             $writable = $readable;
 
-            if (in_array($cast, ['array', 'json', 'object', 'collection'], true)) {
-                //nilai json lazim ditulis sebagai hasil json_encode()
-                $writable = TypeCombinator::union($readable, new StringType());
-            } elseif (in_array($cast, ['bool', 'boolean'], true)) {
+            if (in_array($cast, ['bool', 'boolean'], true)) {
                 $writable = TypeCombinator::union($readable, new IntegerType());
             } elseif ($isDateColumn) {
                 //tetap boleh diisi objek tanggal

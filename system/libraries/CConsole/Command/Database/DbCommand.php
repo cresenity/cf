@@ -25,6 +25,12 @@ class CConsole_Command_Database_DbCommand extends CConsole_Command {
      * @return int
      */
     public function handle() {
+        if (!CServer::os()->onWindows() && !Process::isTtySupported()) {
+            $this->error('Perintah ini butuh terminal interaktif (TTY), tidak bisa dijalankan lewat skrip/sesi non-interaktif.');
+
+            return 1;
+        }
+
         $connection = $this->getConnection();
         $processCommand = array_merge([$this->getCommand($connection)], $this->commandArguments($connection));
         (new Process(

@@ -18,6 +18,7 @@ import initPlugin from './plugin';
 import {element, initElement} from './element';
 import ucfirst from 'locutus/php/strings/ucfirst';
 import { resolveToastrMethod } from './util/toastr.mjs';
+import { installAjaxHtmlGuard } from './util/ajax-html-guard.mjs';
 import Alpine from 'alpinejs';
 import cresReact from './react';
 import CSocket from './csocket/CSocket';
@@ -1045,6 +1046,15 @@ export default class Cresenity {
             });
         });
     }
+    initAjaxHtmlGuard() {
+        if (typeof window.jQuery !== 'function') {
+            return;
+        }
+        const notify = debounce(() => {
+            this.showError('Unexpected response from server, your session may have expired. Please re-login or refresh this page');
+        }, 500);
+        installAjaxHtmlGuard(window.jQuery, notify);
+    }
     initReload() {
         let reloadInitialized = $('body').attr('data-reload-initialized');
         if (!reloadInitialized) {
@@ -1137,6 +1147,7 @@ export default class Cresenity {
                     this.scrollToTop.init();
                 }
             }
+            this.initAjaxHtmlGuard();
             this.initDependency();
             this.initElement();
             this.initConfirm();

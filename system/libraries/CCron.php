@@ -99,4 +99,13 @@ class CCron {
     public static function isCron() {
         return static::$runningEvent !== null;
     }
+
+    /**
+     * Event cron yang sedang berjalan, null di luar event.
+     *
+     * @return null|CCron_Event
+     */
+    public static function getRunningEvent() {
+        return static::$runningEvent;
+    }
 }

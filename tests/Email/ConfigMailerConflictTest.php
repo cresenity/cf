@@ -6,19 +6,29 @@ use PHPUnit\Framework\TestCase;
  * mengubah provider yang dipakai, dan CEmail_ConfigAuditor (dipakai `phpcf email:check`).
  */
 class ConfigMailerConflictTest extends TestCase {
-    /** @var mixed */
+    /**
+     * @var mixed
+     */
     protected $originalMailer;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     protected $hadEnvEntry;
 
-    /** @var mixed */
+    /**
+     * @var mixed
+     */
     protected $envOriginal;
 
-    /** @var bool */
+    /**
+     * @var bool
+     */
     protected $hadServerEntry;
 
-    /** @var mixed */
+    /**
+     * @var mixed
+     */
     protected $serverOriginal;
 
     protected function setUp(): void {
@@ -59,8 +69,6 @@ class ConfigMailerConflictTest extends TestCase {
     }
 
     /**
-     * @param array $overrides
-     *
      * @return array
      */
     protected function settings(array $overrides = []) {
@@ -75,8 +83,6 @@ class ConfigMailerConflictTest extends TestCase {
     }
 
     /**
-     * @param array $findings
-     *
      * @return array
      */
     protected function keys(array $findings) {
@@ -186,5 +192,59 @@ class ConfigMailerConflictTest extends TestCase {
 
         $this->assertSame(['notice:CEmail::sender()'], $this->keys($findings));
         $this->assertStringContainsString('3 berkas', $findings[0]['message']);
+    }
+
+    public function testStillThrowsWithoutDriverHostOrMailMailer() {
+        $this->setMailerEnv(null);
+
+        $this->expectException(CEmail_Exception_InvalidConfigException::class);
+        new CEmail_Config([]);
+    }
+
+    public function testStillThrowsWhenMailMailerPointsToAnUnknownMailer() {
+        $this->setMailerEnv('mailer_yang_tidak_ada');
+
+        $this->expectException(CEmail_Exception_InvalidConfigException::class);
+        new CEmail_Config([]);
+    }
+
+    public function testFallsBackToMailMailerOnlyWhenExplicitlySet() {
+        $this->setMailerEnv('brevo');
+
+        $config = new CEmail_Config(['from' => 'noreply@app.example.com']);
+
+        $this->assertSame('brevo', $config->toMailerConfig()['transport']);
+        $this->assertSame('noreply@app.example.com', $config->getFrom(), 'from dari config asli tetap dibawa ke config fallback');
+    }
+
+    public function testFallbackCarriesSmtpTransportFieldsAndTranslatesEncryptionToSecure() {
+        $this->setMailerEnv('smtp');
+        $repository = CConfig::repository();
+        $original = [
+            'host' => $repository->get('email.mailers.smtp.host'),
+            'port' => $repository->get('email.mailers.smtp.port'),
+            'encryption' => $repository->get('email.mailers.smtp.encryption'),
+        ];
+        $repository->set('email.mailers.smtp.host', 'smtp.uji.example');
+        $repository->set('email.mailers.smtp.port', 2525);
+        $repository->set('email.mailers.smtp.encryption', 'tls');
+
+        try {
+            $config = new CEmail_Config([]);
+
+            $this->assertSame('tls', $config->getEncryption(), "'encryption' milik config mailer modern terbaca sebagai 'secure'");
+            $mailerConfig = $config->toMailerConfig();
+            $this->assertSame('smtp', $mailerConfig['transport']);
+            $this->assertSame('smtp.uji.example', $mailerConfig['host']);
+            $this->assertSame(2525, $mailerConfig['port']);
+        } finally {
+            $repository->set('email.mailers.smtp.host', $original['host']);
+            $repository->set('email.mailers.smtp.port', $original['port']);
+            $repository->set('email.mailers.smtp.encryption', $original['encryption']);
+        }
+    }
+
+    public function testMailerConfigToLegacyOptionsReturnsNullForUnknownMailer() {
+        $this->assertNull(CEmail_Config::mailerConfigToLegacyOptions('mailer_yang_tidak_ada'));
     }
 }

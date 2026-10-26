@@ -38,5 +38,7 @@ trait CLogger_Reader_Concern_LogIndex_HasMetadata {
         $this->maxChunkSize = $data['max_chunk_size'] ?? CLogger_Reader_LogIndex::DEFAULT_CHUNK_SIZE;
         $this->chunkDefinitions = $data['chunk_definitions'] ?? [];
         $this->currentChunkDefinition = $data['current_chunk_definition'] ?? [];
+        // chunk yang sudah termuat dibangun lagi dari definisi di atas, bukan dibawa dari metadata lama
+        $this->currentChunk = null;
     }
 }

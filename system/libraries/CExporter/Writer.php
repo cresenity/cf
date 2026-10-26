@@ -9,6 +9,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 class CExporter_Writer {
     use CExporter_Trait_DelegatedMacroableTrait;
     use CExporter_Trait_HasEventBusTrait;
+
     /**
      * @var CExporter_Writer
      */
@@ -44,14 +45,15 @@ class CExporter_Writer {
     }
 
     /**
-     * @param object $export
-     * @param string $writerType
+     * @param object      $export
+     * @param string      $writerType
+     * @param null|string $fileName   target file name (a .tsv gets a tab delimiter)
      *
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      *
      * @return TemporaryFile
      */
-    public function export($export, $writerType) {
+    public function export($export, $writerType, $fileName = null) {
         $this->open($export);
 
         $sheetExports = [$export];
@@ -63,7 +65,7 @@ class CExporter_Writer {
             $this->addNewSheet()->export($sheetExport);
         }
 
-        return $this->write($export, $this->temporaryFileFactory->makeLocal(), $writerType);
+        return $this->write($export, $this->temporaryFileFactory->makeLocal(), $writerType, $fileName);
     }
 
     /**
@@ -119,8 +121,7 @@ class CExporter_Writer {
     }
 
     /**
-     * @param CExporter_File_TemporaryFile $tempFile
-     * @param string                       $writerType
+     * @param string $writerType
      *
      * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
      *
@@ -137,13 +138,14 @@ class CExporter_Writer {
      * @param object        $export
      * @param TemporaryFile $temporaryFile
      * @param string        $writerType
+     * @param null|string   $fileName      target file name (a .tsv gets a tab delimiter)
      *
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      *
      * @return CExporter_File_TemporaryFile
      */
-    public function write($export, CExporter_File_TemporaryFile $temporaryFile, $writerType) {
+    public function write($export, CExporter_File_TemporaryFile $temporaryFile, $writerType, $fileName = null) {
         $this->exportable = $export;
 
         $this->spreadsheet->setActiveSheetIndex(0);
@@ -153,7 +155,8 @@ class CExporter_Writer {
         $writer = CExporter_WriterFactory::make(
             $writerType,
             $this->spreadsheet,
-            $export
+            $export,
+            $fileName
         );
 
         $writer->save(

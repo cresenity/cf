@@ -47,9 +47,9 @@ class Prophet
      * @param null|StringUtil        $util
      */
     public function __construct(
-        Doubler $doubler = null,
-        RevealerInterface $revealer = null,
-        StringUtil $util = null
+        ?Doubler $doubler = null,
+        ?RevealerInterface $revealer = null,
+        ?StringUtil $util = null
     ) {
         if (null === $doubler) {
             $doubler = new CachedDoubler();

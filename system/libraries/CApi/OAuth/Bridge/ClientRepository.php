@@ -78,6 +78,8 @@ class CApi_OAuth_Bridge_ClientRepository implements ClientRepositoryInterface {
                 return $record->password_client;
             case 'client_credentials':
                 return $record->confidential();
+            case 'urn:ietf:params:oauth:grant-type:device_code':
+                return true;
             default:
                 return true;
         }

@@ -102,7 +102,7 @@ final class TestSuiteSorter
      */
     private $executionOrder = [];
 
-    public function __construct(TestResultCache $cache = null)
+    public function __construct(?TestResultCache $cache = null)
     {
         $this->cache = $cache!=null ? $cache : new NullTestResultCache;
     }

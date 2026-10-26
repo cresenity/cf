@@ -107,6 +107,6 @@ class CVendor_Discord_Webhook implements Arrayable {
      * @return CHTTP_Client_Response
      */
     public function send() {
-        return CHTTP::client()->post($this->url, $this->toArray());
+        return CHTTP::client()->connectTimeout(2)->timeout(3)->post($this->url, $this->toArray());
     }
 }

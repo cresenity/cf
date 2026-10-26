@@ -12,6 +12,13 @@ class CException_Context_RequestContext extends CException_ContextAbstract imple
      */
     protected $request;
 
+    /**
+     * Key yang nilainya tidak boleh ikut laporan exception.
+     *
+     * @var string
+     */
+    protected $sensitiveKeyPattern = '/pass(word|wd)?|pwd|secret|token|api[_-]?key|authorization|cookie|auth[_-]?pw|cvv|cvc|card[_-]?(number|no)|^pin$|otp|private[_-]?key|credential/i';
+
     public function __construct(?CHTTP_Request $request = null) {
         $this->request = $request ?: CHTTP::request();
     }
@@ -88,23 +95,42 @@ class CException_Context_RequestContext extends CException_ContextAbstract imple
             return [];
         }
 
-        return $session->all();
+        return $this->redact($session->all());
     }
 
     public function getCookies() {
-        return $this->request->cookies->all();
+        return array_map(function () {
+            return '[redacted]';
+        }, $this->request->cookies->all());
     }
 
     public function getHeaders() {
-        return $this->request->headers->all();
+        return $this->redact($this->request->headers->all());
     }
 
     public function getRequestData() {
         return [
-            'queryString' => $this->request->query->all(),
-            'body' => $this->request->request->all(),
+            'queryString' => $this->redact($this->request->query->all()),
+            'body' => $this->redact($this->request->request->all()),
             'files' => $this->getFiles(),
         ];
+    }
+
+    /**
+     * @param array $data
+     *
+     * @return array
+     */
+    protected function redact(array $data) {
+        foreach ($data as $key => $value) {
+            if (is_string($key) && preg_match($this->sensitiveKeyPattern, $key)) {
+                $data[$key] = '[redacted]';
+            } elseif (is_array($value)) {
+                $data[$key] = $this->redact($value);
+            }
+        }
+
+        return $data;
     }
 
     public function toArray() {
@@ -177,13 +203,13 @@ class CException_Context_RequestContext extends CException_ContextAbstract imple
 
         try {
             if ($user instanceof Arrayable) {
-                return $user->toArray();
+                return $this->redact($user->toArray());
             }
             if ($user instanceof CModel) {
-                return $user->getAttributes();
+                return $this->redact($user->getAttributes());
             }
 
-            return (array) $user;
+            return $this->redact((array) $user);
         } catch (Exception $e) {
             return [];
         } catch (Throwable $e) {

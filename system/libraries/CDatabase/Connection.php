@@ -17,6 +17,18 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     use CTrait_Helper_InteractsWithTime;
 
     /**
+     * Indicates whether the query log carries a `compiled` SQL string.
+     *
+     * Building it runs every binding through `PDO::quote()` on the write
+     * connection, so logging a read query can open a write connection for
+     * nothing at all. Set false where that cost is unwanted; the key stays in
+     * the log as null, and `lastQuery()` returns null with it.
+     *
+     * @var bool
+     */
+    public static $compileQueryLog = true;
+
+    /**
      * The active PDO connection.
      *
      * @var \PDO|\Closure
@@ -143,18 +155,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     protected $loggingQueries = false;
 
     /**
-     * Indicates whether the query log carries a `compiled` SQL string.
-     *
-     * Building it runs every binding through `PDO::quote()` on the write
-     * connection, so logging a read query can open a write connection for
-     * nothing at all. Set false where that cost is unwanted; the key stays in
-     * the log as null, and `lastQuery()` returns null with it.
-     *
-     * @var bool
-     */
-    public static $compileQueryLog = true;
-
-    /**
      * The duration of all executed queries in milliseconds.
      *
      * @var float
@@ -226,7 +226,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
      * @param \PDO|\Closure $pdo
      * @param string        $database
      * @param string        $tablePrefix
-     * @param array         $config
      *
      * @return void
      */
@@ -381,7 +380,7 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
                 $statement->execute();
 
                 return $statement;
-            }, $useReadPdo));
+            }, $useReadPdo), in_array($this->getDriverName(), ['sqlite', 'pgsql', 'sqlsrv']));
         }
 
         return $this->newQuery();
@@ -569,8 +568,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
 
     /**
      * Configure the PDO prepared statement.
-     *
-     * @param \PDOStatement $statement
      *
      * @return \PDOStatement
      */
@@ -762,8 +759,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Execute the given callback in "dry run" mode.
      *
-     * @param \Closure $callback
-     *
      * @return array
      */
     public function pretend(Closure $callback) {
@@ -829,8 +824,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Prepare the query bindings for execution.
      *
-     * @param array $bindings
-     *
      * @return array
      */
     public function prepareBindings(array $bindings) {
@@ -853,12 +846,11 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Run a SQL statement and log its execution context.
      *
-     * @param string   $query
-     * @param array    $bindings
-     * @param \Closure $callback
-     * @param bool     $useReadPdo the callback ran $query on the read connection - passed
-     *                             through to logQuery() so the query log doesn't open a
-     *                             write connection just to quote a read query's bindings
+     * @param string $query
+     * @param array  $bindings
+     * @param bool   $useReadPdo the callback ran $query on the read connection - passed
+     *                           through to logQuery() so the query log doesn't open a
+     *                           write connection just to quote a read query's bindings
      *
      * @throws \CDatabase_Exception_QueryException
      *
@@ -903,9 +895,8 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Run a SQL statement.
      *
-     * @param string   $query
-     * @param array    $bindings
-     * @param \Closure $callback
+     * @param string $query
+     * @param array  $bindings
      *
      * @throws \CDatabase_Exception_QueryException
      *
@@ -1033,10 +1024,8 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Handle a query exception.
      *
-     * @param \CDatabase_Exception_QueryException $e
-     * @param string                              $query
-     * @param array                               $bindings
-     * @param \Closure                            $callback
+     * @param string $query
+     * @param array  $bindings
      *
      * @throws \CDatabase_Exception_QueryException
      *
@@ -1058,10 +1047,8 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Handle a query exception that occurred during query execution.
      *
-     * @param \CDatabase_Exception_QueryException $e
-     * @param string                              $query
-     * @param array                               $bindings
-     * @param \Closure                            $callback
+     * @param string $query
+     * @param array  $bindings
      *
      * @throws \CDatabase_Exception_QueryException
      *
@@ -1119,8 +1106,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Register a hook to be run just before a database query is executed.
      *
-     * @param \Closure $callback
-     *
      * @return $this
      */
     public function beforeExecuting(Closure $callback) {
@@ -1131,8 +1116,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
 
     /**
      * Register a database query listener with the connection.
-     *
-     * @param \Closure $callback
      *
      * @return void
      */
@@ -1233,6 +1216,7 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
      * Escape a string value for safe SQL embedding.
      *
      * @param string $value
+     * @param mixed  $useReadPdo
      *
      * @return string
      */
@@ -1286,8 +1270,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
 
     /**
      * Set the record modification state.
-     *
-     * @param bool $value
      *
      * @return $this
      */
@@ -1392,13 +1374,9 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
      * Register a custom Doctrine mapping type.
      *
      * @param Type|class-string<Type> $class
-     * @param string                  $name
-     * @param string                  $type
      *
      * @throws \Doctrine\DBAL\Exception
      * @throws \RuntimeException
-     *
-     * @return void
      */
     public function registerDoctrineType($class, string $name, string $type): void {
         if (!$this->isDoctrineAvailable()) {
@@ -1500,8 +1478,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Set the reconnect instance on the connection.
      *
-     * @param callable $reconnector
-     *
      * @return $this
      */
     public function setReconnector(callable $reconnector) {
@@ -1569,8 +1545,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Set the query grammar used by the connection.
      *
-     * @param \CDatabase_Query_Grammar $grammar
-     *
      * @return $this
      */
     public function setQueryGrammar(CDatabase_Query_Grammar $grammar) {
@@ -1590,8 +1564,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
 
     /**
      * Set the schema grammar used by the connection.
-     *
-     * @param \CDatabase_Schema_Grammar $grammar
      *
      * @return $this
      */
@@ -1613,8 +1585,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Set the query post processor used by the connection.
      *
-     * @param \CDatabase_Query_Processor $processor
-     *
      * @return $this
      */
     public function setPostProcessor(CDatabase_Query_Processor $processor) {
@@ -1634,8 +1604,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
 
     /**
      * Set the event dispatcher instance on the connection.
-     *
-     * @param \CEvent_Dispatcher $events
      *
      * @return $this
      */
@@ -1801,8 +1769,6 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Set the table prefix and return the grammar.
      *
-     * @param \CDatabase_Grammar $grammar
-     *
      * @return \CDatabase_Grammar
      */
     public function withTablePrefix(CDatabase_Grammar $grammar) {
@@ -1814,8 +1780,7 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     /**
      * Register a connection resolver.
      *
-     * @param string   $driver
-     * @param \Closure $callback
+     * @param string $driver
      *
      * @return void
      */
@@ -2065,9 +2030,9 @@ class CDatabase_Connection implements CDatabase_ConnectionInterface {
     }
 
     /**
-     * @return never
-     *
      * @throws Exception
+     *
+     * @return never
      */
     protected function getDoctrineDriver() {
         throw new Exception('Doctrine Driver is not implemented on this connection');

@@ -21,7 +21,7 @@ class CLogger_Rotator_Rotate extends CLogger_Rotator_AbstractRotate {
     /**
      * Set the number of old copies to keep.
      *
-     * @param $number
+     * @param mixed $number
      *
      * @return CLogger_Rotator_Rotate
      */
@@ -106,12 +106,23 @@ class CLogger_Rotator_Rotate extends CLogger_Rotator_AbstractRotate {
     }
 
     /**
+     * Lock file per pola nama: proses yang auto-rotate log yang sama bergantian.
+     *
+     * @return string
+     */
+    public function getLockFile() {
+        $format = $this->getFilenameFormat();
+
+        return $format->getPath() . DIRECTORY_SEPARATOR . '.' . preg_replace('/[^A-Za-z0-9._-]/', '_', $format->getFilenamePattern()) . '.rotate.lock';
+    }
+
+    /**
      * Run the file rotation.
      *
      * @param bool $checkSize
      *
      * @throws CLogger_Rotator_Exception_FilenameFormatException
-     * @throws RotateException
+     * @throws CLogger_Rotator_Exception_RotateException
      *
      * @return array Array of files which have been rotated
      */
@@ -119,49 +130,75 @@ class CLogger_Rotator_Rotate extends CLogger_Rotator_AbstractRotate {
         if (!$this->hasFilenameFormat()) {
             throw new CLogger_Rotator_Exception_FilenameFormatException('You must set a filename format to match files against');
         }
-        $rotated = [];
-        $dir = new CLogger_Rotator_DirectoryIterator($this->getFilenameFormat()->getPath());
+        if ($this->isDryRun()) {
+            return $this->rotateMatchedFiles($checkSize);
+        }
+        $lock = @fopen($this->getLockFile(), 'c');
+        if ($lock === false) {
+            //mis. lock milik user lain (web vs cron): rotasi tanpa lock seperti sebelumnya
+            return $this->rotateMatchedFiles($checkSize);
+        }
+
+        try {
+            flock($lock, LOCK_EX);
+
+            //ukuran dicek setelah lock, proses yang menunggu melihat berkas yang sudah dirotasi
+            return $this->rotateMatchedFiles($checkSize);
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    /**
+     * @param bool $checkSize
+     *
+     * @throws CLogger_Rotator_Exception_RotateException
+     *
+     * @return array
+     */
+    protected function rotateMatchedFiles($checkSize) {
+        $path = $this->getFilenameFormat()->getPath();
+        $basenames = [];
+        $dir = new CLogger_Rotator_DirectoryIterator($path);
         $dir->setFilenameFormat($this->getFilenameFormat());
         foreach ($dir as $file) {
             /** @var CLogger_Rotator_DirectoryIterator $file */
             if ($file->isFile() && $file->isMatch()) {
-                if ($checkSize) {
-                    // Skip if rotate size specified and initial matched file doesn't exceed this
-                    if ($this->hasSizeToRotate()) {
-                        if ($file->getSize() < $this->getSizeToRotate()) {
-                            continue;
-                        }
-                    }
+                // Skip if rotate size specified and initial matched file doesn't exceed this
+                if ($checkSize && $this->hasSizeToRotate() && $file->getSize() < $this->getSizeToRotate()) {
+                    continue;
                 }
-                // Rotate files
-                for ($x = $this->keepNumber; $x--; $x > 0) {
-                    $fileToRotate = $file->getPath() . '/' . $file->getRotatedFilename($x);
-                    if (!file_exists($fileToRotate)) {
-                        continue;
-                    }
-                    if ($x === $this->keepNumber) {
-                        if (!$this->isDryRun()) {
-                            if (!unlink($fileToRotate)) {
-                                throw new CLogger_Rotator_Exception_RotateException('Cannot delete file: ' . $file->getRotatedFilename($x));
-                            }
-                        }
-                        $rotated[] = $fileToRotate;
-                    } else {
-                        if (!$this->isDryRun()) {
-                            if (!rename($fileToRotate, $file->getPath() . '/' . $file->getRotatedFilename($x + 1))) {
-                                throw new CLogger_Rotator_Exception_RotateException('Cannot rotate file: ' . $file->getRotatedFilename($x));
-                            }
-                        }
-                        $rotated[] = $fileToRotate;
-                    }
+                $basenames[] = $file->getBasename();
+            }
+        }
+
+        //rename setelah iterasi selesai, supaya berkas hasil rotasi tidak ikut teriterasi
+        $rotated = [];
+        foreach ($basenames as $basename) {
+            // Rotate files
+            for ($x = $this->keepNumber; $x > 0; $x--) {
+                $fileToRotate = $path . '/' . $basename . '.' . $x;
+                if (!file_exists($fileToRotate)) {
+                    continue;
                 }
                 if (!$this->isDryRun()) {
-                    if (!rename($file->getPath() . '/' . $file->getBasename(), $file->getPath() . '/' . $file->getRotatedFilename(1))) {
-                        throw new CLogger_Rotator_Exception_RotateException('Cannot rotate file: ' . $file->getBasename());
+                    if ($x === $this->keepNumber) {
+                        if (!unlink($fileToRotate)) {
+                            throw new CLogger_Rotator_Exception_RotateException('Cannot delete file: ' . $basename . '.' . $x);
+                        }
+                    } elseif (!rename($fileToRotate, $path . '/' . $basename . '.' . ($x + 1))) {
+                        throw new CLogger_Rotator_Exception_RotateException('Cannot rotate file: ' . $basename . '.' . $x);
                     }
                 }
-                $rotated[] = $file->getPath() . '/' . $file->getBasename();
+                $rotated[] = $fileToRotate;
             }
+            if (!$this->isDryRun()) {
+                if (!rename($path . '/' . $basename, $path . '/' . $basename . '.1')) {
+                    throw new CLogger_Rotator_Exception_RotateException('Cannot rotate file: ' . $basename);
+                }
+            }
+            $rotated[] = $path . '/' . $basename;
         }
 
         return $rotated;

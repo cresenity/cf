@@ -7,7 +7,6 @@ class CDatabase_Connection_Pdo_SqliteConnection extends CDatabase_Connection {
      * @param \PDO|\Closure $pdo
      * @param string        $database
      * @param string        $tablePrefix
-     * @param array         $config
      *
      * @return void
      */
@@ -76,8 +75,6 @@ class CDatabase_Connection_Pdo_SqliteConnection extends CDatabase_Connection {
     /**
      * Get the schema state for the connection.
      *
-     * @param null|callable $processFactory
-     *
      * @throws \RuntimeException
      */
     public function getSchemaState(?callable $processFactory = null) {
@@ -100,6 +97,28 @@ class CDatabase_Connection_Pdo_SqliteConnection extends CDatabase_Connection {
      */
     protected function getDoctrineDriver() {
         return new CDatabase_Doctrine_Driver_SqliteDriver();
+    }
+
+    /**
+     * SQLite tidak punya ALTER COLUMN native - CDatabase_Platform_Doctrine mendelegasikan
+     * rebuild tabel (change()/dropColumn() lama) ke Doctrine\DBAL\Platforms\SqlitePlatform
+     * asli, yang sudah mengimplementasikan resep rebuild resmi SQLite ini. Lihat #-21866.
+     *
+     * @inheritdoc
+     *
+     * @return CDatabase_Platform_Doctrine
+     */
+    public function getDefaultDatabasePlatform() {
+        return new CDatabase_Platform_Doctrine($this->getDoctrineConnection()->getDatabasePlatform());
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @return CDatabase_Schema_Manager_Doctrine
+     */
+    public function getSchemaManager() {
+        return new CDatabase_Schema_Manager_Doctrine($this, $this->getDoctrineSchemaManager());
     }
 
     /**

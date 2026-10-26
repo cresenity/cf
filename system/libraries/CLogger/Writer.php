@@ -1,6 +1,7 @@
 <?php
 /**
  * @see CLogger
+ * @deprecated 1.9 warisan Kohana, tidak dipakai CLogger; tulis log lewat CLogger::channel(). Dihapus di 2.0
  */
 abstract class CLogger_Writer {
     /**
@@ -54,8 +55,6 @@ abstract class CLogger_Writer {
      *
      *     $writer->write($messages);
      *
-     * @param array $messages
-     *
      * @return void
      */
     abstract public function write(array $messages);
@@ -74,7 +73,6 @@ abstract class CLogger_Writer {
     /**
      * Formats a log entry.
      *
-     * @param array  $message
      * @param string $format
      *
      * @return string

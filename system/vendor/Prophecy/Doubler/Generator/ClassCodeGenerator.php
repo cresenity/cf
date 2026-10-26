@@ -22,7 +22,7 @@ use Prophecy\Doubler\Generator\Node\TypeNodeAbstract;
  */
 class ClassCodeGenerator
 {
-    public function __construct(TypeHintReference $typeHintReference = null)
+    public function __construct(?TypeHintReference $typeHintReference = null)
     {
     }
 

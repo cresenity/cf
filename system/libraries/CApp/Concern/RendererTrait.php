@@ -28,7 +28,7 @@ trait CApp_Concern_RendererTrait {
 
     /**
      * @param null|array|Closure|CNavigation_Nav|string $nav
-     * @param mixed                                      $renderer
+     * @param mixed                                     $renderer
      *
      * @return string
      */
@@ -317,12 +317,29 @@ HTML;
     /**
      * Render the html of this.
      *
+     * Dipanggil langsung dari kode app (`echo $app->render();`) tercatat sebagai deprecated:
+     * controller cukup `return $app;`, untuk string HTML (PDF dsb) pakai toHtml().
+     *
      * @throws Exception
      * @throws CApp_Exception
      *
      * @return string
      */
     public function render() {
+        CF::deprecated('CApp::render()', 'return $app; dari controller, atau $app->toHtml() untuk string HTML', '1.9', null, true);
+
+        return $this->toHtml();
+    }
+
+    /**
+     * Render this page to its HTML (JSON on an ajax request), once per request.
+     *
+     * @throws Exception
+     * @throws CApp_Exception
+     *
+     * @return string
+     */
+    public function toHtml() {
         /** @var CApp $this */
         if (!CF::isTesting()) {
             if ($this->rendered) {

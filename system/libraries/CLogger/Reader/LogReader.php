@@ -101,8 +101,6 @@ class CLogger_Reader_LogReader {
      * @return $this
      */
     public function exceptLevels($levels = null): self {
-        $levels = null;
-
         if (is_array($levels)) {
             $levels = array_map('strtolower', array_filter($levels));
             $levels = array_diff(self::getDefaultLevels(), $levels);
@@ -208,22 +206,24 @@ class CLogger_Reader_LogReader {
 
     public function setQuery(?string $query = null): self {
         $this->close();
+        // reader di-cache per path: log-index:N dari pencarian sebelumnya tidak boleh terbawa
+        $this->onlyShowIndex = null;
 
         if (!empty($query) && cstr::startsWith($query, 'log-index:')) {
             $this->query = null;
             $this->only(null);
             $this->onlyShow(intval(explode(':', $query)[1]));
         } elseif (!empty($query)) {
-            $query = '/' . $query . '/i';
-
-            CLogger_Reader_Util_Utils::validateRegex($query);
-
-            $this->query = $query;
+            $this->query = CLogger_Reader_Util_Utils::searchRegex($query);
         } else {
             $this->query = null;
         }
 
         $this->index()->setQuery($this->query);
+        // tiap query punya index sendiri, arah yang sudah diset harus ikut
+        if (isset($this->direction)) {
+            $this->index()->setDirection($this->direction);
+        }
 
         return $this;
     }
@@ -281,7 +281,7 @@ class CLogger_Reader_LogReader {
         $lastPositionToScan = isset($maxBytesToScan) ? ($currentLogPosition + $maxBytesToScan) : null;
 
         while ((!isset($lastPositionToScan) || $currentLogPosition < $lastPositionToScan)
-            && ($line = fgets($this->fileHandle, 1024)) !== false
+            && ($line = fgets($this->fileHandle)) !== false
         ) {
             /**
              * $matches[0] - the full line being checked
@@ -331,8 +331,9 @@ class CLogger_Reader_LogReader {
         if ($currentLog !== '' && preg_match($logMatchPattern, $currentLog) === 1) {
             if ((is_null($this->query) || preg_match($this->query, $currentLog))) {
                 $logIndex->addToIndex($currentLogPosition, $currentTimestamp, $currentLogLevel, $currentIndex);
-                $currentIndex++;
             }
+            // nomor log ikut maju walau tidak cocok query, sama seperti di dalam loop
+            $currentIndex++;
         }
 
         $logIndex->setLastScannedIndex($currentIndex);
@@ -342,8 +343,9 @@ class CLogger_Reader_LogReader {
         $this->file->setMetadata('name', $this->file->name);
         $this->file->setMetadata('path', $this->file->path);
         $this->file->setMetadata('size', $this->file->size());
-        $this->file->setMetadata('earliest_timestamp', $this->index()->getEarliestTimestamp());
-        $this->file->setMetadata('latest_timestamp', $this->index()->getLatestTimestamp());
+        // dari seluruh baris yang dipindai, bukan dari index (yang untuk search hanya berisi log yang cocok)
+        $this->file->setMetadata('earliest_timestamp', $earliest_timestamp);
+        $this->file->setMetadata('latest_timestamp', $latest_timestamp);
         $this->file->setMetadata('last_scanned_file_position', ftell($this->fileHandle));
         $this->file->addRelatedIndex($logIndex);
 
@@ -415,6 +417,9 @@ class CLogger_Reader_LogReader {
      */
     public function getLogAtIndex($index) {
         $position = $this->index()->getPositionForIndex($index);
+        if (is_null($position)) {
+            return null;
+        }
 
         list($level, $text, $position) = $this->getLogText($index, $position);
 
@@ -470,8 +475,6 @@ class CLogger_Reader_LogReader {
     }
 
     /**
-     * @param int          $perPage
-     * @param null|int     $page
      * @param null|Closure $itemCallback
      *
      * @return CPagination_LengthAwarePaginator
@@ -480,9 +483,14 @@ class CLogger_Reader_LogReader {
         $page = $page ?: CPagination_Paginator::resolveCurrentPage('page');
 
         if (!is_null($this->onlyShowIndex)) {
+            $log = $this->reset()->getLogAtIndex($this->onlyShowIndex);
+            if ($log && $itemCallback != null) {
+                $log = $itemCallback($log);
+            }
+
             return new CPagination_LengthAwarePaginator(
-                [$this->reset()->getLogAtIndex($this->onlyShowIndex)],
-                1,
+                $log ? [$log] : [],
+                $log ? 1 : 0,
                 $perPage,
                 $page
             );

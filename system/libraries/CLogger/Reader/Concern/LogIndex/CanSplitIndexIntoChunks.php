@@ -82,6 +82,41 @@ trait CLogger_Reader_Concern_LogIndex_CanSplitIndexIntoChunks {
         $this->saveMetadata();
     }
 
+    /**
+     * Chunk seluruhnya di dalam filter tanggal (atau tidak ada filter tanggal), jadi level_counts-nya
+     * bisa dipakai apa adanya tanpa membuka isi chunk.
+     */
+    protected function chunkIsWithinDateFilter(array $chunkDefinition): bool {
+        if (!$this->hasDateFilters()) {
+            return true;
+        }
+        $earliest = $chunkDefinition['earliest_timestamp'] ?? null;
+        $latest = $chunkDefinition['latest_timestamp'] ?? null;
+        if ($earliest === null || $latest === null) {
+            return false;
+        }
+
+        return (!isset($this->filterFrom) || $earliest >= $this->filterFrom)
+            && (!isset($this->filterTo) || $latest <= $this->filterTo);
+    }
+
+    /**
+     * Chunk seluruhnya di luar filter tanggal - tidak ada log yang relevan di dalamnya.
+     */
+    protected function chunkIsOutsideDateFilter(array $chunkDefinition): bool {
+        if (!$this->hasDateFilters()) {
+            return false;
+        }
+        $earliest = $chunkDefinition['earliest_timestamp'] ?? null;
+        $latest = $chunkDefinition['latest_timestamp'] ?? null;
+        if ($earliest === null || $latest === null) {
+            return false;
+        }
+
+        return (isset($this->filterTo) && $earliest > $this->filterTo)
+            || (isset($this->filterFrom) && $latest < $this->filterFrom);
+    }
+
     protected function getRelevantItemsInChunk(array $chunkDefinition): int {
         $relevantItemsInChunk = 0;
 

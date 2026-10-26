@@ -5,6 +5,8 @@ use PHPUnit\Framework\TestCase;
 use Monolog\Handler\TestHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\RotatingFileHandler;
+use Monolog\Handler\FingersCrossedHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
 
 /**
  * CLogger_Manager - padanan suite hulu untuk LogManager, dibatasi pada channel yang dibangun
@@ -39,7 +41,6 @@ class LogManagerTest extends TestCase {
 
     /**
      * @param string $name
-     * @param array  $config
      */
     private function defineChannel($name, array $config) {
         CConfig::repository()->set('log.channels.' . $name, $config);
@@ -196,5 +197,125 @@ class LogManagerTest extends TestCase {
         $logger = CLogger_Manager::instance()->channel('cf-test-single');
         $this->assertInstanceOf(CLogger_Logger::class, $logger);
         $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
+    }
+
+    public function testActionLevelWrapsTheHandlerInFingersCrossed() {
+        $this->defineChannel('cf-test-single', [
+            'driver' => 'single',
+            'path' => $this->tempDir . '/fingers.log',
+            'action_level' => 'error',
+        ]);
+
+        $logger = CLogger_Manager::instance()->channel('cf-test-single');
+        $this->assertArrayHasKey('cf-test-single', CLogger_Manager::instance()->getChannels(), 'bukan emergency logger');
+        $this->assertInstanceOf(FingersCrossedHandler::class, $logger->getHandlers()[0]);
+
+        //info ditahan sampai ada log selevel action_level
+        $logger->info('info tertahan');
+        $this->assertFileDoesNotExist($this->tempDir . '/fingers.log');
+
+        $logger->error('pemicu');
+        $content = file_get_contents($this->tempDir . '/fingers.log');
+        $this->assertStringContainsString('info tertahan', $content);
+        $this->assertStringContainsString('pemicu', $content);
+    }
+
+    public function testInvalidActionLevelFallsBackToTheEmergencyLogger() {
+        $this->defineChannel('cf-test-single', [
+            'driver' => 'single',
+            'path' => $this->tempDir . '/fingers.log',
+            'action_level' => 'tidak-ada',
+        ]);
+
+        CLogger_Manager::instance()->channel('cf-test-single');
+        $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
+    }
+
+    public function testNoticeCanBeCalledStatically() {
+        $this->defineChannel('cf-test-single', ['driver' => 'single', 'path' => $this->tempDir . '/notice.log']);
+        $originalDefault = CConfig::repository()->get('log.default');
+        CConfig::repository()->set('log.default', 'cf-test-single');
+
+        try {
+            CLogger::notice('pemberitahuan');
+        } finally {
+            CConfig::repository()->set('log.default', $originalDefault);
+        }
+
+        $this->assertStringContainsString('NOTICE: pemberitahuan', file_get_contents($this->tempDir . '/notice.log'));
+    }
+
+    public function testUnknownIntegerLevelIsRejected() {
+        $this->expectException(InvalidArgumentException::class);
+        CLogger::log(99, 'level aneh');
+    }
+
+    public function testSyslogIdentFallsBackToTheAppCode() {
+        $logger = CLogger_Manager::instance()->build(['driver' => 'syslog']);
+        $ident = new ReflectionProperty(get_class($logger->getHandlers()[0]), 'ident');
+        $ident->setAccessible(true);
+
+        $this->assertNotSame('', $ident->getValue($logger->getHandlers()[0]));
+        $this->assertSame(cstr::snake(CF::config('app.name') ?: CF::appCode(), '-'), $ident->getValue($logger->getHandlers()[0]));
+    }
+
+    public function testChannelWithoutADriverFallsBackToTheEmergencyLoggerWithoutAWarning() {
+        $this->defineChannel('cf-test-single', ['path' => $this->tempDir . '/x.log']);
+
+        $warnings = [];
+        set_error_handler(function ($errno, $errstr) use (&$warnings) {
+            $warnings[] = $errstr;
+
+            return true;
+        });
+
+        try {
+            $logger = CLogger_Manager::instance()->channel('cf-test-single');
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $warnings);
+        $this->assertInstanceOf(CLogger_Logger::class, $logger);
+        $this->assertArrayNotHasKey('cf-test-single', CLogger_Manager::instance()->getChannels());
+    }
+
+    public function testReplacePlaceholders() {
+        $manager = CLogger_Manager::instance();
+        $manager->build(['driver' => 'single', 'path' => $this->tempDir . '/ph.log', 'replace_placeholders' => true])
+            ->info('halo {name}', ['name' => 'budi']);
+        $manager->build(['driver' => 'daily', 'path' => $this->tempDir . '/ph-daily.log', 'replace_placeholders' => true])
+            ->info('halo {name}', ['name' => 'ani']);
+        $manager->build(['driver' => 'single', 'path' => $this->tempDir . '/raw.log'])
+            ->info('halo {name}', ['name' => 'budi']);
+        $manager->forgetChannel('ondemand');
+
+        $this->assertStringContainsString('halo budi', file_get_contents($this->tempDir . '/ph.log'));
+        $this->assertStringContainsString('halo ani', file_get_contents($this->tempDir . '/ph-daily-' . date('Y-m-d') . '.log'));
+        $this->assertStringContainsString('halo {name}', file_get_contents($this->tempDir . '/raw.log'));
+    }
+
+    public function testMonologDriverAcceptsProcessors() {
+        $logger = CLogger_Manager::instance()->build([
+            'driver' => 'monolog',
+            'handler' => TestHandler::class,
+            'processors' => [
+                PsrLogMessageProcessor::class,
+                ['processor' => PsrLogMessageProcessor::class, 'with' => ['removeUsedContextFields' => true]],
+            ],
+        ]);
+        CLogger_Manager::instance()->forgetChannel('ondemand');
+
+        $processors = $logger->getLogger()->getProcessors();
+        $this->assertCount(2, $processors);
+        $this->assertContainsOnlyInstancesOf(PsrLogMessageProcessor::class, $processors);
+    }
+
+    public function testErrorlogDriverHonoursTheChannelConfig() {
+        $logger = CLogger_Manager::instance()->build(['driver' => 'errorlog', 'action_level' => 'error', 'replace_placeholders' => true]);
+        CLogger_Manager::instance()->forgetChannel('ondemand');
+
+        $this->assertInstanceOf(FingersCrossedHandler::class, $logger->getHandlers()[0]);
+        $this->assertCount(1, $logger->getLogger()->getProcessors());
     }
 }

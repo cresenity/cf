@@ -28,8 +28,6 @@ trait CLogger_Concern_ParseLogConfigurationTrait {
     /**
      * Parse the string level into a Monolog constant.
      *
-     * @param array $config
-     *
      * @throws \InvalidArgumentException
      *
      * @return int
@@ -45,9 +43,24 @@ trait CLogger_Concern_ParseLogConfigurationTrait {
     }
 
     /**
-     * Extract the log channel from the given configuration.
+     * Parse the action level from the given configuration.
      *
-     * @param array $config
+     * @throws \InvalidArgumentException
+     *
+     * @return int
+     */
+    protected function actionLevel(array $config) {
+        $level = isset($config['action_level']) ? $config['action_level'] : 'debug';
+
+        if (isset($this->levels[$level])) {
+            return $this->levels[$level];
+        }
+
+        throw new InvalidArgumentException('Invalid log action level.');
+    }
+
+    /**
+     * Extract the log channel from the given configuration.
      *
      * @return string
      */

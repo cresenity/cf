@@ -136,9 +136,14 @@ class HttpOptInMiddlewareTest extends TestCase {
         $this->assertSame('d', $request->request->get('nama'));
 
         CHTTP_Middleware_TrimStrings::flushState();
-        $again = CHTTP_Request::create('/x', 'POST', ['password' => ' a ']);
+        // #-21062: 'password' kini ada di $except BAWAAN (properti instance), bukan cuma
+        // daftar global static::$neverTrim - flushState() hanya mengosongkan yang global,
+        // jadi field lain yang DITAMBAHKAN via except() di atas ('token') harus balik
+        // dipangkas, sedangkan 'password' tetap tidak dipangkas apa pun yang terjadi.
+        $again = CHTTP_Request::create('/x', 'POST', ['token' => ' a ', 'password' => ' a ']);
         $this->pass(new CHTTP_Middleware_TrimStrings(), $again);
-        $this->assertSame('a', $again->request->get('password'), 'flushState() mengosongkan daftar global');
+        $this->assertSame('a', $again->request->get('token'), 'flushState() mengosongkan daftar global');
+        $this->assertSame(' a ', $again->request->get('password'), 'password tetap dikecualikan lewat $except bawaan');
     }
 
     public function testFlushStateClearsSkipCallbacks() {

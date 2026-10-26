@@ -81,4 +81,24 @@ class CollectorReportableTypeTest extends TestCase {
             'callback collector tidak lagi bertipe Throwable - Error tidak akan pernah terkumpul'
         );
     }
+
+    /**
+     * `Psy\Exception\ParseErrorException` cuma terjadi saat kode yang diketik di
+     * REPL `phpcf tinker` gagal di-parse - kodenya belum sempat jalan sama sekali,
+     * jadi tidak pernah merepresentasikan bug produksi (lihat #AD-21649/#TB-21637/
+     * #MC-21585, satu root cause lintas app).
+     *
+     * @return void
+     */
+    public function testBootstrapSkipsPsyParseErrorExceptionFromCollector() {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/system/bootstrap.php');
+
+        $position = strpos($source, 'collectException');
+        $snippet = substr($source, max(0, $position - 200), 260);
+
+        $this->assertTrue(
+            strpos($snippet, 'Psy\Exception\ParseErrorException') !== false,
+            'guard ParseErrorException hilang - typo di tinker akan ter-collect lagi sebagai bug produksi'
+        );
+    }
 }

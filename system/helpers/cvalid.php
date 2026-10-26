@@ -16,6 +16,7 @@ class cvalid {
      */
     public static function email($email) {
         CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
+
         return (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
 
         //return (bool) preg_match('/^[-_a-z0-9\'+*$^&%=~!?{}]++(?:\.[-_a-z0-9\'+*$^&%=~!?{}]+)*+@(?:(?![-.])[-a-z0-9.]+(?<![-.])\.[a-z]{2,6}|\d{1,3}(?:\.\d{1,3}){3})(?::\d++)?$/iD', (string) $email);
@@ -71,19 +72,6 @@ class cvalid {
         $addr_spec = "$local_part\\x40$domain";
 
         return (bool) preg_match('/^' . $addr_spec . '$/D', (string) $email);
-    }
-
-    /**
-     * Validate URL.
-     *
-     * @param   string   URL
-     * @param mixed $url
-     *
-     * @return bool
-     */
-    public static function url($url) {
-        CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
-        return (bool) filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED);
     }
 
     /**
@@ -225,6 +213,7 @@ class cvalid {
      */
     public static function date($str) {
         CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
+
         return strtotime($str) !== false;
     }
 
@@ -240,6 +229,7 @@ class cvalid {
      */
     public static function alpha($str, $utf8 = false) {
         CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
+
         return ($utf8 === true)
             ? (bool) preg_match('/^\pL++$/uD', (string) $str)
             : ctype_alpha((string) $str);
@@ -257,6 +247,7 @@ class cvalid {
      */
     public static function alpha_numeric($str, $utf8 = false) {
         CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
+
         return ($utf8 === true)
             ? (bool) preg_match('/^[\pL\pN]++$/uD', (string) $str)
             : ctype_alnum((string) $str);
@@ -274,6 +265,7 @@ class cvalid {
      */
     public static function alpha_dash($str, $utf8 = false) {
         CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
+
         return ($utf8 === true)
             ? (bool) preg_match('/^[-\pL\pN_]++$/uD', (string) $str)
             : (bool) preg_match('/^[-a-z0-9_]++$/iD', (string) $str);
@@ -291,6 +283,7 @@ class cvalid {
      */
     public static function digit($str, $utf8 = false) {
         CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
+
         return ($utf8 === true)
             ? (bool) preg_match('/^\pN++$/uD', (string) $str)
             : ctype_digit((string) $str);
@@ -326,6 +319,7 @@ class cvalid {
      */
     public static function standard_text($str) {
         CF::deprecated(__METHOD__, 'CValidation', '1.6', null, true);
+
         // pL matches letters
         // pN matches numbers
         // pZ matches whitespace

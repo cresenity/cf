@@ -100,7 +100,7 @@ class LazyDouble
      *
      * @param array $arguments
      */
-    public function setArguments(array $arguments = null)
+    public function setArguments(?array $arguments = null)
     {
         $this->arguments = $arguments;
     }

@@ -13,11 +13,17 @@ class CHTTP_Response extends SymfonyResponse {
     }
 
     /**
+     * The JSON-able content could not be encoded (body is {"error": ...}, status 500).
+     *
+     * @var bool
+     */
+    protected $contentEncodingFailed = false;
+
+    /**
      * Create a new HTTP reponse.
      *
      * @param mixed $content
      * @param int   $status
-     * @param array $headers
      *
      * @throws \InvalidArgumentException
      *
@@ -27,7 +33,7 @@ class CHTTP_Response extends SymfonyResponse {
         $this->headers = new ResponseHeaderBag($headers);
 
         $this->setContent($content);
-        $this->setStatusCode($status);
+        $this->setStatusCode($this->contentEncodingFailed ? 500 : $status);
         $this->setProtocolVersion('1.0');
     }
 
@@ -40,6 +46,7 @@ class CHTTP_Response extends SymfonyResponse {
      */
     public function setContent($content) {
         $this->original = $content;
+        $this->contentEncodingFailed = false;
 
         // If the content is "JSONable" we will set the appropriate header and convert
         // the content to JSON. This is useful when returning something like models
@@ -56,6 +63,10 @@ class CHTTP_Response extends SymfonyResponse {
         }
 
         parent::setContent($content);
+
+        if ($this->contentEncodingFailed) {
+            $this->setStatusCode(500);
+        }
 
         return $this;
     }
@@ -97,6 +108,8 @@ class CHTTP_Response extends SymfonyResponse {
         if ($json === false) {
             $message = 'Failed to encode response content: ' . json_last_error_msg();
             CLogger::error('CHTTP_Response: ' . $message);
+            //bukan 200: ajax error handler harus terpanggil (#-21064)
+            $this->contentEncodingFailed = true;
 
             return json_encode(['error' => $message]);
         }

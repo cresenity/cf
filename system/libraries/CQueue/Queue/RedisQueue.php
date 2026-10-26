@@ -287,7 +287,11 @@ class CQueue_Queue_RedisQueue extends CQueue_AbstractQueue implements CQueue_Con
             return [null, null];
         }
 
-        list($job, $reserved) = $nextJob;
+        //$nextJob datang dari EVAL Lua (CQueue_LuaScripts::pop()) - jangan destructure
+        //langsung dengan list(), reply Redis untuk tabel Lua kadang pendek dari 2 elemen
+        //yang diharapkan.
+        $job = carr::get($nextJob, 0);
+        $reserved = carr::get($nextJob, 1);
 
         if (!$job && !is_null($this->blockFor) && $block
             && $this->getConnection()->blpop([$queue . ':notify'], $this->blockFor)

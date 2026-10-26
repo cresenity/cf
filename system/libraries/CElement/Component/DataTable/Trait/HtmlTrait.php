@@ -254,7 +254,9 @@ trait CElement_Component_DataTable_Trait_HtmlTrait {
                     $html->decIndent()->appendln('</tr>')->br();
                 }
             }
-            if ($no === 0) {
+            // hanya tanpa DataTables: DataTables membaca baris colspan ini sebagai data
+            // (1 sel vs N kolom -> crash _DT_CellIndex) dan sudah punya pesan kosong sendiri
+            if ($no === 0 && !$this->applyDataTable) {
                 $emptyColspan = count($this->columns);
                 if ($this->haveRowAction()) {
                     $emptyColspan++;

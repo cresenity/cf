@@ -39,7 +39,7 @@ class MethodNode
      * @param string $name
      * @param string $code
      */
-    public function __construct($name, $code = null, TypeHintReference $typeHintReference = null)
+    public function __construct($name, $code = null, ?TypeHintReference $typeHintReference = null)
     {
         $this->name = $name;
         $this->code = $code;

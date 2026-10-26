@@ -17,11 +17,45 @@ class CDatabase_ResultData implements ArrayAccess, Iterator, Countable {
         PDO::FETCH_ASSOC => [],
     ];
 
-    public function __construct(PDOStatement $data) {
+    /**
+     * Baris SELECT yang di-fetch di depan (array asosiatif) untuk driver selain MySQL.
+     *
+     * @var null|array
+     */
+    protected $buffered = null;
+
+    /**
+     * @param bool $bufferRows fetch SELECT rows up front: rowCount() of a SELECT is only
+     *                         reliable on MySQL (SQLite gives the last INSERT/UPDATE count)
+     */
+    public function __construct(PDOStatement $data, $bufferRows = false) {
         $this->data = $data;
 
         $this->currentRow = 0;
-        $this->totalRows = $data->rowCount();
+        if ($bufferRows && $data->columnCount() > 0) {
+            $this->buffered = $data->fetchAll(PDO::FETCH_ASSOC);
+            $this->totalRows = count($this->buffered);
+        } else {
+            $this->totalRows = $data->rowCount();
+        }
+    }
+
+    /**
+     * @param int $offset
+     * @param int $fetch
+     *
+     * @return mixed
+     */
+    protected function bufferedRow($offset, $fetch) {
+        $row = $this->buffered[$offset];
+        if ($fetch == PDO::FETCH_ASSOC) {
+            return $row;
+        }
+        if ($fetch == PDO::FETCH_NUM) {
+            return array_values($row);
+        }
+
+        return (object) $row;
     }
 
     public function resultArray($object = null, $type = 'stdClass') {
@@ -44,6 +78,15 @@ class CDatabase_ResultData implements ArrayAccess, Iterator, Countable {
             if ($fetch == PDO::FETCH_CLASS) {
                 $type = (is_string($type) and CF::autoLoad($type)) ? $type : 'stdClass';
             }
+        }
+
+        if ($this->totalRows && $this->buffered !== null) {
+            $all = [];
+            foreach (array_keys($this->buffered) as $offset) {
+                $all[] = $this->bufferedRow($offset, $fetch);
+            }
+
+            return $all;
         }
 
         if ($this->totalRows) {
@@ -98,6 +141,9 @@ class CDatabase_ResultData implements ArrayAccess, Iterator, Countable {
         }
         if (isset($this->rows[$this->fetchType][$offset])) {
             return $this->rows[$this->fetchType][$offset];
+        }
+        if ($this->buffered !== null) {
+            return $this->rows[$this->fetchType][$offset] = $this->bufferedRow($offset, $this->fetchType);
         }
         // Return the row by calling the defined fetching callback
         $this->rows[$this->fetchType][$offset] = $this->data->fetch($this->fetchType, PDO::FETCH_ORI_ABS, $offset);

@@ -625,7 +625,7 @@ class Expectation implements ExpectationInterface
      * @param \Exception $previous
      * @return self
      */
-    public function andThrow($exception, $message = '', $code = 0, \Exception $previous = null)
+    public function andThrow($exception, $message = '', $code = 0, ?\Exception $previous = null)
     {
         $this->_throw = true;
         if (is_object($exception)) {
@@ -636,7 +636,7 @@ class Expectation implements ExpectationInterface
         return $this;
     }
 
-    public function andThrows($exception, $message = '', $code = 0, \Exception $previous = null)
+    public function andThrows($exception, $message = '', $code = 0, ?\Exception $previous = null)
     {
         return $this->andThrow($exception, $message, $code, $previous);
     }

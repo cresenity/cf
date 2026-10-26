@@ -402,8 +402,18 @@ class Response {
 
         // cookies
 
+        // PHP 7.3+ options-array form - the old positional setcookie() call this replaced had
+        // no way to pass SameSite at all, so it was silently dropped even when the Cookie
+        // object (and every config reading it) correctly carried one.
         foreach ($this->headers->getCookies() as $cookie) {
-            setcookie($cookie->getName(), $cookie->getValue(), $cookie->getExpiresTime(), $cookie->getPath(), $cookie->getDomain(), $cookie->isSecure(), $cookie->isHttpOnly());
+            setcookie($cookie->getName(), $cookie->getValue(), [
+                'expires' => $cookie->getExpiresTime(),
+                'path' => $cookie->getPath(),
+                'domain' => $cookie->getDomain(),
+                'secure' => $cookie->isSecure(),
+                'httponly' => $cookie->isHttpOnly(),
+                'samesite' => $cookie->getSameSite() ?? '',
+            ]);
         }
 
         return $this;

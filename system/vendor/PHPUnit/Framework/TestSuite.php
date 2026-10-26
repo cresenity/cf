@@ -586,7 +586,7 @@ class TestSuite implements IteratorAggregate, Reorderable, SelfDescribing, Test 
      * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
      * @throws Warning
      */
-    public function run(TestResult $result = null) {
+    public function run(?TestResult $result = null) {
         if ($result === null) {
             $result = $this->createResult();
         }

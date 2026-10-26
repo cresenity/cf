@@ -229,6 +229,10 @@ class Controller_Cresenity extends CController {
         if ($method == null) {
             return c::abort(404);
         }
+        // tanpa login connector ini membuka list/upload/hapus berkas (insiden saberpos 25 Okt 2026)
+        if (c::app()->user() == null) {
+            return c::abort(403);
+        }
         $engineName = 'FileManager';
         switch ($engine) {
             case 'elfinder':
@@ -266,6 +270,9 @@ class Controller_Cresenity extends CController {
     }
 
     public function upload($method = 'temp') {
+        if (c::app()->user() == null) {
+            return c::abort(403);
+        }
         $filesInput = $_FILES;
         $fileId = '';
         $fileIdPreview = '';
@@ -314,10 +321,10 @@ class Controller_Cresenity extends CController {
                         $errFileMessage = 'Unknown errors.';
                 }
 
-                $extension = '.' . pathinfo($filename, PATHINFO_EXTENSION);
-                if (strtolower($extension) == 'php') {
-                    die('fatal error');
+                if (CFile::isDangerousFilename($filename)) {
+                    return c::abort(422, 'File type not allowed');
                 }
+                $extension = '.' . pathinfo($filename, PATHINFO_EXTENSION);
                 $fileId = date('Ymd') . cutils::randmd5() . $extension;
                 $fullfilename = CTemporary::makePath('upload', $fileId);
                 $fullfilenameinf = CTemporary::makePath('upload', $fileId);
