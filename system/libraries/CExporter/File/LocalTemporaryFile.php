@@ -16,6 +16,14 @@ class CExporter_File_LocalTemporaryFile extends CExporter_File_TemporaryFile {
         $this->filePath = ($directory !== false ? $directory : dirname($filePath)) . DIRECTORY_SEPARATOR . basename($filePath);
     }
 
+    public function __wakeup() {
+        //job export bisa dijalankan daemon di server lain yang belum punya folder tanggal ini
+        $directory = dirname($this->filePath);
+        if (!CFile::isDirectory($directory)) {
+            CFile::makeDirectory($directory, 0755, true, true);
+        }
+    }
+
     /**
      * @return string
      */
