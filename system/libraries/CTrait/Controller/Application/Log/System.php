@@ -52,14 +52,34 @@ trait CTrait_Controller_Application_Log_System {
         return array_values(array_diff(scandir($path), ['..', '.']));
     }
 
+    /**
+     * @param string      $year
+     * @param string      $month
+     * @param null|string $file
+     *
+     * @return null|string
+     */
+    private function resolveLogPath($year, $month, $file = null) {
+        $path = $this->getPath() . DS . $year . DS . $month;
+        if ($file !== null) {
+            $path .= DS . $file;
+        }
+        $real = realpath($path);
+        $root = realpath($this->getPath());
+        if ($real === false || $root === false || strpos($real, $root . DIRECTORY_SEPARATOR) !== 0) {
+            return null;
+        }
+
+        return $real;
+    }
+
     public function tabDaily($year, $month) {
         $app = c::app();
 
-        $path = $this->getPath();
-
-        $path .= DS . $year;
-
-        $path .= DS . $month;
+        $path = $this->resolveLogPath($year, $month);
+        if ($path === null) {
+            return c::abort(404);
+        }
         $logFiles = [];
 
         try {
@@ -91,12 +111,10 @@ trait CTrait_Controller_Application_Log_System {
     public function systemTable($year, $month) {
         $file = c::request()->file;
         $app = c::app();
-        $path = $this->getPath();
-
-        $path .= DS . $year;
-
-        $path .= DS . $month;
-        $path .= DS . $file;
+        $path = $this->resolveLogPath($year, $month, (string) $file);
+        if ($path === null || !is_file($path)) {
+            return c::abort(404);
+        }
         $table = $app->addTable();
         $table->addHeaderAction()->setLabel('Download')
             ->addClass('btn-primary')
@@ -139,13 +157,10 @@ trait CTrait_Controller_Application_Log_System {
     }
 
     public function systemTableDownload($year, $month, $file) {
-        $app = c::app();
-        $path = $this->getPath();
-
-        $path .= DS . $year;
-
-        $path .= DS . $month;
-        $path .= DS . $file;
+        $path = $this->resolveLogPath($year, $month, $file);
+        if ($path === null || !is_file($path)) {
+            return c::abort(404);
+        }
         $logFile = CLogger::reader()->createLogFile($path);
 
         return $logFile->download();
