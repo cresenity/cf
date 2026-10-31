@@ -374,36 +374,50 @@ class CApp_Formatter {
     }
 
     /**
-     * @param string $number
+     * @param string      $number
+     * @param string|null $decimalSeparator
+     * @param string|null $thousandSeparator
      *
      * @return float|int
      */
-    public function unformatCurrency($number) {
+    public function unformatCurrency($number, $decimalSeparator = null, $thousandSeparator = null) {
+        $decimalSeparator = $decimalSeparator ?: $this->decimalSeparator;
+        $thousandSeparator = $thousandSeparator ?: $this->thousandSeparator;
         $number = preg_replace('/^[^\d]+/', '', $number);
 
-        $type = (strpos($number, $this->decimalSeparator) === false) ? 'int' : 'float';
-        $number = str_replace([$this->decimalSeparator, $this->thousandSeparator], ['.', ''], $number);
+        $type = (strpos($number, $decimalSeparator) === false) ? 'int' : 'float';
+        // strtr mengganti serentak; str_replace berurutan ikut menghapus titik desimal hasil konversi
+        // bila pemisah ribuannya titik
+        $pairs = [$decimalSeparator => '.'];
+        if (strlen($thousandSeparator) > 0) {
+            $pairs[$thousandSeparator] = '';
+        }
+        $number = strtr($number, $pairs);
         settype($number, $type);
 
         return $number;
     }
 
     /**
-     * @param string $number
+     * @param string      $number
+     * @param string|null $decimalSeparator
+     * @param string|null $thousandSeparator
      *
      * @return float|int
      */
-    public function unformatNumber($number) {
-        return $this->unformatCurrency($number);
+    public function unformatNumber($number, $decimalSeparator = null, $thousandSeparator = null) {
+        return $this->unformatCurrency($number, $decimalSeparator, $thousandSeparator);
     }
 
     /**
-     * @param string $number
+     * @param string      $number
+     * @param string|null $decimalSeparator
+     * @param string|null $thousandSeparator
      *
      * @return float|int
      */
-    public function unformatDecimal($number) {
-        return $this->unformatCurrency($number);
+    public function unformatDecimal($number, $decimalSeparator = null, $thousandSeparator = null) {
+        return $this->unformatCurrency($number, $decimalSeparator, $thousandSeparator);
     }
 
     /**
