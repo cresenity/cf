@@ -223,7 +223,7 @@ trait CTrait_Controller_Application_Manager_Daemon {
     }
 
     public function logIndex($serviceClass = null) {
-        if (strlen($serviceClass) == 0) {
+        if (strlen($serviceClass) == 0 || !$this->isRegisteredDaemonService($serviceClass)) {
             return c::redirect($this->controllerUrl());
         }
         $app = CApp::instance();
@@ -256,8 +256,11 @@ trait CTrait_Controller_Application_Manager_Daemon {
 
     public function logFile($serviceClass = null, $filename = null) {
         $app = CApp::instance();
+        if (!$this->isRegisteredDaemonService($serviceClass)) {
+            return $app;
+        }
         $filename = $filename ?: c::request()->f;
-        $logFile = CManager::daemon()->getLogFile($serviceClass, $filename);
+        $logFile = CManager::daemon()->getLogFile($serviceClass, strlen($filename) > 0 ? basename($filename) : null);
         $divLog = $app->addDiv()->addClass('console');
         $log = '';
         if (file_exists($logFile)) {
@@ -324,6 +327,15 @@ trait CTrait_Controller_Application_Manager_Daemon {
         }
 
         return c::redirect($this->controllerUrl() . 'log/index/' . $serviceClass . static::groupQueryString());
+    }
+
+    /**
+     * @param null|string $serviceClass
+     *
+     * @return bool
+     */
+    protected function isRegisteredDaemonService($serviceClass) {
+        return array_key_exists((string) $serviceClass, CManager::daemon()->daemons());
     }
 
     /**
