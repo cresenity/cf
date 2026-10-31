@@ -30,30 +30,40 @@ trait CBase_Trait_UtilsTrait {
         return c::formatter()->formatDecimal($value);
     }
 
-    public static function unformatCurrency($number, $force_number = true, $dec_point = '.', $thousands_sep = ',') {
-        if ($force_number) {
-            $number = preg_replace('/^[^\d]+/', '', $number);
-        } elseif (preg_match('/^[^\d]+/', $number)) {
+    /**
+     * Pemisah yang tidak diisi mengikuti c::formatter() (app.format.*).
+     *
+     * @param string      $number
+     * @param bool        $force_number
+     * @param string|null $dec_point
+     * @param string|null $thousands_sep
+     *
+     * @return float|int|false
+     */
+    public static function unformatCurrency($number, $force_number = true, $dec_point = null, $thousands_sep = null) {
+        if (!$force_number && preg_match('/^[^\d]+/', $number)) {
             return false;
         }
-        $type = (strpos($number, $dec_point) === false) ? 'int' : 'float';
-        $number = str_replace([$dec_point, $thousands_sep], ['.', ''], $number);
-        settype($number, $type);
 
-        return $number;
+        return c::formatter()->unformatCurrency($number, $dec_point, $thousands_sep);
     }
 
-    public static function unformatNumber($number, $force_number = true, $dec_point = '.', $thousands_sep = ',') {
-        if ($force_number) {
-            $number = preg_replace('/^[^\d]+/', '', $number);
-        } elseif (preg_match('/^[^\d]+/', $number)) {
+    /**
+     * Pemisah yang tidak diisi mengikuti c::formatter() (app.format.*).
+     *
+     * @param string      $number
+     * @param bool        $force_number
+     * @param string|null $dec_point
+     * @param string|null $thousands_sep
+     *
+     * @return float|int|false
+     */
+    public static function unformatNumber($number, $force_number = true, $dec_point = null, $thousands_sep = null) {
+        if (!$force_number && preg_match('/^[^\d]+/', $number)) {
             return false;
         }
-        $type = (strpos($number, $dec_point) === false) ? 'int' : 'float';
-        $number = str_replace([$dec_point, $thousands_sep], ['.', ''], $number);
-        settype($number, $type);
 
-        return $number;
+        return c::formatter()->unformatNumber($number, $dec_point, $thousands_sep);
     }
 
     public static function formatDate($date) {
