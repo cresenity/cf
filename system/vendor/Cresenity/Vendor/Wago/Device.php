@@ -125,7 +125,7 @@ class Device {
         if (is_string($response)) {
             $response = json_decode($response, true);
         }
-        $errCode = (int) ($response['errCOde'] ?? null);
+        $errCode = (int) ($response['errCode'] ?? 0);
         if ($errCode != 0) {
             $errMessage = $response['errMessage'] ?? null;
 
