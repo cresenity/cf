@@ -93,6 +93,40 @@ class AuthenticateSessionMiddlewareTest extends TestCase {
         $this->assertTrue($this->guard->check());
     }
 
+    /**
+     * Sesi baru yang login lewat cookie remember: guard dengan request pembawa cookie `id|token|hash`.
+     *
+     * @param string $cookieHash
+     *
+     * @return CHTTP_Request
+     */
+    private function rememberedRequest($cookieHash) {
+        $this->user->remember_token = 'token-ingat';
+        $request = CHTTP_Request::create('/dashboard', 'GET', [], [$this->guard->getRecallerName() => '1|token-ingat|' . $cookieHash]);
+        $this->guard = new CAuth_Guard_SessionGuard('default', $this->provider, $this->session, $request);
+        $this->guard->setDispatcher(new CEvent_Dispatcher());
+        $this->guard->setCookieJar(new CHTTP_Cookie());
+
+        return $request;
+    }
+
+    public function testRememberedLoginWithMatchingCookieHashStaysLoggedIn() {
+        $request = $this->rememberedRequest('hash-lama');
+        list($called) = $this->handle($request);
+        $this->assertTrue($called, 'sesi baru dari cookie remember tidak dikeluarkan');
+        $this->assertTrue($this->guard->viaRemember());
+        $this->assertTrue($this->guard->check());
+        $this->assertSame('hash-lama', $this->session->get('password_hash_default'));
+    }
+
+    public function testRememberedLoginWithStaleCookieHashLogsOut() {
+        $request = $this->rememberedRequest('hash-lama');
+        $this->user->password = 'hash-baru'; // password diganti setelah cookie dibuat
+        list($called) = $this->handle($request);
+        $this->assertFalse($called);
+        $this->assertFalse($this->guard->check());
+    }
+
     public function testEveryHandlerValidatesAndTouchesIds() {
         $handler = new CSession_Handler_ArraySessionHandler(10);
         $this->assertInstanceOf(SessionUpdateTimestampHandlerInterface::class, $handler);

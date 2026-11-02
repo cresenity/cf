@@ -481,7 +481,14 @@ class CAuth_Guard_SessionGuard implements CAuth_Contract_StatefulGuardInterface,
             $this->ensureRememberTokenIsSet($user);
 
             //$this->queueRecallerCookie($user);
-            setcookie($this->getRecallerName(), $user->getAuthIdentifier() . '|' . $user->getRememberToken() . '|' . $user->getAuthPassword(), time() + 60 * 60 * 24 * 365 * 100, '/');
+            $secure = CF::config('session.secure');
+            setcookie($this->getRecallerName(), $user->getAuthIdentifier() . '|' . $user->getRememberToken() . '|' . $user->getAuthPassword(), [
+                'expires' => time() + 60 * 60 * 24 * 365 * 100,
+                'path' => '/',
+                'secure' => is_bool($secure) ? $secure : ($this->request !== null && $this->request->isSecure()),
+                'httponly' => true,
+                'samesite' => CF::config('session.same_site') ?: 'Lax',
+            ]);
         }
 
         // If we have an event dispatcher instance set we will fire an event so that

@@ -47,7 +47,7 @@ class CAuth_Middleware_AuthenticateSession {
         }
         $key = $this->passwordHashKey();
 
-        if ($this->guard()->viaRemember() && !$this->hashMatches($session->get($key))) {
+        if ($this->guard()->viaRemember() && !$this->hashMatches($this->recallerPasswordHash($request))) {
             return $this->logout($request);
         }
         if (!$session->has($key)) {
@@ -70,7 +70,24 @@ class CAuth_Middleware_AuthenticateSession {
      * @return bool
      */
     protected function hashMatches($stored) {
-        return $stored === null ? false : $stored === (string) $this->guard()->user()->getAuthPassword();
+        return $stored === null ? false : hash_equals((string) $this->guard()->user()->getAuthPassword(), (string) $stored);
+    }
+
+    /**
+     * Hash password yang terbawa cookie remember (`id|token|hash`).
+     *
+     * @param CHTTP_Request $request
+     *
+     * @return null|string
+     */
+    protected function recallerPasswordHash($request) {
+        $guard = $this->guard();
+        if (!method_exists($guard, 'getRecallerName')) {
+            return null;
+        }
+        $parts = explode('|', (string) $request->cookies->get($guard->getRecallerName()), 3);
+
+        return isset($parts[2]) ? $parts[2] : null;
     }
 
     /**
