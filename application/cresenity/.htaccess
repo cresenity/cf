@@ -1,0 +1,38 @@
+# Berkas cresenity yang tidak boleh diunduh langsung lewat HTTP.
+#
+# **Jalurnya relatif terhadap folder ini** (application/cresenity/), bukan
+# terhadap docroot. LiteSpeed dan Apache sudah memotong awalan
+# `application/cresenity/` sebelum mencocokkan aturan di .htaccess bersarang ini.
+#
+# Harus `RewriteRule ... [R=404,L]`, bukan `Deny from all` maupun
+# `Require all denied` — kedua direktif akses itu tidak berpengaruh sama sekali
+# di LiteSpeed untuk berkas statis.
+#
+# **Yang perlu disebut ulang di sini hanya aturan docroot/vhost yang berjangkar
+# ke awalan `application/<app>/`.** Aturan yang mencocokkan nama atau ekstensi
+# berkas saja tetap berlaku di dalam folder ini dan tidak perlu diulang.
+# Diverifikasi di produksi 6 Nov 2026 pada app bersaudara yang sudah punya
+# .htaccess sendiri: `env.php`, `phpunit.xml`, `CLAUDE.md`, `.htaccess.bak-*`,
+# dan `service-account-credentials.json` tetap 404, sementara
+# `default/data/docs/` dan `tools/` terunduh bebas sampai disebut ulang.
+#
+# LiteSpeed berhenti memproses setelah sekitar 30 RewriteRule tanpa galat apa
+# pun, jadi gabungkan dengan alternasi daripada menambah satu aturan per berkas.
+RewriteEngine On
+
+# Dokumentasi, catatan kerja, dan perkakas pembangun. Halaman dokumentasi
+# dilayani lewat rute `/docs/...`, jadi berkas sumbernya tidak perlu terunduh.
+RewriteRule ^(docs|tools|default/data/docs)/ - [R=404,L]
+RewriteRule ^default/data/((vendor|key)/|.*\.md$) - [R=404,L]
+
+# Sesi disimpan sebagai berkas .php berisi JSON mentah (sessionId + token). PHP
+# menyajikannya apa adanya karena isinya bukan kode, jadi siapa pun yang
+# memegang sessionId bisa membaca tokennya lewat HTTP biasa.
+RewriteRule ^default/sessions/ - [R=404,L]
+
+# Sumber yang tidak pernah menjadi aset yang disajikan. Template Blade
+# berakhiran .php sehingga diserahkan ke PHP, tapi isinya bukan kode PHP
+# sehingga dikeluarkan verbatim — sumber template terunduh utuh.
+RewriteRule \.blade\.php$ - [R=404,L]
+RewriteRule ^e2e/ - [R=404,L]
+RewriteRule \.(ts|tsx)$ - [R=404,L]
