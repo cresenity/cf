@@ -75,11 +75,11 @@ class CApp_Log_Activity {
             'platform' => CApp::platformName(),
             'platform_version' => CApp::platformVersion(),
             'user_id' => $userId,
-            'uri' => $completeUri,
-            'routed_uri' => $routedUri,
+            'uri' => static::truncate($completeUri, 255),
+            'routed_uri' => static::truncate($routedUri, 255),
             'controller' => $controller,
             'method' => $method,
-            'query_string' => $queryString,
+            'query_string' => static::truncate($queryString, 255),
             'nav' => $navName,
             'nav_label' => $navLabel,
             'action' => $actionName,
@@ -97,9 +97,9 @@ class CApp_Log_Activity {
     }
 
     /**
-     * Potong string sepanjang kolom `user_agent varchar(255)` - beberapa bot
-     * mengirim User-Agent yang lebih panjang (mis. header ganda/rusak), dan
-     * tanpa ini insert-nya gagal dengan "Data too long for column".
+     * Potong string sepanjang kolomnya (varchar(255)) - User-Agent bot dan URL
+     * callback OAuth bisa lebih panjang, dan tanpa ini insert-nya gagal dengan
+     * "Data too long for column".
      *
      * @param null|string $value
      * @param int         $length
